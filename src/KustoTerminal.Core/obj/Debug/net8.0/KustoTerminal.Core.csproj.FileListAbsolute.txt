@@ -1,0 +1,12 @@
+/workspace/kusto-terminal/src/KustoTerminal.Core/bin/Debug/net8.0/KustoTerminal.Core.deps.json
+/workspace/kusto-terminal/src/KustoTerminal.Core/bin/Debug/net8.0/KustoTerminal.Core.dll
+/workspace/kusto-terminal/src/KustoTerminal.Core/bin/Debug/net8.0/KustoTerminal.Core.pdb
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/KustoTerminal.Core.csproj.AssemblyReference.cache
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/KustoTerminal.Core.GeneratedMSBuildEditorConfig.editorconfig
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/KustoTerminal.Core.AssemblyInfoInputs.cache
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/KustoTerminal.Core.AssemblyInfo.cs
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/KustoTerminal.Core.csproj.CoreCompileInputs.cache
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/KustoTerminal.Core.dll
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/refint/KustoTerminal.Core.dll
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/KustoTerminal.Core.pdb
+/workspace/kusto-terminal/src/KustoTerminal.Core/obj/Debug/net8.0/ref/KustoTerminal.Core.dll
