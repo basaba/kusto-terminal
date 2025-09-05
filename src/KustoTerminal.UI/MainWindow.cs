@@ -52,7 +52,8 @@ namespace KustoTerminal.UI
                 new MenuBarItem("_Edit", new MenuItem[]
                 {
                     new MenuItem("_Copy", "Copy selected text", Copy),
-                    new MenuItem("_Paste", "Paste text", Paste)
+                    new MenuItem("_Paste", "Paste text", Paste),
+                    new MenuItem("_Edit Connection", "Edit selected connection (Ctrl+E)", EditConnection)
                 }),
                 new MenuBarItem("_Query", new MenuItem[]
                 {
@@ -70,6 +71,7 @@ namespace KustoTerminal.UI
             {
                 new StatusItem(Key.F5, "~F5~ Execute", ExecuteQuery),
                 new StatusItem(Key.F1, "~F1~ Help", ShowHelp),
+                new StatusItem(Key.CtrlMask | Key.E, "~Ctrl+E~ Edit", EditConnection),
                 new StatusItem(Key.CtrlMask | Key.Q, "~Ctrl+Q~ Quit", () => Application.RequestStop())
             });
 
@@ -143,6 +145,19 @@ namespace KustoTerminal.UI
         {
             // Focus handling for tab navigation
             CanFocus = true;
+            
+            // Global key bindings
+            KeyPress += OnKeyPress;
+        }
+        
+        private void OnKeyPress(KeyEventEventArgs args)
+        {
+            // Handle Ctrl+E for edit connection
+            if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
+            {
+                EditConnection();
+                args.Handled = true;
+            }
         }
 
         private void OnConnectionSelected(object? sender, KustoConnection connection)
@@ -166,6 +181,28 @@ namespace KustoTerminal.UI
                 Task.Run(async () =>
                 {
                     await _connectionManager.AddConnectionAsync(dialog.Result);
+                    Application.MainLoop.Invoke(() => _connectionPane.RefreshConnections());
+                });
+            }
+        }
+
+        private void EditConnection()
+        {
+            var selectedConnection = _connectionPane.GetSelectedConnection();
+            if (selectedConnection == null)
+            {
+                MessageBox.ErrorQuery("Error", "No connection selected. Please select a connection to edit.", "OK");
+                return;
+            }
+
+            var dialog = new ConnectionDialog(selectedConnection);
+            Application.Run(dialog);
+
+            if (dialog.Result != null)
+            {
+                Task.Run(async () =>
+                {
+                    await _connectionManager.UpdateConnectionAsync(dialog.Result);
                     Application.MainLoop.Invoke(() => _connectionPane.RefreshConnections());
                 });
             }
@@ -252,6 +289,7 @@ namespace KustoTerminal.UI
 
 F5           - Execute query
 Ctrl+N       - New connection
+Ctrl+E       - Edit selected connection
 Ctrl+Q       - Quit application
 Ctrl+C       - Copy
 Ctrl+V       - Paste

@@ -23,14 +23,6 @@ namespace KustoTerminal.UI.Panes
 
         private void InitializeComponents()
         {
-            _connectionLabel = new Label("No connection selected")
-            {
-                X = 0,
-                Y = 0,
-                Width = Dim.Fill(),
-                Height = 1
-            };
-
             _queryTextView = new TextView()
             {
                 X = 0,
