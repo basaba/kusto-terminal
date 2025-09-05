@@ -12,11 +12,13 @@ namespace KustoTerminal.UI.Dialogs
         private CheckBox _isDefaultCheckBox;
         private Button _okButton;
         private Button _cancelButton;
+        private readonly KustoConnection? _originalConnection;
         
         public KustoConnection? Result { get; private set; }
 
         public ConnectionDialog(KustoConnection? connection = null)
         {
+            _originalConnection = connection;
             Title = connection == null ? "Add Connection" : "Edit Connection";
             Width = 60;
             Height = 15;
@@ -136,15 +138,34 @@ namespace KustoTerminal.UI.Dialogs
                 return;
             }
 
-            // Create result
-            Result = new KustoConnection
+            // Create result - preserve original ID and timestamps for edits
+            if (_originalConnection != null)
             {
-                Name = name,
-                ClusterUri = clusterUri,
-                Database = database,
-                IsDefault = _isDefaultCheckBox.Checked,
-                AuthType = AuthenticationType.AzureCli
-            };
+                // Editing existing connection - preserve ID and metadata
+                Result = new KustoConnection
+                {
+                    Id = _originalConnection.Id,
+                    Name = name,
+                    ClusterUri = clusterUri,
+                    Database = database,
+                    IsDefault = _isDefaultCheckBox.Checked,
+                    AuthType = _originalConnection.AuthType,
+                    CreatedAt = _originalConnection.CreatedAt,
+                    LastUsed = _originalConnection.LastUsed
+                };
+            }
+            else
+            {
+                // Creating new connection
+                Result = new KustoConnection
+                {
+                    Name = name,
+                    ClusterUri = clusterUri,
+                    Database = database,
+                    IsDefault = _isDefaultCheckBox.Checked,
+                    AuthType = AuthenticationType.AzureCli
+                };
+            }
 
             Application.RequestStop();
         }
