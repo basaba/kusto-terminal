@@ -104,75 +104,14 @@ namespace KustoTerminal.UI.Panes
 
         protected override void OnFocusEnter()
         {
-            // Additional highlighting when the pane itself receives focus
-            HighlightActiveElements();
+            // Use BasePane's color scheme system
+            base.OnFocusEnter();
         }
 
         protected override void OnFocusLeave()
         {
-            // Remove highlighting when leaving the pane
-            RemoveElementHighlighting();
-        }
-
-        private void HighlightActiveElements()
-        {
-            // Enhanced highlighting for the table view when pane is active
-            var highlightedTableScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
-                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
-                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
-                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
-            };
-            
-            _tableView.ColorScheme = highlightedTableScheme;
-            
-            // Also highlight the status label
-            var highlightedStatusScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
-            };
-            
-            _statusLabel.ColorScheme = highlightedStatusScheme;
-            
-            // Force redraw
-            _tableView.SetNeedsDisplay();
-            _statusLabel.SetNeedsDisplay();
-        }
-
-        private void RemoveElementHighlighting()
-        {
-            // Reset to normal color schemes
-            var normalTableScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
-                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
-                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
-            };
-            
-            _tableView.ColorScheme = normalTableScheme;
-            
-            var normalStatusScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
-            };
-            
-            _statusLabel.ColorScheme = normalStatusScheme;
-            
-            // Force redraw
-            _tableView.SetNeedsDisplay();
-            _statusLabel.SetNeedsDisplay();
+            // Use BasePane's color scheme system
+            base.OnFocusLeave();
         }
 
         public void DisplayResult(QueryResult result)

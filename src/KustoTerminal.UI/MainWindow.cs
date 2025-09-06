@@ -265,24 +265,9 @@ namespace KustoTerminal.UI
 
         private void UpdateFrameBorderColors()
         {
-            // Create color schemes for normal and active frames
-            var normalColorScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
-            };
-
-            var activeColorScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
-            };
+            // Use BasePane's centralized color scheme methods
+            var normalColorScheme = BasePane.CreateStandardColorScheme();
+            var activeColorScheme = BasePane.CreateActiveFrameColorScheme();
 
             // Reset all frames to normal color
             _leftFrame.ColorScheme = normalColorScheme;

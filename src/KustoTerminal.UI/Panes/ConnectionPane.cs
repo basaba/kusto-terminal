@@ -143,52 +143,20 @@ namespace KustoTerminal.UI.Panes
 
         protected override void OnFocusEnter()
         {
-            // Additional highlighting when the pane itself receives focus
-            HighlightActiveElements();
+            // Use BasePane's color scheme system
+            base.OnFocusEnter();
         }
 
         protected override void OnFocusLeave()
         {
-            // Remove highlighting when leaving the pane
-            RemoveElementHighlighting();
-        }
-
-        private void HighlightActiveElements()
-        {
-            // Enhanced highlighting for the connections list when pane is active
-            var highlightedListScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
-                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
-                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
-            };
-            
-            _connectionsList.ColorScheme = highlightedListScheme;
-            _connectionsList.SetNeedsDisplay();
-        }
-
-        private void RemoveElementHighlighting()
-        {
-            // Reset to the original connection list style
-            SetupConnectionListStyle();
+            // Use BasePane's color scheme system
+            base.OnFocusLeave();
         }
 
         private void SetupConnectionListStyle()
         {
-            // Configure ListView color scheme for persistent selection highlighting
-            // Selection remains visible even when focus is on other panes
-            var normalListScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
-                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan), // Keep selection visible when not focused
-                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Brighter when focused
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
-            };
-            
-            _connectionsList.ColorScheme = normalListScheme;
+            // Apply BasePane's normal color scheme for ListView
+            _connectionsList.ColorScheme = GetNormalSchemeForControl(_connectionsList);
         }
 
         private async void LoadConnections()

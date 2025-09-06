@@ -184,5 +184,66 @@ namespace KustoTerminal.UI.Panes
         }
 
         public bool IsHighlighted => _isHighlighted;
+
+        // Static methods for creating consistent color schemes across the application
+        public static ColorScheme CreateStandardColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+        }
+
+        public static ColorScheme CreateHighlightedColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
+            };
+        }
+
+        public static ColorScheme CreateButtonColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightBlue),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+        }
+
+        public static ColorScheme CreateTextFieldColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+        }
+
+        public static ColorScheme CreateActiveFrameColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
+            };
+        }
     }
 }

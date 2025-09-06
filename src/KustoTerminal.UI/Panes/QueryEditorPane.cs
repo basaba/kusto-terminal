@@ -110,46 +110,14 @@ namespace KustoTerminal.UI.Panes
 
         protected override void OnFocusEnter()
         {
-            // Additional highlighting when the pane itself receives focus
-            HighlightActiveElement();
+            // Use BasePane's color scheme system
+            base.OnFocusEnter();
         }
 
         protected override void OnFocusLeave()
         {
-            // Remove highlighting when leaving the pane
-            RemoveElementHighlighting();
-        }
-
-        private void HighlightActiveElement()
-        {
-            // Add a subtle border or highlighting to the text view when pane is active
-            var highlightedTextViewScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
-            };
-            
-            _queryTextView.ColorScheme = highlightedTextViewScheme;
-            _queryTextView.SetNeedsDisplay();
-        }
-
-        private void RemoveElementHighlighting()
-        {
-            // Reset to normal color scheme
-            var normalTextViewScheme = new ColorScheme()
-            {
-                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
-            };
-            
-            _queryTextView.ColorScheme = normalTextViewScheme;
-            _queryTextView.SetNeedsDisplay();
+            // Use BasePane's color scheme system
+            base.OnFocusLeave();
         }
 
         private void SetupLayout()
