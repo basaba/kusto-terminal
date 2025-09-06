@@ -43,6 +43,9 @@ namespace KustoTerminal.UI.Panes
                 AllowsMultipleSelection = false
             };
 
+            // Customize the ListView appearance for better selection highlighting
+            SetupConnectionListStyle();
+
             _addButton = new Button("Add")
             {
                 X = 0,
@@ -85,6 +88,20 @@ namespace KustoTerminal.UI.Panes
         private void SetupLayout()
         {
             Add(_connectionsList, _addButton, _editButton, _deleteButton, _connectButton);
+        }
+
+        private void SetupConnectionListStyle()
+        {
+            // Configure ListView color scheme for persistent selection highlighting
+            // Selection remains visible even when focus is on other panes
+            _connectionsList.ColorScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan), // Keep selection visible when not focused
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Brighter when focused
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
         }
 
         private async void LoadConnections()
@@ -130,6 +147,9 @@ namespace KustoTerminal.UI.Panes
                 _editButton.Enabled = true;
                 _deleteButton.Enabled = true;
                 _connectButton.Enabled = true;
+                
+                // Force a redraw to ensure selection highlighting is visible
+                _connectionsList.SetNeedsDisplay();
             }
             else
             {
