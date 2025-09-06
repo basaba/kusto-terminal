@@ -10,8 +10,10 @@ namespace KustoTerminal.UI.Panes
         private Label _connectionLabel;
         private Button _executeButton;
         private Button _clearButton;
+        private Label _progressLabel;
         
         private KustoConnection? _currentConnection;
+        private bool _isExecuting = false;
 
         public event EventHandler<string>? QueryExecuteRequested;
 
@@ -38,7 +40,7 @@ namespace KustoTerminal.UI.Panes
                 Y = 1,
                 Width = Dim.Fill(),
                 Height = Dim.Fill() - 3,
-                Text = "-- Enter your KQL query here\n"
+                Text = ""
             };
 
             _executeButton = new Button("Execute (F5)")
@@ -53,6 +55,15 @@ namespace KustoTerminal.UI.Panes
                 X = Pos.Right(_executeButton) + 1,
                 Y = Pos.Bottom(_queryTextView),
                 Width = 8
+            };
+
+            _progressLabel = new Label("")
+            {
+                X = Pos.Right(_clearButton) + 2,
+                Y = Pos.Bottom(_queryTextView),
+                Width = Dim.Fill(),
+                Height = 1,
+                Visible = false
             };
 
             // Event handlers
@@ -122,7 +133,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_connectionLabel, _queryTextView, _executeButton, _clearButton);
+            Add(_connectionLabel, _queryTextView, _executeButton, _clearButton, _progressLabel);
             
             // Focus on the text view
             _queryTextView.SetFocus();
@@ -146,9 +157,13 @@ namespace KustoTerminal.UI.Panes
 
         private void OnExecuteClicked()
         {
+            if (_isExecuting)
+                return;
+
             var query = GetCurrentQuery();
             if (!string.IsNullOrWhiteSpace(query))
             {
+                SetExecuting(true);
                 QueryExecuteRequested?.Invoke(this, query);
             }
             else
@@ -198,6 +213,67 @@ namespace KustoTerminal.UI.Panes
         public void FocusEditor()
         {
             _queryTextView.SetFocus();
+        }
+
+        public void SetExecuting(bool isExecuting)
+        {
+            _isExecuting = isExecuting;
+            
+            if (isExecuting)
+            {
+                _executeButton.Text = "Executing...";
+                _executeButton.Enabled = false;
+                _progressLabel.Text = "⠋ Running query...";
+                _progressLabel.Visible = true;
+                StartProgressSpinner();
+            }
+            else
+            {
+                _executeButton.Text = "Execute (F5)";
+                _executeButton.Enabled = true;
+                _progressLabel.Visible = false;
+                StopProgressSpinner();
+            }
+        }
+
+        private System.Threading.Timer? _spinnerTimer;
+        private readonly string[] _spinnerFrames = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" };
+        private int _spinnerIndex = 0;
+
+        private void StartProgressSpinner()
+        {
+            _spinnerTimer = new System.Threading.Timer(UpdateSpinner, null, 0, 100);
+        }
+
+        private void StopProgressSpinner()
+        {
+            _spinnerTimer?.Dispose();
+            _spinnerTimer = null;
+        }
+
+        private void UpdateSpinner(object? state)
+        {
+            Application.MainLoop.Invoke(() =>
+            {
+                if (_isExecuting && _progressLabel.Visible)
+                {
+                    _spinnerIndex = (_spinnerIndex + 1) % _spinnerFrames.Length;
+                    var currentMessage = _progressLabel.Text?.ToString() ?? "Running query...";
+                    // Extract the message part (everything after the spinner character and space)
+                    var messagePart = currentMessage.Length > 2 ? currentMessage.Substring(2) : "Running query...";
+                    _progressLabel.Text = $"{_spinnerFrames[_spinnerIndex]} {messagePart}";
+                    _progressLabel.SetNeedsDisplay();
+                }
+            });
+        }
+
+        public void UpdateProgressMessage(string message)
+        {
+            if (_isExecuting && _progressLabel.Visible)
+            {
+                _progressLabel.Text = $"{_spinnerFrames[_spinnerIndex]} {message}";
+                _progressLabel.SetNeedsDisplay();
+            }
         }
     }
 }

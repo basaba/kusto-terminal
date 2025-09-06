@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Kusto.Data;
 using Kusto.Data.Common;
@@ -24,29 +25,48 @@ namespace KustoTerminal.Core.Services
             _authProvider = authProvider ?? throw new ArgumentNullException(nameof(authProvider));
         }
 
-        public async Task<QueryResult> ExecuteQueryAsync(string query)
+        public async Task<QueryResult> ExecuteQueryAsync(string query, CancellationToken cancellationToken = default, IProgress<string>? progress = null)
         {
             var stopwatch = Stopwatch.StartNew();
             
             try
             {
+                progress?.Report("Initializing connection...");
                 await EnsureConnectionAsync();
                 
                 if (_queryProvider == null)
                     throw new InvalidOperationException("Query provider is not initialized");
 
+                progress?.Report("Preparing query...");
                 var clientRequestProperties = new ClientRequestProperties();
+                
+                // Add cancellation token support
+                if (cancellationToken.CanBeCanceled)
+                {
+                    clientRequestProperties.ClientRequestId = Guid.NewGuid().ToString();
+                }
+                
+                progress?.Report("Executing query...");
                 var reader = await _queryProvider.ExecuteQueryAsync(_connection.Database, query, clientRequestProperties);
                 
+                progress?.Report("Processing results...");
                 var dataTable = new DataTable();
                 dataTable.Load(reader);
                 
+                progress?.Report("Query completed successfully");
                 stopwatch.Stop();
                 return QueryResult.Success(query, dataTable, stopwatch.Elapsed);
+            }
+            catch (OperationCanceledException)
+            {
+                stopwatch.Stop();
+                progress?.Report("Query cancelled");
+                return QueryResult.Error(query, "Query was cancelled", stopwatch.Elapsed);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
+                progress?.Report($"Query failed: {ex.Message}");
                 return QueryResult.Error(query, ex.Message, stopwatch.Elapsed);
             }
         }

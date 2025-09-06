@@ -381,17 +381,29 @@ namespace KustoTerminal.UI
                 if (connection == null)
                 {
                     UpdateStatusBar("No connection selected");
+                    Application.MainLoop.Invoke(() => _queryEditorPane.SetExecuting(false));
                     return;
                 }
 
                 UpdateStatusBar("Executing query...");
                 
+                // Create progress handler
+                var progress = new Progress<string>(message =>
+                {
+                    Application.MainLoop.Invoke(() =>
+                    {
+                        UpdateStatusBar(message);
+                        _queryEditorPane.UpdateProgressMessage(message);
+                    });
+                });
+                
                 var client = new Core.Services.KustoClient(connection, _authProvider);
-                var result = await client.ExecuteQueryAsync(query);
+                var result = await client.ExecuteQueryAsync(query, progress: progress);
                 client.Dispose();
                 
                 Application.MainLoop.Invoke(() =>
                 {
+                    _queryEditorPane.SetExecuting(false);
                     _resultsPane.DisplayResult(result);
                     if (result.IsSuccess)
                     {
@@ -407,6 +419,7 @@ namespace KustoTerminal.UI
             {
                 Application.MainLoop.Invoke(() =>
                 {
+                    _queryEditorPane.SetExecuting(false);
                     UpdateStatusBar($"Error: {ex.Message}");
                 });
             }
