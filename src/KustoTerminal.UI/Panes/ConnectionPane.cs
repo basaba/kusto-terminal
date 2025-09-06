@@ -36,7 +36,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 2,
+                Height = Dim.Fill() - 4,
                 AllowsMarking = false,
                 AllowsMultipleSelection = false
             };
@@ -44,7 +44,7 @@ namespace KustoTerminal.UI.Panes
             // Customize the ListView appearance for better selection highlighting
             SetupConnectionListStyle();
 
-            _shortcutsLabel = new Label("Ctrl+N: Add | Ctrl+E: Edit | Del: Delete | Enter: Connect")
+            _shortcutsLabel = new Label("Ctrl+N: Add\nCtrl+E: Edit\nDel: Delete\nEnter: Connect")
             {
                 X = 0,
                 Y = Pos.Bottom(_connectionsList),
