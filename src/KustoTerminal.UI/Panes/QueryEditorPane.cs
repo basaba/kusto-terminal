@@ -23,17 +23,6 @@ namespace KustoTerminal.UI.Panes
 
         private void InitializeComponents()
         {
-            _queryTextView = new TextView()
-            {
-                X = 0,
-                Y = 1,
-                Width = Dim.Fill(),
-                Height = Dim.Fill() - 2,
-                WordWrap = false,
-                AllowsTab = true,
-                Text = "// Enter your KQL query here\n// Press F5 to execute\n\n"
-            };
-
             _executeButton = new Button("Execute (F5)")
             {
                 X = 0,
