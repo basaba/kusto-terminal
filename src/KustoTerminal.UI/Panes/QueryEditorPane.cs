@@ -8,8 +8,6 @@ namespace KustoTerminal.UI.Panes
     {
         private TextView _queryTextView;
         private Label _connectionLabel;
-        private Button _executeButton;
-        private Button _clearButton;
         private Label _progressLabel;
         
         private KustoConnection? _currentConnection;
@@ -43,32 +41,14 @@ namespace KustoTerminal.UI.Panes
                 Text = ""
             };
 
-            _executeButton = new Button("Execute (F5)")
-            {
-                X = 0,
-                Y = Pos.Bottom(_queryTextView),
-                Width = 15
-            };
-
-            _clearButton = new Button("Clear")
-            {
-                X = Pos.Right(_executeButton) + 1,
-                Y = Pos.Bottom(_queryTextView),
-                Width = 8
-            };
-
             _progressLabel = new Label("")
             {
-                X = Pos.Right(_clearButton) + 2,
+                X = 0,
                 Y = Pos.Bottom(_queryTextView),
                 Width = Dim.Fill(),
                 Height = 1,
                 Visible = false
             };
-
-            // Event handlers
-            _executeButton.Clicked += OnExecuteClicked;
-            _clearButton.Clicked += OnClearClicked;
             
             // Set up key bindings for the TextView
             _queryTextView.KeyPress += OnKeyPress;
@@ -79,10 +59,6 @@ namespace KustoTerminal.UI.Panes
             // Set up focus handlers for individual elements
             _queryTextView.Enter += OnElementFocusEnter;
             _queryTextView.Leave += OnElementFocusLeave;
-            _executeButton.Enter += OnElementFocusEnter;
-            _executeButton.Leave += OnElementFocusLeave;
-            _clearButton.Enter += OnElementFocusEnter;
-            _clearButton.Leave += OnElementFocusLeave;
         }
 
         private void OnElementFocusEnter(FocusEventArgs args)
@@ -133,7 +109,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_connectionLabel, _queryTextView, _executeButton, _clearButton, _progressLabel);
+            Add(_connectionLabel, _queryTextView, _progressLabel);
             
             // Focus on the text view
             _queryTextView.SetFocus();
@@ -145,6 +121,12 @@ namespace KustoTerminal.UI.Panes
             if (e.KeyEvent.Key == Key.F5)
             {
                 OnExecuteClicked();
+                e.Handled = true;
+            }
+            // Handle Ctrl+L for clear
+            else if (e.KeyEvent.Key == (Key.CtrlMask | Key.L))
+            {
+                OnClearClicked();
                 e.Handled = true;
             }
             // Handle Ctrl+A for select all
@@ -187,7 +169,6 @@ namespace KustoTerminal.UI.Panes
         {
             _currentConnection = connection;
             _connectionLabel.Text = $"Connected: {connection.DisplayName} | {connection.Database}";
-            _executeButton.Enabled = true;
         }
 
         public void SetQuery(string query)
@@ -221,16 +202,12 @@ namespace KustoTerminal.UI.Panes
             
             if (isExecuting)
             {
-                _executeButton.Text = "Executing...";
-                _executeButton.Enabled = false;
                 _progressLabel.Text = "⠋ Running query...";
                 _progressLabel.Visible = true;
                 StartProgressSpinner();
             }
             else
             {
-                _executeButton.Text = "Execute (F5)";
-                _executeButton.Enabled = true;
                 _progressLabel.Visible = false;
                 StopProgressSpinner();
             }

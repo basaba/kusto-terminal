@@ -74,8 +74,12 @@ namespace KustoTerminal.UI
             _statusBar = new StatusBar(new StatusItem[]
             {
                 new StatusItem(Key.F5, "~F5~ Execute", ExecuteQuery),
-                new StatusItem(Key.F1, "~F1~ Help", ShowHelp),
+                new StatusItem(Key.CtrlMask | Key.L, "~Ctrl+L~ Clear", ClearQuery),
+                new StatusItem(Key.CtrlMask | Key.N, "~Ctrl+N~ New", NewConnection),
                 new StatusItem(Key.CtrlMask | Key.E, "~Ctrl+E~ Edit", EditConnection),
+                new StatusItem(Key.DeleteChar, "~Del~ Delete", DeleteConnection),
+                new StatusItem(Key.CtrlMask | Key.S, "~Ctrl+S~ Export", ExportResults),
+                new StatusItem(Key.F1, "~F1~ Help", ShowHelp),
                 new StatusItem(Key.CtrlMask | Key.Q, "~Ctrl+Q~ Quit", () => Application.RequestStop())
             });
 
@@ -214,6 +218,30 @@ namespace KustoTerminal.UI
             if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
             {
                 EditConnection();
+                args.Handled = true;
+            }
+            // Handle Ctrl+N for new connection
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
+            {
+                NewConnection();
+                args.Handled = true;
+            }
+            // Handle Ctrl+L for clear query
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.L))
+            {
+                ClearQuery();
+                args.Handled = true;
+            }
+            // Handle Ctrl+S for export results
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
+            {
+                ExportResults();
+                args.Handled = true;
+            }
+            // Handle Delete key for delete connection
+            else if (args.KeyEvent.Key == Key.DeleteChar)
+            {
+                DeleteConnection();
                 args.Handled = true;
             }
         }
@@ -373,6 +401,43 @@ namespace KustoTerminal.UI
             }
         }
 
+        private void ClearQuery()
+        {
+            _queryEditorPane.FocusEditor();
+            // The actual clear will be handled by the QueryEditorPane's Ctrl+L handler
+        }
+
+        private void DeleteConnection()
+        {
+            var selectedConnection = _connectionPane.GetSelectedConnection();
+            if (selectedConnection == null)
+            {
+                MessageBox.ErrorQuery("Error", "No connection selected. Please select a connection to delete.", "OK");
+                return;
+            }
+
+            var result = MessageBox.Query("Confirm Delete",
+                $"Are you sure you want to delete connection '{selectedConnection.DisplayName}'?",
+                "Yes", "No");
+
+            if (result == 0) // Yes
+            {
+                Task.Run(async () =>
+                {
+                    await _connectionManager.DeleteConnectionAsync(selectedConnection.Id);
+                    Application.MainLoop.Invoke(() => _connectionPane.RefreshConnections());
+                });
+            }
+        }
+
+        private void ExportResults()
+        {
+            // Focus on results pane to trigger export
+            _currentPaneIndex = 2; // Results pane
+            SetFocusToCurrentPane();
+            // The actual export will be handled by the ResultsPane's Ctrl+S handler
+        }
+
         private async Task ExecuteQueryAsync(string query)
         {
             try
@@ -440,18 +505,31 @@ namespace KustoTerminal.UI
         {
             var helpText = @"Kusto Terminal - Keyboard Shortcuts
 
+Query Editor:
 F5           - Execute query
-Ctrl+N       - New connection
-Ctrl+E       - Edit selected connection
-Ctrl+Q       - Quit application
-Ctrl+C       - Copy
-Ctrl+V       - Paste
+Ctrl+L       - Clear query
+Ctrl+A       - Select all text
 
-Navigation:
+Connections:
+Ctrl+N       - Add new connection
+Ctrl+E       - Edit selected connection
+Del          - Delete selected connection
+Enter        - Connect to selected connection
+
+Results:
+Ctrl+S       - Export results
+
+Dialog Navigation:
+Enter        - Accept/OK
+Esc          - Cancel
+
+General:
 Tab          - Switch to next pane
 Shift+Tab    - Switch to previous pane
-Arrow Keys   - Navigate within panes
-Enter        - Select/Activate item";
+Ctrl+C       - Copy
+Ctrl+V       - Paste
+Ctrl+Q       - Quit application
+F1           - Show this help";
 
             MessageBox.Query("Help", helpText, "OK");
         }

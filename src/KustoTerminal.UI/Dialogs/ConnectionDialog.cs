@@ -10,8 +10,6 @@ namespace KustoTerminal.UI.Dialogs
         private TextField _clusterUriField;
         private TextField _databaseField;
         private CheckBox _isDefaultCheckBox;
-        private Button _okButton;
-        private Button _cancelButton;
         private readonly KustoConnection? _originalConnection;
         
         public KustoConnection? Result { get; private set; }
@@ -80,35 +78,33 @@ namespace KustoTerminal.UI.Dialogs
                 Checked = connection?.IsDefault ?? false
             };
 
-            // Buttons
-            _okButton = new Button("OK")
-            {
-                X = 10,
-                Y = 10,
-                Width = 10,
-                IsDefault = true
-            };
+            Add(nameLabel, _nameField, clusterLabel, _clusterUriField,
+                databaseLabel, _databaseField, _isDefaultCheckBox);
 
-            _cancelButton = new Button("Cancel")
-            {
-                X = 25,
-                Y = 10,
-                Width = 10
-            };
-
-            // Event handlers
-            _okButton.Clicked += OnOkClicked;
-            _cancelButton.Clicked += OnCancelClicked;
-
-            Add(nameLabel, _nameField, clusterLabel, _clusterUriField, 
-                databaseLabel, _databaseField, _isDefaultCheckBox, 
-                _okButton, _cancelButton);
+            // Set up key bindings
+            KeyPress += OnKeyPress;
         }
 
         private void SetupLayout()
         {
             // Focus on the first field
             _nameField.SetFocus();
+        }
+
+        private void OnKeyPress(KeyEventEventArgs args)
+        {
+            // Handle Enter key to accept (OK)
+            if (args.KeyEvent.Key == Key.Enter)
+            {
+                OnOkClicked();
+                args.Handled = true;
+            }
+            // Handle Escape key to cancel
+            else if (args.KeyEvent.Key == Key.Esc)
+            {
+                OnCancelClicked();
+                args.Handled = true;
+            }
         }
 
         private void SetupColorScheme()
@@ -122,10 +118,6 @@ namespace KustoTerminal.UI.Dialogs
             _clusterUriField.ColorScheme = textFieldColorScheme;
             _databaseField.ColorScheme = textFieldColorScheme;
 
-            // Apply button color schemes
-            var buttonColorScheme = KustoTerminal.UI.Panes.BasePane.CreateButtonColorScheme();
-            _okButton.ColorScheme = buttonColorScheme;
-            _cancelButton.ColorScheme = buttonColorScheme;
 
             // Apply checkbox color scheme (using text field scheme for consistency)
             _isDefaultCheckBox.ColorScheme = textFieldColorScheme;

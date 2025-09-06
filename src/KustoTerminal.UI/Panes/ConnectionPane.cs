@@ -12,10 +12,6 @@ namespace KustoTerminal.UI.Panes
     {
         private readonly IConnectionManager _connectionManager;
         private ListView _connectionsList;
-        private Button _addButton;
-        private Button _editButton;
-        private Button _deleteButton;
-        private Button _connectButton;
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
         private KustoConnection? _selectedConnection;
@@ -47,49 +43,14 @@ namespace KustoTerminal.UI.Panes
             // Customize the ListView appearance for better selection highlighting
             SetupConnectionListStyle();
 
-            _addButton = new Button("Add")
-            {
-                X = 0,
-                Y = Pos.Bottom(_connectionsList),
-                Width = 6
-            };
-
-            _editButton = new Button("Edit")
-            {
-                X = Pos.Right(_addButton) + 1,
-                Y = Pos.Bottom(_connectionsList),
-                Width = 6,
-                Enabled = false
-            };
-
-            _deleteButton = new Button("Delete")
-            {
-                X = Pos.Right(_editButton) + 1,
-                Y = Pos.Bottom(_connectionsList),
-                Width = 8,
-                Enabled = false
-            };
-
-            _connectButton = new Button("Connect")
-            {
-                X = 0,
-                Y = Pos.Bottom(_addButton),
-                Width = Dim.Fill(),
-                Enabled = false
-            };
-
             // Set up event handlers
             _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
             _connectionsList.KeyPress += OnConnectionsListKeyPress;
-            _addButton.Clicked += OnAddClicked;
-            _editButton.Clicked += OnEditClicked;
-            _deleteButton.Clicked += OnDeleteClicked;
-            _connectButton.Clicked += OnConnectClicked;
         }
 
         private void SetupLayout()
         {
-            Add(_connectionsList, _addButton, _editButton, _deleteButton, _connectButton);
+            Add(_connectionsList);
         }
 
         private void SetupElementFocusHandlers()
@@ -97,14 +58,6 @@ namespace KustoTerminal.UI.Panes
             // Set up focus handlers for individual elements
             _connectionsList.Enter += OnElementFocusEnter;
             _connectionsList.Leave += OnElementFocusLeave;
-            _addButton.Enter += OnElementFocusEnter;
-            _addButton.Leave += OnElementFocusLeave;
-            _editButton.Enter += OnElementFocusEnter;
-            _editButton.Leave += OnElementFocusLeave;
-            _deleteButton.Enter += OnElementFocusEnter;
-            _deleteButton.Leave += OnElementFocusLeave;
-            _connectButton.Enter += OnElementFocusEnter;
-            _connectButton.Leave += OnElementFocusLeave;
         }
 
         private void OnElementFocusEnter(FocusEventArgs args)
@@ -199,9 +152,6 @@ namespace KustoTerminal.UI.Panes
             if (selectedIndex >= 0 && selectedIndex < _connections.Length)
             {
                 _selectedConnection = _connections[selectedIndex];
-                _editButton.Enabled = true;
-                _deleteButton.Enabled = true;
-                _connectButton.Enabled = true;
                 
                 // Force a redraw to ensure selection highlighting is visible
                 _connectionsList.SetNeedsDisplay();
@@ -209,9 +159,6 @@ namespace KustoTerminal.UI.Panes
             else
             {
                 _selectedConnection = null;
-                _editButton.Enabled = false;
-                _deleteButton.Enabled = false;
-                _connectButton.Enabled = false;
             }
         }
 
@@ -223,6 +170,30 @@ namespace KustoTerminal.UI.Panes
                 if (_selectedConnection != null)
                 {
                     ConnectionSelected?.Invoke(this, _selectedConnection);
+                    args.Handled = true;
+                }
+            }
+            // Handle Ctrl+N for new connection
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
+            {
+                OnAddClicked();
+                args.Handled = true;
+            }
+            // Handle Ctrl+E for edit connection
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
+            {
+                if (_selectedConnection != null)
+                {
+                    OnEditClicked();
+                    args.Handled = true;
+                }
+            }
+            // Handle Delete key for delete connection
+            else if (args.KeyEvent.Key == Key.DeleteChar)
+            {
+                if (_selectedConnection != null)
+                {
+                    OnDeleteClicked();
                     args.Handled = true;
                 }
             }

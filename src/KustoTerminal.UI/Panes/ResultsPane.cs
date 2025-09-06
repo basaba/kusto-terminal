@@ -10,8 +10,6 @@ namespace KustoTerminal.UI.Panes
     {
         private TableView _tableView;
         private Label _statusLabel;
-        private Button _exportButton;
-        private ScrollView _scrollView;
         
         private QueryResult? _currentResult;
 
@@ -42,21 +40,13 @@ namespace KustoTerminal.UI.Panes
                 MultiSelect = false
             };
 
-            _exportButton = new Button("Export")
-            {
-                X = 0,
-                Y = Pos.Bottom(_tableView),
-                Width = 10,
-                Enabled = false
-            };
-
-            // Event handlers
-            _exportButton.Clicked += OnExportClicked;
+            // Set up key bindings
+            KeyPress += OnKeyPress;
         }
 
         private void SetupLayout()
         {
-            Add(_statusLabel, _tableView, _exportButton);
+            Add(_statusLabel, _tableView);
         }
 
         private void SetupElementFocusHandlers()
@@ -64,8 +54,6 @@ namespace KustoTerminal.UI.Panes
             // Set up focus handlers for individual elements
             _tableView.Enter += OnElementFocusEnter;
             _tableView.Leave += OnElementFocusLeave;
-            _exportButton.Enter += OnElementFocusEnter;
-            _exportButton.Leave += OnElementFocusLeave;
         }
 
         private void OnElementFocusEnter(FocusEventArgs args)
@@ -114,6 +102,19 @@ namespace KustoTerminal.UI.Panes
             base.OnFocusLeave();
         }
 
+        private void OnKeyPress(KeyEventEventArgs args)
+        {
+            // Handle Ctrl+S for export
+            if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
+            {
+                if (_currentResult?.Data != null)
+                {
+                    OnExportClicked();
+                    args.Handled = true;
+                }
+            }
+        }
+
         public void DisplayResult(QueryResult result)
         {
             _currentResult = result;
@@ -141,12 +142,10 @@ namespace KustoTerminal.UI.Panes
                 _tableView.Table = dataTable;
 
                 _statusLabel.Text = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
-                _exportButton.Enabled = true;
             }
             catch (Exception ex)
             {
                 _statusLabel.Text = $"Error displaying results: {ex.Message}";
-                _exportButton.Enabled = false;
             }
         }
 
@@ -156,7 +155,6 @@ namespace KustoTerminal.UI.Panes
             
             // Clear the table
             _tableView.Table = new DataTable();
-            _exportButton.Enabled = false;
         }
 
         private void DisplayEmpty(QueryResult result)
@@ -173,7 +171,6 @@ namespace KustoTerminal.UI.Panes
                 _tableView.Table = new DataTable();
             }
             
-            _exportButton.Enabled = false;
         }
 
         public new void Clear()
@@ -181,7 +178,6 @@ namespace KustoTerminal.UI.Panes
             _currentResult = null;
             _tableView.Table = new DataTable();
             _statusLabel.Text = "No results";
-            _exportButton.Enabled = false;
         }
 
         private void OnExportClicked()
