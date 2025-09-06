@@ -85,7 +85,7 @@ namespace KustoTerminal.CLI
                 Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
                 HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
 
             // Apply the color scheme to all built-in color schemes
@@ -99,7 +99,7 @@ namespace KustoTerminal.CLI
                 Focus = new Terminal.Gui.Attribute(Color.BrightRed, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.BrightRed, Color.Black),
                 HotFocus = new Terminal.Gui.Attribute(Color.BrightRed, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
         }
     }

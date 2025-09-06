@@ -281,7 +281,7 @@ namespace KustoTerminal.UI
                 Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
                 HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
 
             // Reset all frames to normal color

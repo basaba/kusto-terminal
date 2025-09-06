@@ -34,7 +34,7 @@ namespace KustoTerminal.UI.Panes
                 Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
                 HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
 
             ColorScheme = _normalColorScheme;
@@ -109,18 +109,18 @@ namespace KustoTerminal.UI.Panes
             {
                 Button => new ColorScheme()
                 {
-                    Normal = new Terminal.Gui.Attribute(Color.White, Color.DarkGray),
+                    Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
                     Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightBlue),
-                    HotNormal = new Terminal.Gui.Attribute(Color.BrightBlue, Color.DarkGray),
+                    HotNormal = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
                     HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
                     Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
                 },
                 TextView => new ColorScheme()
                 {
                     Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                    Focus = new Terminal.Gui.Attribute(Color.Black, Color.White),
+                    Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
                     HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                    HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.White),
+                    HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
                     Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
                 },
                 ListView => new ColorScheme()
@@ -149,10 +149,10 @@ namespace KustoTerminal.UI.Panes
             {
                 Button => new ColorScheme()
                 {
-                    Normal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
-                    Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
-                    HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
-                    HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                    Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.Black, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.Black),
                     Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
                 },
                 TextView => new ColorScheme()

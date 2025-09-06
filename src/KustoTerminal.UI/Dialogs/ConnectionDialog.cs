@@ -25,6 +25,7 @@ namespace KustoTerminal.UI.Dialogs
             
             InitializeComponents(connection);
             SetupLayout();
+            SetupColorScheme();
         }
 
         private void InitializeComponents(KustoConnection? connection)
@@ -108,6 +109,61 @@ namespace KustoTerminal.UI.Dialogs
         {
             // Focus on the first field
             _nameField.SetFocus();
+        }
+
+        private void SetupColorScheme()
+        {
+            // Set up consistent black background color scheme for the dialog
+            var dialogColorScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+
+            // Apply to all components
+            ColorScheme = dialogColorScheme;
+
+            // Set up text field color schemes
+            var textFieldColorScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+
+            _nameField.ColorScheme = textFieldColorScheme;
+            _clusterUriField.ColorScheme = textFieldColorScheme;
+            _databaseField.ColorScheme = textFieldColorScheme;
+
+            // Set up button color schemes
+            var buttonColorScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightBlue),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+
+            _okButton.ColorScheme = buttonColorScheme;
+            _cancelButton.ColorScheme = buttonColorScheme;
+
+            // Set up checkbox color scheme
+            var checkboxColorScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightBlue, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+
+            _isDefaultCheckBox.ColorScheme = checkboxColorScheme;
         }
 
         private void OnOkClicked()

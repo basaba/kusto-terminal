@@ -123,7 +123,7 @@ namespace KustoTerminal.UI.Panes
                 Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
                 HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
                 HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
             
             _tableView.ColorScheme = highlightedTableScheme;
@@ -135,7 +135,7 @@ namespace KustoTerminal.UI.Panes
                 Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
                 HotFocus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
             
             _statusLabel.ColorScheme = highlightedStatusScheme;
@@ -165,7 +165,7 @@ namespace KustoTerminal.UI.Panes
                 Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
                 HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+                Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
             
             _statusLabel.ColorScheme = normalStatusScheme;

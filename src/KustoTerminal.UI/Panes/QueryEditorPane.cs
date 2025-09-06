@@ -126,9 +126,9 @@ namespace KustoTerminal.UI.Panes
             var highlightedTextViewScheme = new ColorScheme()
             {
                 Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
                 Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
             };
             
@@ -142,9 +142,9 @@ namespace KustoTerminal.UI.Panes
             var normalTextViewScheme = new ColorScheme()
             {
                 Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.Black, Color.White),
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
                 HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.White),
+                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
                 Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
             };
             
