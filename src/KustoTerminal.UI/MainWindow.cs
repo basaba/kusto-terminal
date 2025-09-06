@@ -22,6 +22,10 @@ namespace KustoTerminal.UI
         private FrameView _leftFrame;
         private FrameView _rightFrame;
         private FrameView _bottomFrame;
+        
+        // Pane navigation
+        private View[] _navigablePanes;
+        private int _currentPaneIndex = 0;
 
         public MainWindow(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
         {
@@ -136,6 +140,15 @@ namespace KustoTerminal.UI
             _rightFrame.Add(_queryEditorPane);
             _bottomFrame.Add(_resultsPane);
 
+            // Set up navigable panes array for TAB navigation
+            _navigablePanes = new View[] { _connectionPane, _queryEditorPane, _resultsPane };
+
+            // Set initial focus to connection pane
+            _connectionPane.SetFocus();
+
+            // Initialize frame border colors
+            UpdateFrameBorderColors();
+
             // Set up events
             _connectionPane.ConnectionSelected += OnConnectionSelected;
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
@@ -152,12 +165,118 @@ namespace KustoTerminal.UI
         
         private void OnKeyPress(KeyEventEventArgs args)
         {
+            // Handle TAB for pane navigation
+            if (args.KeyEvent.Key == Key.Tab)
+            {
+                SwitchToNextPane();
+                args.Handled = true;
+                return;
+            }
+            
+            // Handle Shift+TAB for reverse pane navigation
+            if (args.KeyEvent.Key == (Key.ShiftMask | Key.Tab))
+            {
+                SwitchToPreviousPane();
+                args.Handled = true;
+                return;
+            }
+            
             // Handle Ctrl+E for edit connection
             if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
             {
                 EditConnection();
                 args.Handled = true;
             }
+        }
+
+        private void SwitchToNextPane()
+        {
+            _currentPaneIndex = (_currentPaneIndex + 1) % _navigablePanes.Length;
+            SetFocusToCurrentPane();
+        }
+
+        private void SwitchToPreviousPane()
+        {
+            _currentPaneIndex = (_currentPaneIndex - 1 + _navigablePanes.Length) % _navigablePanes.Length;
+            SetFocusToCurrentPane();
+        }
+
+        private void SetFocusToCurrentPane()
+        {
+            var currentPane = _navigablePanes[_currentPaneIndex];
+            currentPane.SetFocus();
+            
+            // Update frame titles and border colors to show which pane is active
+            UpdateFrameTitles();
+            UpdateFrameBorderColors();
+        }
+
+        private void UpdateFrameTitles()
+        {
+            // Reset all frame titles
+            _leftFrame.Title = "Connections";
+            _rightFrame.Title = "Query Editor";
+            _bottomFrame.Title = "Results";
+            
+            // Highlight the active frame title
+            switch (_currentPaneIndex)
+            {
+                case 0: // Connection pane
+                    _leftFrame.Title = "▶ Connections";
+                    break;
+                case 1: // Query editor pane
+                    _rightFrame.Title = "▶ Query Editor";
+                    break;
+                case 2: // Results pane
+                    _bottomFrame.Title = "▶ Results";
+                    break;
+            }
+        }
+
+        private void UpdateFrameBorderColors()
+        {
+            // Create color schemes for normal and active frames
+            var normalColorScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+
+            var activeColorScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+
+            // Reset all frames to normal color
+            _leftFrame.ColorScheme = normalColorScheme;
+            _rightFrame.ColorScheme = normalColorScheme;
+            _bottomFrame.ColorScheme = normalColorScheme;
+
+            // Highlight the active frame border
+            switch (_currentPaneIndex)
+            {
+                case 0: // Connection pane
+                    _leftFrame.ColorScheme = activeColorScheme;
+                    break;
+                case 1: // Query editor pane
+                    _rightFrame.ColorScheme = activeColorScheme;
+                    break;
+                case 2: // Results pane
+                    _bottomFrame.ColorScheme = activeColorScheme;
+                    break;
+            }
+
+            // Force redraw of all frames
+            _leftFrame.SetNeedsDisplay();
+            _rightFrame.SetNeedsDisplay();
+            _bottomFrame.SetNeedsDisplay();
         }
 
         private void OnConnectionSelected(object? sender, KustoConnection connection)
@@ -295,7 +414,8 @@ Ctrl+C       - Copy
 Ctrl+V       - Paste
 
 Navigation:
-Tab          - Switch between panes
+Tab          - Switch to next pane
+Shift+Tab    - Switch to previous pane
 Arrow Keys   - Navigate within panes
 Enter        - Select/Activate item";
 
