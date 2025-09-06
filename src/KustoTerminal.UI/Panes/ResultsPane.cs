@@ -6,7 +6,7 @@ using KustoTerminal.Core.Models;
 
 namespace KustoTerminal.UI.Panes
 {
-    public class ResultsPane : View
+    public class ResultsPane : BasePane
     {
         private TableView _tableView;
         private Label _statusLabel;
@@ -19,6 +19,7 @@ namespace KustoTerminal.UI.Panes
         {
             InitializeComponents();
             SetupLayout();
+            SetupElementFocusHandlers();
         }
 
         private void InitializeComponents()
@@ -56,6 +57,122 @@ namespace KustoTerminal.UI.Panes
         private void SetupLayout()
         {
             Add(_statusLabel, _tableView, _exportButton);
+        }
+
+        private void SetupElementFocusHandlers()
+        {
+            // Set up focus handlers for individual elements
+            _tableView.Enter += OnElementFocusEnter;
+            _tableView.Leave += OnElementFocusLeave;
+            _exportButton.Enter += OnElementFocusEnter;
+            _exportButton.Leave += OnElementFocusLeave;
+        }
+
+        private void OnElementFocusEnter(FocusEventArgs args)
+        {
+            // When any element in this pane gets focus, highlight the entire pane
+            SetHighlighted(true);
+        }
+
+        private void OnElementFocusLeave(FocusEventArgs args)
+        {
+            // Check if focus is moving to another element within this pane
+            Application.MainLoop.Invoke(() =>
+            {
+                var focusedView = Application.Top.MostFocused;
+                bool stillInPane = IsChildOf(focusedView, this);
+                
+                if (!stillInPane)
+                {
+                    SetHighlighted(false);
+                }
+            });
+        }
+
+        private bool IsChildOf(View? child, View parent)
+        {
+            if (child == null) return false;
+            if (child == parent) return true;
+            
+            foreach (View subview in parent.Subviews)
+            {
+                if (IsChildOf(child, subview))
+                    return true;
+            }
+            return false;
+        }
+
+        protected override void OnFocusEnter()
+        {
+            // Additional highlighting when the pane itself receives focus
+            HighlightActiveElements();
+        }
+
+        protected override void OnFocusLeave()
+        {
+            // Remove highlighting when leaving the pane
+            RemoveElementHighlighting();
+        }
+
+        private void HighlightActiveElements()
+        {
+            // Enhanced highlighting for the table view when pane is active
+            var highlightedTableScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+            
+            _tableView.ColorScheme = highlightedTableScheme;
+            
+            // Also highlight the status label
+            var highlightedStatusScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+            
+            _statusLabel.ColorScheme = highlightedStatusScheme;
+            
+            // Force redraw
+            _tableView.SetNeedsDisplay();
+            _statusLabel.SetNeedsDisplay();
+        }
+
+        private void RemoveElementHighlighting()
+        {
+            // Reset to normal color schemes
+            var normalTableScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+            
+            _tableView.ColorScheme = normalTableScheme;
+            
+            var normalStatusScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+            
+            _statusLabel.ColorScheme = normalStatusScheme;
+            
+            // Force redraw
+            _tableView.SetNeedsDisplay();
+            _statusLabel.SetNeedsDisplay();
         }
 
         public void DisplayResult(QueryResult result)
@@ -120,7 +237,7 @@ namespace KustoTerminal.UI.Panes
             _exportButton.Enabled = false;
         }
 
-        public void Clear()
+        public new void Clear()
         {
             _currentResult = null;
             _tableView.Table = new DataTable();

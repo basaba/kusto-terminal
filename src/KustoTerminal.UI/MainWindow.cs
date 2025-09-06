@@ -24,7 +24,7 @@ namespace KustoTerminal.UI
         private FrameView _bottomFrame;
         
         // Pane navigation
-        private View[] _navigablePanes;
+        private BasePane[] _navigablePanes;
         private int _currentPaneIndex = 0;
 
         public MainWindow(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
@@ -141,17 +141,46 @@ namespace KustoTerminal.UI
             _bottomFrame.Add(_resultsPane);
 
             // Set up navigable panes array for TAB navigation
-            _navigablePanes = new View[] { _connectionPane, _queryEditorPane, _resultsPane };
+            _navigablePanes = new BasePane[] { _connectionPane, _queryEditorPane, _resultsPane };
 
             // Set initial focus to connection pane
             _connectionPane.SetFocus();
 
-            // Initialize frame border colors
+            // Initialize frame border colors and highlighting
             UpdateFrameBorderColors();
+            SetupPaneEventHandlers();
 
             // Set up events
             _connectionPane.ConnectionSelected += OnConnectionSelected;
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
+        }
+
+        private void SetupPaneEventHandlers()
+        {
+            // Subscribe to focus change events from each pane
+            _connectionPane.FocusChanged += OnPaneFocusChanged;
+            _queryEditorPane.FocusChanged += OnPaneFocusChanged;
+            _resultsPane.FocusChanged += OnPaneFocusChanged;
+        }
+
+        private void OnPaneFocusChanged(object? sender, bool hasFocus)
+        {
+            if (sender is BasePane pane && hasFocus)
+            {
+                // Update current pane index when a pane receives focus
+                for (int i = 0; i < _navigablePanes.Length; i++)
+                {
+                    if (_navigablePanes[i] == pane)
+                    {
+                        _currentPaneIndex = i;
+                        break;
+                    }
+                }
+                
+                // Update frame highlighting
+                UpdateFrameTitles();
+                UpdateFrameBorderColors();
+            }
         }
 
         private void SetupKeyBindings()
@@ -206,7 +235,8 @@ namespace KustoTerminal.UI
             var currentPane = _navigablePanes[_currentPaneIndex];
             currentPane.SetFocus();
             
-            // Update frame titles and border colors to show which pane is active
+            // The pane highlighting will be handled by the OnPaneFocusChanged event
+            // But we still need to update frame titles and borders
             UpdateFrameTitles();
             UpdateFrameBorderColors();
         }
@@ -247,10 +277,10 @@ namespace KustoTerminal.UI
 
             var activeColorScheme = new ColorScheme()
             {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
                 Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
             };
 
@@ -259,7 +289,8 @@ namespace KustoTerminal.UI
             _rightFrame.ColorScheme = normalColorScheme;
             _bottomFrame.ColorScheme = normalColorScheme;
 
-            // Highlight the active frame border
+            // Highlight the active frame border with a different color than the pane content
+            // This creates a layered highlighting effect: yellow frame + cyan pane content
             switch (_currentPaneIndex)
             {
                 case 0: // Connection pane

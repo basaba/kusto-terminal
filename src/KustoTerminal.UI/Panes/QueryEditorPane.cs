@@ -4,7 +4,7 @@ using KustoTerminal.Core.Models;
 
 namespace KustoTerminal.UI.Panes
 {
-    public class QueryEditorPane : View
+    public class QueryEditorPane : BasePane
     {
         private TextView _queryTextView;
         private Label _connectionLabel;
@@ -19,6 +19,7 @@ namespace KustoTerminal.UI.Panes
         {
             InitializeComponents();
             SetupLayout();
+            SetupElementFocusHandlers();
         }
 
         private void InitializeComponents()
@@ -60,6 +61,95 @@ namespace KustoTerminal.UI.Panes
             
             // Set up key bindings for the TextView
             _queryTextView.KeyPress += OnKeyPress;
+        }
+
+        private void SetupElementFocusHandlers()
+        {
+            // Set up focus handlers for individual elements
+            _queryTextView.Enter += OnElementFocusEnter;
+            _queryTextView.Leave += OnElementFocusLeave;
+            _executeButton.Enter += OnElementFocusEnter;
+            _executeButton.Leave += OnElementFocusLeave;
+            _clearButton.Enter += OnElementFocusEnter;
+            _clearButton.Leave += OnElementFocusLeave;
+        }
+
+        private void OnElementFocusEnter(FocusEventArgs args)
+        {
+            // When any element in this pane gets focus, highlight the entire pane
+            SetHighlighted(true);
+        }
+
+        private void OnElementFocusLeave(FocusEventArgs args)
+        {
+            // Check if focus is moving to another element within this pane
+            Application.MainLoop.Invoke(() =>
+            {
+                var focusedView = Application.Top.MostFocused;
+                bool stillInPane = IsChildOf(focusedView, this);
+                
+                if (!stillInPane)
+                {
+                    SetHighlighted(false);
+                }
+            });
+        }
+
+        private bool IsChildOf(View? child, View parent)
+        {
+            if (child == null) return false;
+            if (child == parent) return true;
+            
+            foreach (View subview in parent.Subviews)
+            {
+                if (IsChildOf(child, subview))
+                    return true;
+            }
+            return false;
+        }
+
+        protected override void OnFocusEnter()
+        {
+            // Additional highlighting when the pane itself receives focus
+            HighlightActiveElement();
+        }
+
+        protected override void OnFocusLeave()
+        {
+            // Remove highlighting when leaving the pane
+            RemoveElementHighlighting();
+        }
+
+        private void HighlightActiveElement()
+        {
+            // Add a subtle border or highlighting to the text view when pane is active
+            var highlightedTextViewScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+            
+            _queryTextView.ColorScheme = highlightedTextViewScheme;
+            _queryTextView.SetNeedsDisplay();
+        }
+
+        private void RemoveElementHighlighting()
+        {
+            // Reset to normal color scheme
+            var normalTextViewScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.White),
+                HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.White),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+            
+            _queryTextView.ColorScheme = normalTextViewScheme;
+            _queryTextView.SetNeedsDisplay();
         }
 
         private void SetupLayout()

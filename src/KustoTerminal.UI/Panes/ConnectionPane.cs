@@ -8,7 +8,7 @@ using KustoTerminal.UI.Dialogs;
 
 namespace KustoTerminal.UI.Panes
 {
-    public class ConnectionPane : View
+    public class ConnectionPane : BasePane
     {
         private readonly IConnectionManager _connectionManager;
         private ListView _connectionsList;
@@ -28,6 +28,7 @@ namespace KustoTerminal.UI.Panes
             
             InitializeComponents();
             SetupLayout();
+            SetupElementFocusHandlers();
             LoadConnections();
         }
 
@@ -91,11 +92,94 @@ namespace KustoTerminal.UI.Panes
             Add(_connectionsList, _addButton, _editButton, _deleteButton, _connectButton);
         }
 
+        private void SetupElementFocusHandlers()
+        {
+            // Set up focus handlers for individual elements
+            _connectionsList.Enter += OnElementFocusEnter;
+            _connectionsList.Leave += OnElementFocusLeave;
+            _addButton.Enter += OnElementFocusEnter;
+            _addButton.Leave += OnElementFocusLeave;
+            _editButton.Enter += OnElementFocusEnter;
+            _editButton.Leave += OnElementFocusLeave;
+            _deleteButton.Enter += OnElementFocusEnter;
+            _deleteButton.Leave += OnElementFocusLeave;
+            _connectButton.Enter += OnElementFocusEnter;
+            _connectButton.Leave += OnElementFocusLeave;
+        }
+
+        private void OnElementFocusEnter(FocusEventArgs args)
+        {
+            // When any element in this pane gets focus, highlight the entire pane
+            SetHighlighted(true);
+        }
+
+        private void OnElementFocusLeave(FocusEventArgs args)
+        {
+            // Check if focus is moving to another element within this pane
+            Application.MainLoop.Invoke(() =>
+            {
+                var focusedView = Application.Top.MostFocused;
+                bool stillInPane = IsChildOf(focusedView, this);
+                
+                if (!stillInPane)
+                {
+                    SetHighlighted(false);
+                }
+            });
+        }
+
+        private bool IsChildOf(View? child, View parent)
+        {
+            if (child == null) return false;
+            if (child == parent) return true;
+            
+            foreach (View subview in parent.Subviews)
+            {
+                if (IsChildOf(child, subview))
+                    return true;
+            }
+            return false;
+        }
+
+        protected override void OnFocusEnter()
+        {
+            // Additional highlighting when the pane itself receives focus
+            HighlightActiveElements();
+        }
+
+        protected override void OnFocusLeave()
+        {
+            // Remove highlighting when leaving the pane
+            RemoveElementHighlighting();
+        }
+
+        private void HighlightActiveElements()
+        {
+            // Enhanced highlighting for the connections list when pane is active
+            var highlightedListScheme = new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+                Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
+            };
+            
+            _connectionsList.ColorScheme = highlightedListScheme;
+            _connectionsList.SetNeedsDisplay();
+        }
+
+        private void RemoveElementHighlighting()
+        {
+            // Reset to the original connection list style
+            SetupConnectionListStyle();
+        }
+
         private void SetupConnectionListStyle()
         {
             // Configure ListView color scheme for persistent selection highlighting
             // Selection remains visible even when focus is on other panes
-            _connectionsList.ColorScheme = new ColorScheme()
+            var normalListScheme = new ColorScheme()
             {
                 Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
                 Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
@@ -103,6 +187,8 @@ namespace KustoTerminal.UI.Panes
                 HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Brighter when focused
                 Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
             };
+            
+            _connectionsList.ColorScheme = normalListScheme;
         }
 
         private async void LoadConnections()
