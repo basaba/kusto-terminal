@@ -23,6 +23,23 @@ namespace KustoTerminal.UI.Panes
 
         private void InitializeComponents()
         {
+            _connectionLabel = new Label("No connection")
+            {
+                X = 0,
+                Y = 0,
+                Width = Dim.Fill(),
+                Height = 1
+            };
+
+            _queryTextView = new TextView()
+            {
+                X = 0,
+                Y = 1,
+                Width = Dim.Fill(),
+                Height = Dim.Fill() - 3,
+                Text = "-- Enter your KQL query here\n"
+            };
+
             _executeButton = new Button("Execute (F5)")
             {
                 X = 0,
@@ -118,6 +135,11 @@ namespace KustoTerminal.UI.Panes
             
             var newText = currentText.Insert(cursor.Y * currentText.Length + cursor.X, template);
             _queryTextView.Text = newText;
+        }
+
+        public void FocusEditor()
+        {
+            _queryTextView.SetFocus();
         }
     }
 }

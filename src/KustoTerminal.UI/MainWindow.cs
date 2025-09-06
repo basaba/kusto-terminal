@@ -283,6 +283,11 @@ namespace KustoTerminal.UI
         {
             _queryEditorPane.SetConnection(connection);
             UpdateStatusBar($"Connected to: {connection.DisplayName}");
+            
+            // Switch focus to query editor pane when connection is selected
+            _currentPaneIndex = 1; // Query editor is at index 1
+            SetFocusToCurrentPane();
+            _queryEditorPane.FocusEditor();
         }
 
         private async void OnQueryExecuteRequested(object? sender, string query)

@@ -79,6 +79,7 @@ namespace KustoTerminal.UI.Panes
 
             // Set up event handlers
             _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
+            _connectionsList.KeyPress += OnConnectionsListKeyPress;
             _addButton.Clicked += OnAddClicked;
             _editButton.Clicked += OnEditClicked;
             _deleteButton.Clicked += OnDeleteClicked;
@@ -157,6 +158,19 @@ namespace KustoTerminal.UI.Panes
                 _editButton.Enabled = false;
                 _deleteButton.Enabled = false;
                 _connectButton.Enabled = false;
+            }
+        }
+
+        private void OnConnectionsListKeyPress(KeyEventEventArgs args)
+        {
+            // Handle Enter key to connect to selected connection
+            if (args.KeyEvent.Key == Key.Enter)
+            {
+                if (_selectedConnection != null)
+                {
+                    ConnectionSelected?.Invoke(this, _selectedConnection);
+                    args.Handled = true;
+                }
             }
         }
 
