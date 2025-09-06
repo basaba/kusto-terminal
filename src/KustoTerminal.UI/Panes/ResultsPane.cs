@@ -41,7 +41,7 @@ namespace KustoTerminal.UI.Panes
                 MultiSelect = false
             };
 
-            _shortcutsLabel = new Label("Ctrl+S: Export Results")
+            _shortcutsLabel = new Label("Ctrl+S: Export | Ctrl+C: Copy Cell | Enter: View Cell | Ctrl+A: Copy Row")
             {
                 X = 0,
                 Y = Pos.Bottom(_tableView),
@@ -56,7 +56,10 @@ namespace KustoTerminal.UI.Panes
                 }
             };
 
-            // Set up key bindings
+            // Set up key bindings on the table view itself
+            _tableView.KeyPress += OnTableViewKeyPress;
+            
+            // Also set up key bindings on the pane for when other elements have focus
             KeyPress += OnKeyPress;
         }
 
@@ -120,7 +123,19 @@ namespace KustoTerminal.UI.Panes
             base.OnFocusLeave();
         }
 
+        private void OnTableViewKeyPress(KeyEventEventArgs args)
+        {
+            // Handle key presses when the table view has focus
+            HandleKeyPress(args);
+        }
+
         private void OnKeyPress(KeyEventEventArgs args)
+        {
+            // Handle key presses when other elements in the pane have focus
+            HandleKeyPress(args);
+        }
+
+        private void HandleKeyPress(KeyEventEventArgs args)
         {
             // Handle Ctrl+S for export
             if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
@@ -130,6 +145,24 @@ namespace KustoTerminal.UI.Panes
                     OnExportClicked();
                     args.Handled = true;
                 }
+            }
+            // Handle Ctrl+C for copy cell
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.C))
+            {
+                OnCopyCellClicked();
+                args.Handled = true;
+            }
+            // Handle Ctrl+A for copy row
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.A))
+            {
+                OnCopyRowClicked();
+                args.Handled = true;
+            }
+            // Handle Enter for view cell
+            else if (args.KeyEvent.Key == Key.Enter)
+            {
+                OnViewCellClicked();
+                args.Handled = true;
             }
         }
 
@@ -294,6 +327,152 @@ namespace KustoTerminal.UI.Panes
             
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(rows, Newtonsoft.Json.Formatting.Indented);
             System.IO.File.WriteAllText(fileName, json);
+        }
+
+        private void OnCopyCellClicked()
+        {
+            if (_currentResult?.Data == null || _tableView.Table == null)
+            {
+                MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
+                return;
+            }
+
+            var selectedRow = _tableView.SelectedRow;
+            var selectedCol = _tableView.SelectedColumn;
+
+            if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count ||
+                selectedCol < 0 || selectedCol >= _tableView.Table.Columns.Count)
+            {
+                MessageBox.ErrorQuery("Copy Error", "No cell selected.", "OK");
+                return;
+            }
+
+            var cellValue = _tableView.Table.Rows[selectedRow][selectedCol]?.ToString() ?? "";
+            
+            try
+            {
+                // Copy to clipboard using Terminal.Gui's Clipboard
+                Clipboard.Contents = cellValue;
+                MessageBox.Query("Copy", $"Cell value copied to clipboard: {(cellValue.Length > 50 ? cellValue.Substring(0, 50) + "..." : cellValue)}", "OK");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.ErrorQuery("Copy Error", $"Failed to copy to clipboard: {ex.Message}", "OK");
+            }
+        }
+
+        private void OnCopyRowClicked()
+        {
+            if (_currentResult?.Data == null || _tableView.Table == null)
+            {
+                MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
+                return;
+            }
+
+            var selectedRow = _tableView.SelectedRow;
+
+            if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count)
+            {
+                MessageBox.ErrorQuery("Copy Error", "No row selected.", "OK");
+                return;
+            }
+
+            var row = _tableView.Table.Rows[selectedRow];
+            var rowValues = new string[_tableView.Table.Columns.Count];
+            
+            for (int i = 0; i < _tableView.Table.Columns.Count; i++)
+            {
+                rowValues[i] = row[i]?.ToString() ?? "";
+            }
+
+            var rowText = string.Join("\t", rowValues);
+            
+            try
+            {
+                Clipboard.Contents = rowText;
+                MessageBox.Query("Copy", $"Row copied to clipboard (tab-separated)", "OK");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.ErrorQuery("Copy Error", $"Failed to copy to clipboard: {ex.Message}", "OK");
+            }
+        }
+
+        private void OnViewCellClicked()
+        {
+            if (_currentResult?.Data == null || _tableView.Table == null)
+            {
+                MessageBox.ErrorQuery("View Error", "No data available to view.", "OK");
+                return;
+            }
+
+            var selectedRow = _tableView.SelectedRow;
+            var selectedCol = _tableView.SelectedColumn;
+
+            if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count ||
+                selectedCol < 0 || selectedCol >= _tableView.Table.Columns.Count)
+            {
+                MessageBox.ErrorQuery("View Error", "No cell selected.", "OK");
+                return;
+            }
+
+            var cellValue = _tableView.Table.Rows[selectedRow][selectedCol]?.ToString() ?? "";
+            var columnName = _tableView.Table.Columns[selectedCol].ColumnName;
+
+            ShowCellDetailDialog(columnName, cellValue);
+        }
+
+        private void ShowCellDetailDialog(string columnName, string cellValue)
+        {
+            var dialog = new Dialog($"Cell Content: {columnName}", 80, 20)
+            {
+                Modal = true
+            };
+
+            var textView = new TextView()
+            {
+                X = 1,
+                Y = 1,
+                Width = Dim.Fill(1),
+                Height = Dim.Fill(2),
+                Text = cellValue,
+                ReadOnly = false, // Allow text selection
+                WordWrap = true
+            };
+
+            var copyButton = new Button("Copy All")
+            {
+                X = 1,
+                Y = Pos.Bottom(textView) + 1
+            };
+
+            var closeButton = new Button("Close")
+            {
+                X = Pos.Right(copyButton) + 2,
+                Y = Pos.Bottom(textView) + 1
+            };
+
+            copyButton.Clicked += () =>
+            {
+                try
+                {
+                    Clipboard.Contents = cellValue;
+                    MessageBox.Query("Copy", "Cell content copied to clipboard!", "OK");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.ErrorQuery("Copy Error", $"Failed to copy: {ex.Message}", "OK");
+                }
+            };
+
+            closeButton.Clicked += () => dialog.RequestStop();
+
+            dialog.Add(textView, copyButton, closeButton);
+
+            // Set focus to text view so user can select text
+            textView.SetFocus();
+
+            Application.Run(dialog);
         }
     }
 }
