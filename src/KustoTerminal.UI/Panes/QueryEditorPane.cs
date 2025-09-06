@@ -9,6 +9,7 @@ namespace KustoTerminal.UI.Panes
         private TextView _queryTextView;
         private Label _connectionLabel;
         private Label _progressLabel;
+        private Label _shortcutsLabel;
         
         private KustoConnection? _currentConnection;
         private bool _isExecuting = false;
@@ -37,14 +38,29 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 3,
+                Height = Dim.Fill() - 4,
                 Text = ""
+            };
+
+            _shortcutsLabel = new Label("F5: Execute | Ctrl+L: Clear | Ctrl+A: Select All")
+            {
+                X = 0,
+                Y = Pos.Bottom(_queryTextView),
+                Width = Dim.Fill(),
+                Height = 1,
+                ColorScheme = new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black)
+                }
             };
 
             _progressLabel = new Label("")
             {
                 X = 0,
-                Y = Pos.Bottom(_queryTextView),
+                Y = Pos.Bottom(_shortcutsLabel),
                 Width = Dim.Fill(),
                 Height = 1,
                 Visible = false
@@ -109,7 +125,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_connectionLabel, _queryTextView, _progressLabel);
+            Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel);
             
             // Focus on the text view
             _queryTextView.SetFocus();

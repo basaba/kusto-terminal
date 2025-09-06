@@ -10,6 +10,7 @@ namespace KustoTerminal.UI.Panes
     {
         private TableView _tableView;
         private Label _statusLabel;
+        private Label _shortcutsLabel;
         
         private QueryResult? _currentResult;
 
@@ -35,9 +36,24 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 2,
+                Height = Dim.Fill() - 3,
                 FullRowSelect = true,
                 MultiSelect = false
+            };
+
+            _shortcutsLabel = new Label("Ctrl+S: Export Results")
+            {
+                X = 0,
+                Y = Pos.Bottom(_tableView),
+                Width = Dim.Fill(),
+                Height = 1,
+                ColorScheme = new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black)
+                }
             };
 
             // Set up key bindings
@@ -46,7 +62,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_statusLabel, _tableView);
+            Add(_statusLabel, _tableView, _shortcutsLabel);
         }
 
         private void SetupElementFocusHandlers()
@@ -54,6 +70,8 @@ namespace KustoTerminal.UI.Panes
             // Set up focus handlers for individual elements
             _tableView.Enter += OnElementFocusEnter;
             _tableView.Leave += OnElementFocusLeave;
+            _shortcutsLabel.Enter += OnElementFocusEnter;
+            _shortcutsLabel.Leave += OnElementFocusLeave;
         }
 
         private void OnElementFocusEnter(FocusEventArgs args)

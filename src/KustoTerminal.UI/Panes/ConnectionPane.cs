@@ -12,6 +12,7 @@ namespace KustoTerminal.UI.Panes
     {
         private readonly IConnectionManager _connectionManager;
         private ListView _connectionsList;
+        private Label _shortcutsLabel;
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
         private KustoConnection? _selectedConnection;
@@ -35,13 +36,28 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 3,
+                Height = Dim.Fill() - 2,
                 AllowsMarking = false,
                 AllowsMultipleSelection = false
             };
 
             // Customize the ListView appearance for better selection highlighting
             SetupConnectionListStyle();
+
+            _shortcutsLabel = new Label("Ctrl+N: Add | Ctrl+E: Edit | Del: Delete | Enter: Connect")
+            {
+                X = 0,
+                Y = Pos.Bottom(_connectionsList),
+                Width = Dim.Fill(),
+                Height = 1,
+                ColorScheme = new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black)
+                }
+            };
 
             // Set up event handlers
             _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
@@ -50,7 +66,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_connectionsList);
+            Add(_connectionsList, _shortcutsLabel);
         }
 
         private void SetupElementFocusHandlers()
@@ -58,6 +74,8 @@ namespace KustoTerminal.UI.Panes
             // Set up focus handlers for individual elements
             _connectionsList.Enter += OnElementFocusEnter;
             _connectionsList.Leave += OnElementFocusLeave;
+            _shortcutsLabel.Enter += OnElementFocusEnter;
+            _shortcutsLabel.Leave += OnElementFocusLeave;
         }
 
         private void OnElementFocusEnter(FocusEventArgs args)

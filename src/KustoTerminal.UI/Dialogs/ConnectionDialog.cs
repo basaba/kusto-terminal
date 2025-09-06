@@ -10,6 +10,7 @@ namespace KustoTerminal.UI.Dialogs
         private TextField _clusterUriField;
         private TextField _databaseField;
         private CheckBox _isDefaultCheckBox;
+        private Label _shortcutsLabel;
         private readonly KustoConnection? _originalConnection;
         
         public KustoConnection? Result { get; private set; }
@@ -78,8 +79,24 @@ namespace KustoTerminal.UI.Dialogs
                 Checked = connection?.IsDefault ?? false
             };
 
+            // Shortcuts label
+            _shortcutsLabel = new Label("Enter: OK | Esc: Cancel")
+            {
+                X = 1,
+                Y = 9,
+                Width = Dim.Fill() - 2,
+                Height = 1,
+                ColorScheme = new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                    HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black)
+                }
+            };
+
             Add(nameLabel, _nameField, clusterLabel, _clusterUriField,
-                databaseLabel, _databaseField, _isDefaultCheckBox);
+                databaseLabel, _databaseField, _isDefaultCheckBox, _shortcutsLabel);
 
             // Set up key bindings
             KeyPress += OnKeyPress;
