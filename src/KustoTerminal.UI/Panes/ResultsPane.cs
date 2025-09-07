@@ -37,9 +37,12 @@ namespace KustoTerminal.UI.Panes
                 Y = 1,
                 Width = Dim.Fill(),
                 Height = Dim.Fill() - 3,
-                FullRowSelect = true,
+                FullRowSelect = false,
                 MultiSelect = false
             };
+
+            // Add event handlers to ensure proper cursor visibility
+            _tableView.SelectedCellChanged += OnSelectedCellChanged;
 
             _shortcutsLabel = new Label("Ctrl+S: Export | Ctrl+C: Copy Cell | Enter: View Cell | Ctrl+A: Copy Row")
             {
@@ -473,6 +476,12 @@ namespace KustoTerminal.UI.Panes
             textView.SetFocus();
 
             Application.Run(dialog);
+        }
+
+        private void OnSelectedCellChanged(TableView.SelectedCellChangedEventArgs args)
+        {
+            // Force a redraw to ensure cursor visibility when cell selection changes
+            _tableView.SetNeedsDisplay();
         }
     }
 }
