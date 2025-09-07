@@ -157,6 +157,7 @@ namespace KustoTerminal.UI
             // Set up events
             _connectionPane.ConnectionSelected += OnConnectionSelected;
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
+            _queryEditorPane.EscapePressed += OnQueryEditorEscapePressed;
         }
 
         private void SetupPaneEventHandlers()
@@ -337,6 +338,13 @@ namespace KustoTerminal.UI
         private async void OnQueryExecuteRequested(object? sender, string query)
         {
             await ExecuteQueryAsync(query);
+        }
+
+        private void OnQueryEditorEscapePressed(object? sender, EventArgs e)
+        {
+            // Switch focus to results pane when ESC is pressed in query editor
+            _currentPaneIndex = 2; // Results pane is at index 2
+            SetFocusToCurrentPane();
         }
 
         private void NewConnection()

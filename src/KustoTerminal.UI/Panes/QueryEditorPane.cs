@@ -15,6 +15,7 @@ namespace KustoTerminal.UI.Panes
         private bool _isExecuting = false;
 
         public event EventHandler<string>? QueryExecuteRequested;
+        public event EventHandler? EscapePressed;
 
         public QueryEditorPane()
         {
@@ -149,6 +150,12 @@ namespace KustoTerminal.UI.Panes
             else if (e.KeyEvent.Key == (Key.CtrlMask | Key.A))
             {
                 _queryTextView.SelectAll();
+                e.Handled = true;
+            }
+            // Handle ESC to switch focus to results pane
+            else if (e.KeyEvent.Key == Key.Esc)
+            {
+                EscapePressed?.Invoke(this, EventArgs.Empty);
                 e.Handled = true;
             }
         }
