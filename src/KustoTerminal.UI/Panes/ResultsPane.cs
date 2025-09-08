@@ -53,15 +53,11 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
-                Height = 1,
-                ColorScheme = new ColorScheme()
-                {
-                    Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                    Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                    HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                    HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black)
-                }
+                Height = 1
             };
+            
+            // Apply color scheme using BasePane method
+            ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
             // Initialize search components (initially hidden)
             _searchLabel = new Label("Filter:")
@@ -100,59 +96,8 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupElementFocusHandlers()
         {
-            // Set up focus handlers for individual elements
-            _tableView.Enter += OnElementFocusEnter;
-            _tableView.Leave += OnElementFocusLeave;
-            _searchField.Enter += OnElementFocusEnter;
-            _searchField.Leave += OnElementFocusLeave;
-            _shortcutsLabel.Enter += OnElementFocusEnter;
-            _shortcutsLabel.Leave += OnElementFocusLeave;
-        }
-
-        private void OnElementFocusEnter(FocusEventArgs args)
-        {
-            // When any element in this pane gets focus, highlight the entire pane
-            SetHighlighted(true);
-        }
-
-        private void OnElementFocusLeave(FocusEventArgs args)
-        {
-            // Check if focus is moving to another element within this pane
-            Application.MainLoop.Invoke(() =>
-            {
-                var focusedView = Application.Top.MostFocused;
-                bool stillInPane = IsChildOf(focusedView, this);
-                
-                if (!stillInPane)
-                {
-                    SetHighlighted(false);
-                }
-            });
-        }
-
-        private bool IsChildOf(View? child, View parent)
-        {
-            if (child == null) return false;
-            if (child == parent) return true;
-            
-            foreach (View subview in parent.Subviews)
-            {
-                if (IsChildOf(child, subview))
-                    return true;
-            }
-            return false;
-        }
-
-        protected override void OnFocusEnter()
-        {
-            // Use BasePane's color scheme system
-            base.OnFocusEnter();
-        }
-
-        protected override void OnFocusLeave()
-        {
-            // Use BasePane's color scheme system
-            base.OnFocusLeave();
+            // Use BasePane's common focus handling for all controls
+            SetupCommonElementFocusHandlers(_tableView, _searchField, _shortcutsLabel);
         }
 
         private void OnTableViewKeyPress(KeyEventEventArgs args)

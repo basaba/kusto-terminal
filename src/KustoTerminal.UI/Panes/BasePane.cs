@@ -245,5 +245,106 @@ namespace KustoTerminal.UI.Panes
                 Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
             };
         }
+
+        // Specialized color schemes for specific control types
+        public static ColorScheme CreateShortcutLabelColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
+                Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+            };
+        }
+
+        public static ColorScheme CreateTextViewNormalColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Selected text
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),  // Selected text when focused
+                Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+            };
+        }
+
+        public static ColorScheme CreateTextViewHighlightedColorScheme()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Selected text
+                HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),  // Selected text when focused
+                Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+            };
+        }
+
+        // Common control focus handling methods
+        protected void SetupCommonElementFocusHandlers(params View[] controls)
+        {
+            foreach (var control in controls)
+            {
+                if (control != null)
+                {
+                    control.Enter += OnElementFocusEnter;
+                    control.Leave += OnElementFocusLeave;
+                }
+            }
+        }
+
+        protected virtual void OnElementFocusEnter(FocusEventArgs args)
+        {
+            // When any element in this pane gets focus, highlight the entire pane
+            SetHighlighted(true);
+        }
+
+        protected virtual void OnElementFocusLeave(FocusEventArgs args)
+        {
+            // Check if focus is moving to another element within this pane
+            Application.MainLoop.Invoke(() =>
+            {
+                var focusedView = Application.Top.MostFocused;
+                bool stillInPane = IsChildOf(focusedView, this);
+                
+                if (!stillInPane)
+                {
+                    SetHighlighted(false);
+                }
+            });
+        }
+
+        protected bool IsChildOf(View? child, View parent)
+        {
+            if (child == null) return false;
+            if (child == parent) return true;
+            
+            foreach (View subview in parent.Subviews)
+            {
+                if (IsChildOf(child, subview))
+                    return true;
+            }
+            return false;
+        }
+
+        // Apply specific color scheme to a control by type
+        protected void ApplyColorSchemeToControl(View control, string controlType, bool isHighlighted = false)
+        {
+            var colorScheme = controlType.ToLowerInvariant() switch
+            {
+                "shortcut" => CreateShortcutLabelColorScheme(),
+                "textview_normal" => CreateTextViewNormalColorScheme(),
+                "textview_highlighted" => CreateTextViewHighlightedColorScheme(),
+                "button" => CreateButtonColorScheme(),
+                "textfield" => CreateTextFieldColorScheme(),
+                "activeframe" => CreateActiveFrameColorScheme(),
+                _ => isHighlighted ? _highlightedColorScheme : _normalColorScheme
+            };
+            
+            control.ColorScheme = colorScheme;
+        }
     }
 }
