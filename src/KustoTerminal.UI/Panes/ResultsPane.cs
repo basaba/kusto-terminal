@@ -11,8 +11,12 @@ namespace KustoTerminal.UI.Panes
         private TableView _tableView;
         private Label _statusLabel;
         private Label _shortcutsLabel;
+        private TextField _searchField;
+        private Label _searchLabel;
         
         private QueryResult? _currentResult;
+        private DataTable? _originalData;
+        private bool _searchVisible = false;
 
         public ResultsPane()
         {
@@ -44,7 +48,7 @@ namespace KustoTerminal.UI.Panes
             // Add event handlers to ensure proper cursor visibility
             _tableView.SelectedCellChanged += OnSelectedCellChanged;
 
-            _shortcutsLabel = new Label("Ctrl+S: Export | Ctrl+C: Copy Cell | Enter: View Cell | Ctrl+A: Copy Row")
+            _shortcutsLabel = new Label("/: Filter | Ctrl+S: Export")
             {
                 X = 0,
                 Y = Pos.Bottom(_tableView),
@@ -59,6 +63,29 @@ namespace KustoTerminal.UI.Panes
                 }
             };
 
+            // Initialize search components (initially hidden)
+            _searchLabel = new Label("Filter:")
+            {
+                X = 0,
+                Y = Pos.Bottom(_tableView),
+                Width = 8,
+                Height = 1,
+                Visible = false
+            };
+
+            _searchField = new TextField("")
+            {
+                X = Pos.Right(_searchLabel) + 1,
+                Y = Pos.Bottom(_tableView),
+                Width = Dim.Fill(),
+                Height = 1,
+                Visible = false
+            };
+
+            // Set up search field event handlers
+            _searchField.TextChanged += (oldText) => OnSearchTextChanged();
+            _searchField.KeyPress += OnSearchFieldKeyPress;
+
             // Set up key bindings on the table view itself
             _tableView.KeyPress += OnTableViewKeyPress;
             
@@ -68,7 +95,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_statusLabel, _tableView, _shortcutsLabel);
+            Add(_statusLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
         }
 
         private void SetupElementFocusHandlers()
@@ -76,6 +103,8 @@ namespace KustoTerminal.UI.Panes
             // Set up focus handlers for individual elements
             _tableView.Enter += OnElementFocusEnter;
             _tableView.Leave += OnElementFocusLeave;
+            _searchField.Enter += OnElementFocusEnter;
+            _searchField.Leave += OnElementFocusLeave;
             _shortcutsLabel.Enter += OnElementFocusEnter;
             _shortcutsLabel.Leave += OnElementFocusLeave;
         }
@@ -138,10 +167,41 @@ namespace KustoTerminal.UI.Panes
             HandleKeyPress(args);
         }
 
+        private void OnSearchFieldKeyPress(KeyEventEventArgs args)
+        {
+            // Handle Enter key in search field to focus on results table
+            if (args.KeyEvent.Key == Key.Enter)
+            {
+                _tableView.SetFocus();
+                args.Handled = true;
+            }
+            // Handle Escape to close search
+            else if (args.KeyEvent.Key == Key.Esc)
+            {
+                HideSearch();
+                args.Handled = true;
+            }
+        }
+
         private void HandleKeyPress(KeyEventEventArgs args)
         {
+            // Handle "/" for search toggle
+            if (args.KeyEvent.Key == (Key)'/')
+            {
+                ToggleSearch();
+                args.Handled = true;
+            }
+            // Handle Escape to close search
+            else if (args.KeyEvent.Key == Key.Esc)
+            {
+                if (_searchVisible)
+                {
+                    HideSearch();
+                    args.Handled = true;
+                }
+            }
             // Handle Ctrl+S for export
-            if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
+            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
             {
                 if (_currentResult?.Data != null)
                 {
@@ -161,8 +221,8 @@ namespace KustoTerminal.UI.Panes
                 OnCopyRowClicked();
                 args.Handled = true;
             }
-            // Handle Enter for view cell
-            else if (args.KeyEvent.Key == Key.Enter)
+            // Handle Enter for view cell (only when table view has focus)
+            else if (args.KeyEvent.Key == Key.Enter && Application.Top.MostFocused == _tableView)
             {
                 OnViewCellClicked();
                 args.Handled = true;
@@ -193,6 +253,7 @@ namespace KustoTerminal.UI.Panes
             try
             {
                 var dataTable = result.Data!;
+                _originalData = dataTable.Copy(); // Keep a copy of the original data
                 _tableView.Table = dataTable;
 
                 _statusLabel.Text = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
@@ -230,8 +291,10 @@ namespace KustoTerminal.UI.Panes
         public new void Clear()
         {
             _currentResult = null;
+            _originalData = null;
             _tableView.Table = new DataTable();
             _statusLabel.Text = "No results";
+            HideSearch();
         }
 
         private void OnExportClicked()
@@ -482,6 +545,134 @@ namespace KustoTerminal.UI.Panes
         {
             // Force a redraw to ensure cursor visibility when cell selection changes
             _tableView.SetNeedsDisplay();
+        }
+
+        private void ToggleSearch()
+        {
+            if (_searchVisible)
+            {
+                // If search is already visible, just focus on the search field
+                // and preserve the current search text
+                _searchField.SetFocus();
+            }
+            else
+            {
+                ShowSearch();
+            }
+        }
+
+        private void ShowSearch()
+        {
+            if (_currentResult?.Data == null || _originalData == null)
+                return;
+
+            _searchVisible = true;
+            _searchLabel.Visible = true;
+            _searchField.Visible = true;
+            
+            // Adjust table height to make room for search
+            _tableView.Height = Dim.Fill() - 4;
+            
+            // Update shortcuts position
+            _shortcutsLabel.Y = Pos.Bottom(_searchField);
+            
+            _searchField.SetFocus();
+            SetNeedsDisplay();
+        }
+
+        private void HideSearch()
+        {
+            _searchVisible = false;
+            _searchLabel.Visible = false;
+            _searchField.Visible = false;
+            _searchField.Text = "";
+            
+            // Restore original table height
+            _tableView.Height = Dim.Fill() - 3;
+            
+            // Restore shortcuts position
+            _shortcutsLabel.Y = Pos.Bottom(_tableView);
+            
+            // Restore original data if we have it
+            if (_originalData != null)
+            {
+                _tableView.Table = _originalData;
+                UpdateStatusForOriginalData();
+            }
+            
+            _tableView.SetFocus();
+            SetNeedsDisplay();
+        }
+
+        private void OnSearchTextChanged()
+        {
+            PerformSearch();
+        }
+
+        private void PerformSearch()
+        {
+            if (_originalData == null || !_searchVisible)
+                return;
+
+            var searchText = _searchField.Text.ToString();
+            
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                // Show all data when search is empty
+                _tableView.Table = _originalData;
+                UpdateStatusForOriginalData();
+                return;
+            }
+
+            try
+            {
+                // Create a filtered view of the data
+                var filteredTable = _originalData.Clone();
+                
+                foreach (DataRow row in _originalData.Rows)
+                {
+                    bool rowMatches = false;
+                    
+                    // Check each column for the search text (case-insensitive)
+                    foreach (var item in row.ItemArray)
+                    {
+                        var cellValue = item?.ToString() ?? "";
+                        if (cellValue.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            rowMatches = true;
+                            break;
+                        }
+                    }
+                    
+                    if (rowMatches)
+                    {
+                        filteredTable.ImportRow(row);
+                    }
+                }
+                
+                _tableView.Table = filteredTable;
+                UpdateStatusForFilteredData(filteredTable.Rows.Count, searchText);
+            }
+            catch (Exception ex)
+            {
+                _statusLabel.Text = $"Search error: {ex.Message}";
+            }
+        }
+
+        private void UpdateStatusForOriginalData()
+        {
+            if (_currentResult != null)
+            {
+                _statusLabel.Text = $"Rows: {_currentResult.RowCount:N0} | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
+            }
+        }
+
+        private void UpdateStatusForFilteredData(int filteredRowCount, string searchText)
+        {
+            if (_currentResult != null)
+            {
+                _statusLabel.Text = $"Filtered: {filteredRowCount:N0} of {_currentResult.RowCount:N0} rows | Search: \"{searchText}\" | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
+            }
         }
     }
 }

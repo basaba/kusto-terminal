@@ -42,8 +42,11 @@ namespace KustoTerminal.UI.Panes
                 Height = Dim.Fill() - 4,
                 Text = ""
             };
+            
+            // Configure selection highlighting
+            SetupSelectionHighlighting();
 
-            _shortcutsLabel = new Label("F5: Execute | Ctrl+L: Clear | Ctrl+A: Select All")
+            _shortcutsLabel = new Label("F5: Execute | Ctrl+L: Clear | Ctrl+A: Select All | Shift+Arrow: Select Text")
             {
                 X = 0,
                 Y = Pos.Bottom(_queryTextView),
@@ -71,6 +74,50 @@ namespace KustoTerminal.UI.Panes
             _queryTextView.KeyPress += OnKeyPress;
         }
 
+        private void SetupSelectionHighlighting()
+        {
+            // Configure TextView with enhanced selection highlighting
+            if (_queryTextView != null)
+            {
+                // Create a custom color scheme for better text selection visibility
+                var selectionColorScheme = new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Selected text
+                    HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),  // Selected text when focused
+                    Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+                };
+                
+                _queryTextView.ColorScheme = selectionColorScheme;
+                
+                // Add mouse support for better text selection
+                _queryTextView.WantMousePositionReports = true;
+                _queryTextView.WantContinuousButtonPressed = true;
+                
+                // Note: MouseEvent is handled differently in Terminal.Gui
+                // We'll use a different approach to maintain selection highlighting
+            }
+        }
+
+
+        private void ApplySelectionColorScheme()
+        {
+            if (_queryTextView != null)
+            {
+                var selectionColorScheme = new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Selected text
+                    HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),  // Selected text when focused
+                    Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+                };
+                
+                _queryTextView.ColorScheme = selectionColorScheme;
+            }
+        }
+
         private void SetupElementFocusHandlers()
         {
             // Set up focus handlers for individual elements
@@ -82,6 +129,9 @@ namespace KustoTerminal.UI.Panes
         {
             // When any element in this pane gets focus, highlight the entire pane
             SetHighlighted(true);
+            
+            // Ensure selection highlighting is maintained
+            ApplySelectionColorScheme();
         }
 
         private void OnElementFocusLeave(FocusEventArgs args)
@@ -96,6 +146,9 @@ namespace KustoTerminal.UI.Panes
                 {
                     SetHighlighted(false);
                 }
+                
+                // Always maintain selection highlighting regardless of focus
+                ApplySelectionColorScheme();
             });
         }
 
@@ -116,12 +169,73 @@ namespace KustoTerminal.UI.Panes
         {
             // Use BasePane's color scheme system
             base.OnFocusEnter();
+            
+            // Ensure selection highlighting is maintained when pane gets focus
+            ApplySelectionColorScheme();
         }
 
         protected override void OnFocusLeave()
         {
             // Use BasePane's color scheme system
             base.OnFocusLeave();
+            
+            // Maintain selection highlighting even when pane loses focus
+            ApplySelectionColorScheme();
+        }
+
+        protected override void ApplyHighlighting()
+        {
+            // Override the base highlighting to preserve TextView selection colors
+            foreach (View child in Subviews)
+            {
+                if (child is TextView textView)
+                {
+                    // Don't let BasePane override TextView color scheme
+                    ApplySelectionColorScheme();
+                }
+                else
+                {
+                    ApplyHighlightingToControl(child);
+                }
+            }
+
+            SetNeedsDisplay();
+        }
+
+        protected override ColorScheme GetHighlightedSchemeForControl(View control)
+        {
+            // Override for TextView to maintain selection highlighting when pane is highlighted
+            if (control is TextView)
+            {
+                return new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Selected text
+                    HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),  // Selected text when focused
+                    Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+                };
+            }
+            
+            return base.GetHighlightedSchemeForControl(control);
+        }
+
+        protected override ColorScheme GetNormalSchemeForControl(View control)
+        {
+            // Override for TextView to maintain selection highlighting when pane is not highlighted
+            if (control is TextView)
+            {
+                return new ColorScheme()
+                {
+                    Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),
+                    HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Selected text
+                    HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),  // Selected text when focused
+                    Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+                };
+            }
+            
+            return base.GetNormalSchemeForControl(control);
         }
 
         private void SetupLayout()
