@@ -275,8 +275,8 @@ namespace KustoTerminal.UI.Panes
         {
             return new ColorScheme()
             {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
+                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black), // Keep white text when pane is highlighted
+                Focus = new Terminal.Gui.Attribute(Color.White, Color.Black),  // White text when focused
                 HotNormal = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow), // Selected text
                 HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),  // Selected text when focused
                 Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
