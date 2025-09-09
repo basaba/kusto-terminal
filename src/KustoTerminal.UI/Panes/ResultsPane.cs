@@ -447,7 +447,7 @@ namespace KustoTerminal.UI.Panes
                 Width = Dim.Fill(1),
                 Height = Dim.Fill(2),
                 Text = cellValue,
-                ReadOnly = false, // Allow text selection
+                ReadOnly = true,
                 WordWrap = true
             };
 
