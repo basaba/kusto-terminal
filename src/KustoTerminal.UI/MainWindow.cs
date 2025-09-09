@@ -15,10 +15,7 @@ namespace KustoTerminal.UI
         
         private ConnectionPane _connectionPane;
         private QueryEditorPane _queryEditorPane;
-        private ResultsPane _resultsPane;
-        private StatusBar _statusBar;
-        
-        private MenuBar _menuBar;
+        private ResultsPane _resultsPane;        
         private FrameView _leftFrame;
         private FrameView _rightFrame;
         private FrameView _bottomFrame;
@@ -32,9 +29,9 @@ namespace KustoTerminal.UI
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
             _authProvider = authProvider ?? throw new ArgumentNullException(nameof(authProvider));
             
-            Title = "Kusto Terminal - Azure Data Explorer Client";
+            Title = "Kusto Terminal";
             X = 0;
-            Y = 1; // Leave space for menu bar
+            Y = 0; // Leave space for menu bar
             Width = Dim.Fill();
             Height = Dim.Fill() - 1; // Leave space for status bar
             
@@ -45,44 +42,6 @@ namespace KustoTerminal.UI
 
         private void InitializeComponents()
         {
-            // Create menu bar
-            _menuBar = new MenuBar(new MenuBarItem[]
-            {
-                new MenuBarItem("_File", new MenuItem[]
-                {
-                    new MenuItem("_New Connection", "Add a new Kusto connection", NewConnection),
-                    new MenuItem("_Exit", "Exit the application", () => Application.RequestStop())
-                }),
-                new MenuBarItem("_Edit", new MenuItem[]
-                {
-                    new MenuItem("_Copy", "Copy selected text", Copy),
-                    new MenuItem("_Paste", "Paste text", Paste),
-                    new MenuItem("_Edit Connection", "Edit selected connection (Ctrl+E)", EditConnection)
-                }),
-                new MenuBarItem("_Query", new MenuItem[]
-                {
-                    new MenuItem("_Execute", "Execute current query (F5)", ExecuteQuery),
-                    new MenuItem("_Clear Results", "Clear query results", ClearResults)
-                }),
-                new MenuBarItem("_Help", new MenuItem[]
-                {
-                    new MenuItem("_About", "About Kusto Terminal", ShowAbout)
-                })
-            });
-
-            // Create status bar
-            _statusBar = new StatusBar(new StatusItem[]
-            {
-                new StatusItem(Key.F5, "~F5~ Execute", ExecuteQuery),
-                new StatusItem(Key.CtrlMask | Key.L, "~Ctrl+L~ Clear", ClearQuery),
-                new StatusItem(Key.CtrlMask | Key.N, "~Ctrl+N~ New", NewConnection),
-                new StatusItem(Key.CtrlMask | Key.E, "~Ctrl+E~ Edit", EditConnection),
-                new StatusItem(Key.DeleteChar, "~Del~ Delete", DeleteConnection),
-                new StatusItem(Key.CtrlMask | Key.S, "~Ctrl+S~ Export", ExportResults),
-                new StatusItem(Key.F1, "~F1~ Help", ShowHelp),
-                new StatusItem(Key.CtrlMask | Key.Q, "~Ctrl+Q~ Quit", () => Application.RequestStop())
-            });
-
             // Create frames for layout
             _leftFrame = new FrameView("Connections")
             {
@@ -556,7 +515,7 @@ F1           - Show this help";
             var top = Application.Top;
             
             var mainWindow = new MainWindow(connectionManager, authProvider);
-            top.Add(mainWindow._menuBar, mainWindow, mainWindow._statusBar);
+            top.Add(mainWindow);
             
             Application.Run();
         }

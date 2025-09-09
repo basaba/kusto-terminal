@@ -44,7 +44,7 @@ namespace KustoTerminal.UI.Panes
             };
             
             // Configure selection highlighting using BasePane method
-            ApplyColorSchemeToControl(_queryTextView, "textview_normal");
+             ApplyColorSchemeToControl(_queryTextView, "textview_normal");
 
             _shortcutsLabel = new Label("F5: Execute | Ctrl+L: Clear | Ctrl+A: Select All | Shift+Arrow: Select Text")
             {
@@ -67,7 +67,7 @@ namespace KustoTerminal.UI.Panes
             };
             
             // Set up key bindings for the TextView
-            _queryTextView.KeyPress += OnKeyPress;
+             _queryTextView.KeyPress += OnKeyPress;
         }
 
         private void SetupElementFocusHandlers()
@@ -168,26 +168,6 @@ namespace KustoTerminal.UI.Panes
         {
             _currentConnection = connection;
             _connectionLabel.Text = $"Connected: {connection.DisplayName} | {connection.Database}";
-        }
-
-        public void SetQuery(string query)
-        {
-            _queryTextView.Text = query;
-        }
-
-        public void AppendQuery(string query)
-        {
-            var currentText = _queryTextView.Text?.ToString() ?? "";
-            _queryTextView.Text = currentText + query;
-        }
-
-        public void InsertTemplate(string template)
-        {
-            var cursor = _queryTextView.CursorPosition;
-            var currentText = _queryTextView.Text?.ToString() ?? "";
-            
-            var newText = currentText.Insert(cursor.Y * currentText.Length + cursor.X, template);
-            _queryTextView.Text = newText;
         }
 
         public void FocusEditor()
