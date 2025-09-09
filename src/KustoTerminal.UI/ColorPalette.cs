@@ -13,6 +13,7 @@ namespace KustoTerminal.UI
         public static readonly Color Background = Color.Black;
         public static readonly Color Accent = Color.BrightCyan;
         public static readonly Color Highlight = Color.BrightYellow;
+        public static readonly Color Warning = Color.BrightRed;
         public static readonly Color Disabled = Color.Gray;
 
         // Semantic colors - these can be easily changed for different themes
@@ -39,6 +40,9 @@ namespace KustoTerminal.UI
         
         public static readonly Color ShortcutText = Highlight;
         public static readonly Color ShortcutBackground = Background;
+        
+        public static readonly Color WarningText = Warning;
+        public static readonly Color WarningBackground = Background;
 
         // Button-specific colors
         public static readonly Color ButtonNormalText = Primary;

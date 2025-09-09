@@ -99,6 +99,21 @@ namespace KustoTerminal.UI
         }
 
         /// <summary>
+        /// Creates a color scheme for warning messages.
+        /// </summary>
+        public static ColorScheme CreateWarning()
+        {
+            return new ColorScheme()
+            {
+                Normal = new Terminal.Gui.Attribute(ColorPalette.WarningText, ColorPalette.WarningBackground),
+                Focus = new Terminal.Gui.Attribute(ColorPalette.WarningText, ColorPalette.WarningBackground),
+                HotNormal = new Terminal.Gui.Attribute(ColorPalette.WarningText, ColorPalette.WarningBackground),
+                HotFocus = new Terminal.Gui.Attribute(ColorPalette.WarningText, ColorPalette.WarningBackground),
+                Disabled = new Terminal.Gui.Attribute(ColorPalette.DisabledText, ColorPalette.DisabledBackground)
+            };
+        }
+
+        /// <summary>
         /// Creates a color scheme for text views in normal state.
         /// </summary>
         public static ColorScheme CreateTextViewNormal()
@@ -175,6 +190,7 @@ namespace KustoTerminal.UI
                 "listview" or "tableview" => isHighlighted ? CreateListHighlighted() : CreateListNormal(),
                 "shortcut" => CreateShortcutLabel(),
                 "activeframe" => CreateActiveFrame(),
+                "warning" => CreateWarning(),
                 _ => isHighlighted ? CreateHighlighted() : CreateStandard()
             };
         }

@@ -10,9 +10,11 @@ namespace KustoTerminal.UI.Panes
         private Label _connectionLabel;
         private Label _progressLabel;
         private Label _shortcutsLabel;
+        private Label _temporaryMessageLabel;
         
         private KustoConnection? _currentConnection;
         private bool _isExecuting = false;
+        private System.Threading.Timer? _temporaryMessageTimer;
 
         public event EventHandler<string>? QueryExecuteRequested;
         public event EventHandler? EscapePressed;
@@ -66,6 +68,18 @@ namespace KustoTerminal.UI.Panes
                 Height = 1,
                 Visible = false
             };
+
+            _temporaryMessageLabel = new Label("")
+            {
+                X = 0,
+                Y = Pos.Bottom(_progressLabel),
+                Width = Dim.Fill(),
+                Height = 1,
+                Visible = false
+            };
+            
+            // Apply color scheme for temporary message
+            ApplyColorSchemeToControl(_temporaryMessageLabel, "warning");
             
             // Set up key bindings for the TextView
              _queryTextView.KeyPress += OnKeyPress;
@@ -99,7 +113,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel);
+            Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel, _temporaryMessageLabel);
             
             // Focus on the text view
             _queryTextView.SetFocus();
@@ -143,7 +157,10 @@ namespace KustoTerminal.UI.Panes
         private void OnExecuteClicked()
         {
             if (_isExecuting)
+            {
+                ShowTemporaryMessage("Query already running. Please wait for it to complete.", 3000);
                 return;
+            }
 
             var query = GetCurrentQuery();
             if (!string.IsNullOrWhiteSpace(query))
@@ -234,6 +251,41 @@ namespace KustoTerminal.UI.Panes
                 _progressLabel.Text = $"{_spinnerFrames[_spinnerIndex]} {message}";
                 _progressLabel.SetNeedsDisplay();
             }
+        }
+
+        public void ShowTemporaryMessage(string message, int durationMs = 2000)
+        {
+            // Cancel any existing timer
+            _temporaryMessageTimer?.Dispose();
+            
+            // Show the message
+            _temporaryMessageLabel.Text = message;
+            _temporaryMessageLabel.Visible = true;
+            _temporaryMessageLabel.SetNeedsDisplay();
+            
+            // Set up timer to hide the message after the specified duration
+            _temporaryMessageTimer = new System.Threading.Timer(HideTemporaryMessage, null, durationMs, Timeout.Infinite);
+        }
+
+        private void HideTemporaryMessage(object? state)
+        {
+            Application.MainLoop.Invoke(() =>
+            {
+                _temporaryMessageLabel.Visible = false;
+                _temporaryMessageLabel.SetNeedsDisplay();
+                _temporaryMessageTimer?.Dispose();
+                _temporaryMessageTimer = null;
+            });
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _temporaryMessageTimer?.Dispose();
+                _spinnerTimer?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }
