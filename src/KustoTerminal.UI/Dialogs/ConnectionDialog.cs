@@ -86,13 +86,7 @@ namespace KustoTerminal.UI.Dialogs
                 Y = 9,
                 Width = Dim.Fill() - 2,
                 Height = 1,
-                ColorScheme = new ColorScheme()
-                {
-                    Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                    Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                    HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-                    HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black)
-                }
+                ColorScheme = ColorSchemeFactory.CreateShortcutLabel()
             };
 
             Add(nameLabel, _nameField, clusterLabel, _clusterUriField,
@@ -126,15 +120,14 @@ namespace KustoTerminal.UI.Dialogs
 
         private void SetupColorScheme()
         {
-            // Use BasePane's centralized color scheme methods
-            ColorScheme = KustoTerminal.UI.Panes.BasePane.CreateStandardColorScheme();
+            // Use centralized color scheme factory
+            ColorScheme = ColorSchemeFactory.CreateStandard();
 
             // Apply text field color schemes
-            var textFieldColorScheme = KustoTerminal.UI.Panes.BasePane.CreateTextFieldColorScheme();
+            var textFieldColorScheme = ColorSchemeFactory.CreateTextField();
             _nameField.ColorScheme = textFieldColorScheme;
             _clusterUriField.ColorScheme = textFieldColorScheme;
             _databaseField.ColorScheme = textFieldColorScheme;
-
 
             // Apply checkbox color scheme (using text field scheme for consistency)
             _isDefaultCheckBox.ColorScheme = textFieldColorScheme;

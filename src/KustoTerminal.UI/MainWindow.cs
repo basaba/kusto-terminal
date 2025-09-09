@@ -294,9 +294,9 @@ namespace KustoTerminal.UI
 
         private void UpdateFrameBorderColors()
         {
-            // Use BasePane's centralized color scheme methods
-            var normalColorScheme = BasePane.CreateStandardColorScheme();
-            var activeColorScheme = BasePane.CreateActiveFrameColorScheme();
+            // Use centralized color scheme factory
+            var normalColorScheme = ColorSchemeFactory.CreateStandard();
+            var activeColorScheme = ColorSchemeFactory.CreateActiveFrame();
 
             // Reset all frames to normal color
             _leftFrame.ColorScheme = normalColorScheme;
