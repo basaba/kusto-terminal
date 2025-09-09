@@ -74,10 +74,6 @@ namespace KustoTerminal.UI.Panes
         {
             // Use BasePane's common focus handling for all controls
             SetupCommonElementFocusHandlers(_queryTextView);
-            
-            // Add mouse support for better text selection
-            _queryTextView.WantMousePositionReports = true;
-            _queryTextView.WantContinuousButtonPressed = true;
         }
 
         protected override void ApplyHighlighting()
