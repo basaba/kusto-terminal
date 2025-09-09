@@ -18,6 +18,8 @@ namespace KustoTerminal.Core.Services
         private readonly IAuthenticationProvider _authProvider;
         private ICslQueryProvider? _queryProvider;
         private ICslAdminProvider? _adminProvider;
+        private string? _currentRequestId;
+        private CancellationTokenSource? _internalCancellationSource;
 
         public KustoClient(KustoConnection connection, IAuthenticationProvider authProvider)
         {
@@ -29,10 +31,22 @@ namespace KustoTerminal.Core.Services
         {
             var stopwatch = Stopwatch.StartNew();
             
+            // Clean up any previous internal cancellation source
+            _internalCancellationSource?.Dispose();
+            _internalCancellationSource = new CancellationTokenSource();
+            
+            // Combine external cancellation token with internal one
+            var combinedCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken, _internalCancellationSource.Token);
+            var combinedToken = combinedCancellationSource.Token;
+            
             try
             {
                 progress?.Report("Initializing connection...");
                 await EnsureConnectionAsync();
+                
+                // Check for cancellation after connection setup
+                combinedToken.ThrowIfCancellationRequested();
                 
                 if (_queryProvider == null)
                     throw new InvalidOperationException("Query provider is not initialized");
@@ -40,18 +54,32 @@ namespace KustoTerminal.Core.Services
                 progress?.Report("Preparing query...");
                 var clientRequestProperties = new ClientRequestProperties();
                 
-                // Add cancellation token support
-                if (cancellationToken.CanBeCanceled)
-                {
-                    clientRequestProperties.ClientRequestId = Guid.NewGuid().ToString();
-                }
+                // Always set up request ID for potential cancellation
+                _currentRequestId = Guid.NewGuid().ToString();
+                clientRequestProperties.ClientRequestId = _currentRequestId;
+                
+                // Set up cancellation monitoring
+                var cancellationMonitorTask = MonitorCancellationAsync(combinedToken, progress);
+                
+                // Check for cancellation before executing query
+                combinedToken.ThrowIfCancellationRequested();
                 
                 progress?.Report("Executing query...");
+                
+                // Execute query
                 var reader = await _queryProvider.ExecuteQueryAsync(_connection.Database, query, clientRequestProperties);
+                
+                // Check for cancellation after query execution
+                combinedToken.ThrowIfCancellationRequested();
                 
                 progress?.Report("Processing results...");
                 var dataTable = new DataTable();
-                dataTable.Load(reader);
+                
+                // Load data with cancellation checks
+                await Task.Run(() =>
+                {
+                    dataTable.Load(reader);
+                }, combinedToken);
                 
                 progress?.Report("Query completed successfully");
                 stopwatch.Stop();
@@ -60,6 +88,11 @@ namespace KustoTerminal.Core.Services
             catch (OperationCanceledException)
             {
                 stopwatch.Stop();
+                progress?.Report("Cancelling query on server...");
+                
+                // Cancel the query on the server side using .cancel query command
+                await CancelQueryOnServerAsync();
+                
                 progress?.Report("Query cancelled");
                 return QueryResult.Error(query, "Query was cancelled", stopwatch.Elapsed);
             }
@@ -69,6 +102,55 @@ namespace KustoTerminal.Core.Services
                 progress?.Report($"Query failed: {ex.Message}");
                 return QueryResult.Error(query, ex.Message, stopwatch.Elapsed);
             }
+            finally
+            {
+                combinedCancellationSource?.Dispose();
+                _currentRequestId = null;
+            }
+        }
+
+        private async Task MonitorCancellationAsync(CancellationToken cancellationToken, IProgress<string>? progress)
+        {
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // When cancellation is requested, immediately try to cancel on server
+                progress?.Report("Cancellation requested, stopping query...");
+                await CancelQueryOnServerAsync();
+            }
+        }
+
+        private async Task CancelQueryOnServerAsync()
+        {
+            if (string.IsNullOrEmpty(_currentRequestId) || _adminProvider == null)
+                return;
+
+            try
+            {
+                var cancelCommand = $".cancel query '{_currentRequestId}'";
+                var cancelProperties = new ClientRequestProperties();
+                
+                // Execute the cancel command with a short timeout
+                await _adminProvider.ExecuteControlCommandAsync(_connection.Database, cancelCommand, cancelProperties);
+            }
+            catch
+            {
+                // Ignore errors when trying to cancel - the query might have already completed
+                // or there might be permission issues
+            }
+        }
+
+        public async Task CancelCurrentQueryAsync()
+        {
+            if (_internalCancellationSource != null && !_internalCancellationSource.Token.IsCancellationRequested)
+            {
+                _internalCancellationSource.Cancel();
+            }
+            
+            await CancelQueryOnServerAsync();
         }
 
         public async Task<bool> TestConnectionAsync()

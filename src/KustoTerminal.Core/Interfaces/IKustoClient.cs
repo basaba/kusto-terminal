@@ -11,6 +11,7 @@ namespace KustoTerminal.Core.Interfaces
         Task<bool> TestConnectionAsync();
         Task<string[]> GetDatabasesAsync();
         Task<string[]> GetTablesAsync(string database);
+        Task CancelCurrentQueryAsync();
         void Dispose();
     }
 }

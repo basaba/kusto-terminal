@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Terminal.Gui;
 using KustoTerminal.Core.Interfaces;
@@ -23,6 +24,10 @@ namespace KustoTerminal.UI
         // Pane navigation
         private BasePane[] _navigablePanes;
         private int _currentPaneIndex = 0;
+        
+        // Query cancellation
+        private CancellationTokenSource? _queryCancellationTokenSource;
+        private Core.Services.KustoClient? _currentKustoClient;
 
         public MainWindow(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
         {
@@ -117,6 +122,7 @@ namespace KustoTerminal.UI
             _connectionPane.ConnectionSelected += OnConnectionSelected;
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
             _queryEditorPane.EscapePressed += OnQueryEditorEscapePressed;
+            _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
         }
 
         private void SetupPaneEventHandlers()
@@ -306,6 +312,32 @@ namespace KustoTerminal.UI
             SetFocusToCurrentPane();
         }
 
+        private async void OnQueryCancelRequested(object? sender, EventArgs e)
+        {
+            // Cancel the current query if one is running
+            if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
+            {
+                UpdateStatusBar("Query cancellation requested...");
+                
+                // First cancel the token to stop any local processing
+                _queryCancellationTokenSource.Cancel();
+                
+                // Then try to cancel on the server side using the Kusto client
+                if (_currentKustoClient != null)
+                {
+                    try
+                    {
+                        await _currentKustoClient.CancelCurrentQueryAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't throw - cancellation errors shouldn't crash the UI
+                        UpdateStatusBar($"Warning: Could not cancel query on server: {ex.Message}");
+                    }
+                }
+            }
+        }
+
         private void NewConnection()
         {
             var dialog = new ConnectionDialog();
@@ -407,6 +439,14 @@ namespace KustoTerminal.UI
 
         private async Task ExecuteQueryAsync(string query)
         {
+            // Cancel any existing query
+            _queryCancellationTokenSource?.Cancel();
+            _queryCancellationTokenSource?.Dispose();
+            
+            // Create new cancellation token source for this query
+            _queryCancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = _queryCancellationTokenSource.Token;
+            
             try
             {
                 var connection = _connectionPane.GetSelectedConnection();
@@ -429,9 +469,10 @@ namespace KustoTerminal.UI
                     });
                 });
                 
-                var client = new Core.Services.KustoClient(connection, _authProvider);
-                var result = await client.ExecuteQueryAsync(query, progress: progress);
-                client.Dispose();
+                _currentKustoClient = new Core.Services.KustoClient(connection, _authProvider);
+                var result = await _currentKustoClient.ExecuteQueryAsync(query, cancellationToken, progress);
+                _currentKustoClient.Dispose();
+                _currentKustoClient = null;
                 
                 Application.MainLoop.Invoke(() =>
                 {
@@ -447,6 +488,14 @@ namespace KustoTerminal.UI
                     }
                 });
             }
+            catch (OperationCanceledException)
+            {
+                Application.MainLoop.Invoke(() =>
+                {
+                    _queryEditorPane.SetExecuting(false);
+                    UpdateStatusBar("Query was cancelled");
+                });
+            }
             catch (Exception ex)
             {
                 Application.MainLoop.Invoke(() =>
@@ -454,6 +503,21 @@ namespace KustoTerminal.UI
                     _queryEditorPane.SetExecuting(false);
                     UpdateStatusBar($"Error: {ex.Message}");
                 });
+            }
+            finally
+            {
+                // Clean up the cancellation token source and client
+                if (_queryCancellationTokenSource != null)
+                {
+                    _queryCancellationTokenSource.Dispose();
+                    _queryCancellationTokenSource = null;
+                }
+                
+                if (_currentKustoClient != null)
+                {
+                    _currentKustoClient.Dispose();
+                    _currentKustoClient = null;
+                }
             }
         }
 
@@ -474,6 +538,7 @@ namespace KustoTerminal.UI
 
 Query Editor:
 F5           - Execute query
+Esc          - Cancel running query / Switch to results pane
 Ctrl+L       - Clear query
 Ctrl+A       - Select all text
 

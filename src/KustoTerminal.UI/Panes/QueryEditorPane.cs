@@ -16,6 +16,7 @@ namespace KustoTerminal.UI.Panes
 
         public event EventHandler<string>? QueryExecuteRequested;
         public event EventHandler? EscapePressed;
+        public event EventHandler? QueryCancelRequested;
 
         public QueryEditorPane()
         {
@@ -46,7 +47,7 @@ namespace KustoTerminal.UI.Panes
             // Configure selection highlighting using BasePane method
              ApplyColorSchemeToControl(_queryTextView, "textview_normal");
 
-            _shortcutsLabel = new Label("F5: Execute | Ctrl+L: Clear | Ctrl+A: Select All | Shift+Arrow: Select Text")
+            _shortcutsLabel = new Label("F5: Execute | Esc: Cancel/Switch | Ctrl+L: Clear | Ctrl+A: Select All")
             {
                 X = 0,
                 Y = Pos.Bottom(_queryTextView),
@@ -124,10 +125,17 @@ namespace KustoTerminal.UI.Panes
                 _queryTextView.SelectAll();
                 e.Handled = true;
             }
-            // Handle ESC to switch focus to results pane
+            // Handle ESC - cancel query if executing, otherwise switch focus to results pane
             else if (e.KeyEvent.Key == Key.Esc)
             {
-                EscapePressed?.Invoke(this, EventArgs.Empty);
+                if (_isExecuting)
+                {
+                    QueryCancelRequested?.Invoke(this, EventArgs.Empty);
+                }
+                else
+                {
+                    EscapePressed?.Invoke(this, EventArgs.Empty);
+                }
                 e.Handled = true;
             }
         }
