@@ -5,6 +5,8 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 
 using KustoTerminal.Core.Models;
+using Terminal.Gui.Input;
+using Terminal.Gui.Drivers;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -28,7 +30,7 @@ namespace KustoTerminal.UI.Panes
         {
             InitializeComponents();
             SetupLayout();
-            SetupElementFocusHandlers();
+            CanFocus = true;
         }
 
         private void InitializeComponents()
@@ -48,11 +50,11 @@ namespace KustoTerminal.UI.Panes
                 Y = 1,
                 Width = Dim.Fill(),
                 Height = Dim.Fill() - 4,
-                Text = ""
+                Text = "",
             };
-            
+
             // Configure selection highlighting using BasePane method
-             ApplyColorSchemeToControl(_queryTextView, "textview_normal");
+            // ApplyColorSchemeToControl(_queryTextView, "textview_normal");
 
             _shortcutsLabel = new Label()
             {
@@ -62,7 +64,7 @@ namespace KustoTerminal.UI.Panes
                 Width = Dim.Fill(),
                 Height = 1
             };
-            
+
             // Apply shortcut label color scheme using BasePane method
             ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
@@ -83,39 +85,26 @@ namespace KustoTerminal.UI.Panes
                 Height = 1,
                 Visible = false
             };
-            
+
             // Apply color scheme for temporary message
             ApplyColorSchemeToControl(_temporaryMessageLabel, "warning");
 
             // Set up key bindings for the TextView
             //_queryTextView.KeyBindings = new KeyBindings
-             // += OnKeyPress;
+            // += OnKeyPress;
+            SetKeyDown();
+
         }
 
-        private void SetupElementFocusHandlers()
+        private void SetKeyDown()
         {
-            // Use BasePane's common focus handling for all controls
-            SetupCommonElementFocusHandlers(_queryTextView);
-        }
-
-        protected override void ApplyHighlighting()
-        {
-            // // Apply highlighting to all controls, with special handling for TextView
-            // foreach (View child in Subviews)
-            // {
-            //     if (child is TextView)
-            //     {
-            //         // Apply appropriate TextView color scheme based on highlight state
-            //         var colorSchemeType = IsHighlighted ? "textview_highlighted" : "textview_normal";
-            //         ApplyColorSchemeToControl(child, colorSchemeType);
-            //     }
-            //     else
-            //     {
-            //         ApplyHighlightingToControl(child);
-            //     }
-            // }
-
-            // SetNeedsDisplay();
+            _queryTextView.KeyDown += (sender, key) =>
+            {
+                if (key == Key.F5)
+                {
+                    OnExecuteClicked();
+                }
+            };
         }
 
         private void SetupLayout()
@@ -123,7 +112,7 @@ namespace KustoTerminal.UI.Panes
             Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel, _temporaryMessageLabel);
             
             // Focus on the text view
-            _queryTextView.SetFocus();
+            // _queryTextView.SetFocus();
         }
 
         // private void OnKeyPress(KeyEventEventArgs e)
@@ -179,12 +168,6 @@ namespace KustoTerminal.UI.Panes
             {
                 MessageBox.ErrorQuery("Error", "Please enter a query to execute.", "OK");
             }
-        }
-
-        private void OnClearClicked()
-        {
-            _queryTextView.Text = "";
-            _queryTextView.SetFocus();
         }
 
         public string GetCurrentQuery()
@@ -268,7 +251,6 @@ namespace KustoTerminal.UI.Panes
             // Show the message
             _temporaryMessageLabel.Text = message;
             _temporaryMessageLabel.Visible = true;
-            //_temporaryMessageLabel.SetNeedsDisplay();
             
             // Set up timer to hide the message after the specified duration
             _temporaryMessageTimer = new System.Threading.Timer(HideTemporaryMessage, null, durationMs, System.Threading.Timeout.Infinite);

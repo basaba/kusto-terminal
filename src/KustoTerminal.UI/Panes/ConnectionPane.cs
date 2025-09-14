@@ -13,11 +13,12 @@ using System.Collections.ObjectModel;
 
 namespace KustoTerminal.UI.Panes
 {
-    public class ConnectionPane : BasePane
+    public class ConnectionPane : View
     {
         private readonly IConnectionManager _connectionManager;
         private ListView _connectionsList;
         private Label _shortcutsLabel;
+
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
         private KustoConnection? _selectedConnection;
@@ -27,11 +28,12 @@ namespace KustoTerminal.UI.Panes
         public ConnectionPane(IConnectionManager connectionManager)
         {
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-            
+
             InitializeComponents();
             SetupLayout();
             SetupElementFocusHandlers();
             LoadConnections();
+            CanFocus = true;
         }
 
         private void InitializeComponents()
@@ -54,13 +56,26 @@ namespace KustoTerminal.UI.Panes
                 Width = Dim.Fill(),
                 Height = 1
             };
-            
+
             // Apply color schemes using BasePane methods
-            ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
+            // ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
             // Set up event handlers
-            // _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
+            _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
+            _connectionsList.Accepting += (sender, args) => { OnConnectClicked(); args.Handled = true; };
             // _connectionsList.KeyPress += OnConnectionsListKeyPress;
+            // AddCommand(Command.Accept, () => { OnConnectClicked(); return true; });
+            //KeyBindings.Add(Key)
+            //.ReplaceCommands(Key.Enter, Command.Select);
+
+            _connectionsList.CanFocus = true; ;
+            _connectionsList.KeyDown += (sender, key) =>
+            {
+                if (key == Key.A)
+                {
+                    OnAddClicked();
+                }
+            };
         }
 
         private void SetupLayout()
@@ -71,7 +86,7 @@ namespace KustoTerminal.UI.Panes
         private void SetupElementFocusHandlers()
         {
             // Use BasePane's common focus handling for all controls
-            SetupCommonElementFocusHandlers(_connectionsList, _shortcutsLabel);
+            // SetupCommonElementFocusHandlers(_connectionsList, _shortcutsLabel);
         }
 
         private async void LoadConnections()
@@ -89,7 +104,7 @@ namespace KustoTerminal.UI.Panes
                 if (_connections.Length > 0)
                 {
                     _connectionsList.SelectedItem = 0;
-                    OnConnectionSelected();
+                    OnConnectionSelected(0);
                 }
             }
             catch (Exception ex)
@@ -103,14 +118,14 @@ namespace KustoTerminal.UI.Panes
             LoadConnections();
         }
 
-        private void OnConnectionSelectedChanged(ListViewItemEventArgs args)
+        private void OnConnectionSelectedChanged(object? sender, ListViewItemEventArgs args)
         {
-            OnConnectionSelected();
+            OnConnectionSelected(args.Item);
+            // OnConnectClicked();
         }
 
-        private void OnConnectionSelected()
+        private void OnConnectionSelected(int selectedIndex)
         {
-            var selectedIndex = _connectionsList.SelectedItem;
             if (selectedIndex >= 0 && selectedIndex < _connections.Length)
             {
                 _selectedConnection = _connections[selectedIndex];

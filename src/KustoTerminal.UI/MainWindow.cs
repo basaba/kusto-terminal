@@ -9,6 +9,7 @@ using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Panes;
 using KustoTerminal.UI.Dialogs;
+using Terminal.Gui.Input;
 
 namespace KustoTerminal.UI
 {
@@ -36,15 +37,17 @@ namespace KustoTerminal.UI
         {
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
             _authProvider = authProvider ?? throw new ArgumentNullException(nameof(authProvider));
-            
+
             Title = "Kusto Terminal";
             X = 0;
             Y = 0; // Leave space for menu bar
             Width = Dim.Fill();
             Height = Dim.Fill() - 1; // Leave space for status bar
-            
+
             InitializeComponents();
             SetupLayout();
+        
+            KeyBindings.ReplaceCommands(Key.Enter, Command.Open);
             // SetupKeyBindings();
         }
 
@@ -115,7 +118,7 @@ namespace KustoTerminal.UI
             _bottomFrame.Add(_resultsPane);
 
             // Set up navigable panes array for TAB navigation
-            _navigablePanes = new BasePane[] { _connectionPane, _queryEditorPane, _resultsPane };
+            // _navigablePanes = new BasePane[] { _connectionPane, _queryEditorPane, _resultsPane };
 
             // Set initial focus to connection pane
             _connectionPane.SetFocus();
@@ -134,7 +137,7 @@ namespace KustoTerminal.UI
         private void SetupPaneEventHandlers()
         {
             // Subscribe to focus change events from each pane
-            _connectionPane.FocusChanged += OnPaneFocusChanged;
+            // _connectionPane.FocusChanged += OnPaneFocusChanged;
             _queryEditorPane.FocusChanged += OnPaneFocusChanged;
             _resultsPane.FocusChanged += OnPaneFocusChanged;
         }
@@ -218,28 +221,28 @@ namespace KustoTerminal.UI
         //     }
         // }
 
-        private void SwitchToNextPane()
-        {
-            _currentPaneIndex = (_currentPaneIndex + 1) % _navigablePanes.Length;
-            SetFocusToCurrentPane();
-        }
+        // private void SwitchToNextPane()
+        // {
+        //     _currentPaneIndex = (_currentPaneIndex + 1) % _navigablePanes.Length;
+        //     SetFocusToCurrentPane();
+        // }
 
-        private void SwitchToPreviousPane()
-        {
-            _currentPaneIndex = (_currentPaneIndex - 1 + _navigablePanes.Length) % _navigablePanes.Length;
-            SetFocusToCurrentPane();
-        }
+        // private void SwitchToPreviousPane()
+        // {
+        //     _currentPaneIndex = (_currentPaneIndex - 1 + _navigablePanes.Length) % _navigablePanes.Length;
+        //     SetFocusToCurrentPane();
+        // }
 
-        private void SetFocusToCurrentPane()
-        {
-            var currentPane = _navigablePanes[_currentPaneIndex];
-            currentPane.SetFocus();
+        // private void SetFocusToCurrentPane()
+        // {
+        //     var currentPane = _navigablePanes[_currentPaneIndex];
+        //     currentPane.SetFocus();
             
-            // The pane highlighting will be handled by the OnPaneFocusChanged event
-            // But we still need to update frame titles and borders
-            UpdateFrameTitles();
-            UpdateFrameBorderColors();
-        }
+        //     // The pane highlighting will be handled by the OnPaneFocusChanged event
+        //     // But we still need to update frame titles and borders
+        //     UpdateFrameTitles();
+        //     UpdateFrameBorderColors();
+        // }
 
         private void UpdateFrameTitles()
         {
@@ -302,8 +305,8 @@ namespace KustoTerminal.UI
             
             // Switch focus to query editor pane when connection is selected
             _currentPaneIndex = 1; // Query editor is at index 1
-            SetFocusToCurrentPane();
-            _queryEditorPane.FocusEditor();
+            // SetFocusToCurrentPane();
+            // _queryEditorPane.FocusEditor();
         }
 
         private async void OnQueryExecuteRequested(object? sender, string query)
@@ -315,7 +318,7 @@ namespace KustoTerminal.UI
         {
             // Switch focus to results pane when ESC is pressed in query editor
             _currentPaneIndex = 2; // Results pane is at index 2
-            SetFocusToCurrentPane();
+            // SetFocusToCurrentPane();
         }
 
         private async void OnQueryCancelRequested(object? sender, EventArgs e)
@@ -439,7 +442,7 @@ namespace KustoTerminal.UI
         {
             // Focus on results pane to trigger export
             _currentPaneIndex = 2; // Results pane
-            SetFocusToCurrentPane();
+            // SetFocusToCurrentPane();
             // The actual export will be handled by the ResultsPane's Ctrl+S handler
         }
 
@@ -577,7 +580,9 @@ F1           - Show this help";
             // Update status bar with current message
             Application.Invoke(() =>
             {
+                //_statusBar.SetMessage(message);
                 // Terminal.Gui will handle status updates
+                // Title = $"Kusto Terminal - {message}";
             });
         }
 

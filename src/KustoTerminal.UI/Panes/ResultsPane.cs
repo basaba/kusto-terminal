@@ -7,6 +7,7 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 
 using KustoTerminal.Core.Models;
+using Terminal.Gui.Input;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -27,6 +28,7 @@ namespace KustoTerminal.UI.Panes
             InitializeComponents();
             SetupLayout();
             SetupElementFocusHandlers();
+            CanFocus = true;
         }
 
         private void InitializeComponents()
@@ -47,7 +49,7 @@ namespace KustoTerminal.UI.Panes
                 Width = Dim.Fill(),
                 Height = Dim.Fill() - 3,
                 FullRowSelect = false,
-                MultiSelect = false
+                MultiSelect = false,
             };
 
             // Add event handlers to ensure proper cursor visibility
@@ -96,6 +98,28 @@ namespace KustoTerminal.UI.Panes
             
             // // Also set up key bindings on the pane for when other elements have focus
             // KeyPress += OnKeyPress;
+            SetKeyboard();
+        }
+
+        private void SetKeyboard()
+        {
+            KeyDown += (sender, key) =>
+            {
+                if (Key.TryParse("/", out var k) && key == k)
+                {
+                    ToggleSearch();
+                    key.Handled = true;
+                }
+            };
+
+            _searchField.KeyDown += (sender, key) =>
+            {
+                if (key == Key.Esc)
+                {
+                    HideSearch();
+                    key.Handled = true;
+                }
+            };
         }
 
         private void SetupLayout()
@@ -534,26 +558,25 @@ namespace KustoTerminal.UI.Panes
 
         private void HideSearch()
         {
-            // _searchVisible = false;
-            // _searchLabel.Visible = false;
-            // _searchField.Visible = false;
-            // _searchField.Text = "";
+            _searchVisible = false;
+            _searchLabel.Visible = false;
+            _searchField.Visible = false;
+            _searchField.Text = "";
             
-            // // Restore original table height
-            // _tableView.Height = Dim.Fill() - 3;
+            // Restore original table height
+            //_tableView.Height = Dim.Fill() - 3;
             
-            // // Restore shortcuts position
-            // _shortcutsLabel.Y = Pos.Bottom(_tableView);
+            // Restore shortcuts position
+            _shortcutsLabel.Y = Pos.Bottom(_tableView);
             
-            // // Restore original data if we have it
-            // if (_originalData != null)
-            // {
-            //     _tableView.Table = _originalData;
-            //     UpdateStatusForOriginalData();
-            // }
+            // Restore original data if we have it
+            if (_originalData != null)
+            {
+                _tableView.Table = new DataTableSource(_originalData);
+                UpdateStatusForOriginalData();
+            }
             
-            // _tableView.SetFocus();
-            // // SetNeedsDisplay();
+            _tableView.SetFocus();
         }
 
         private void OnSearchTextChanged(object? sender, EventArgs e)
@@ -563,52 +586,52 @@ namespace KustoTerminal.UI.Panes
 
         private void PerformSearch()
         {
-            // if (_originalData == null || !_searchVisible)
-            //     return;
+            if (_originalData == null || !_searchVisible)
+                return;
 
-            // var searchText = _searchField.Text.ToString();
+            var searchText = _searchField.Text.ToString();
             
-            // if (string.IsNullOrWhiteSpace(searchText))
-            // {
-            //     // Show all data when search is empty
-            //     _tableView.Table = _originalData;
-            //     UpdateStatusForOriginalData();
-            //     return;
-            // }
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                // Show all data when search is empty
+                _tableView.Table = new DataTableSource(_originalData);
+                UpdateStatusForOriginalData();
+                return;
+            }
 
-            // try
-            // {
-            //     // Create a filtered view of the data
-            //     var filteredTable = _originalData.Clone();
+            try
+            {
+                // Create a filtered view of the data
+                var filteredTable = _originalData.Clone();
                 
-            //     foreach (DataRow row in _originalData.Rows)
-            //     {
-            //         bool rowMatches = false;
+                foreach (DataRow row in _originalData.Rows)
+                {
+                    bool rowMatches = false;
                     
-            //         // Check each column for the search text (case-insensitive)
-            //         foreach (var item in row.ItemArray)
-            //         {
-            //             var cellValue = item?.ToString() ?? "";
-            //             if (cellValue.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
-            //             {
-            //                 rowMatches = true;
-            //                 break;
-            //             }
-            //         }
+                    // Check each column for the search text (case-insensitive)
+                    foreach (var item in row.ItemArray)
+                    {
+                        var cellValue = item?.ToString() ?? "";
+                        if (cellValue.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            rowMatches = true;
+                            break;
+                        }
+                    }
                     
-            //         if (rowMatches)
-            //         {
-            //             filteredTable.ImportRow(row);
-            //         }
-            //     }
+                    if (rowMatches)
+                    {
+                        filteredTable.ImportRow(row);
+                    }
+                }
                 
-            //     _tableView.Table = filteredTable;
-            //     UpdateStatusForFilteredData(filteredTable.Rows.Count, searchText);
-            // }
-            // catch (Exception ex)
-            // {
-            //     _statusLabel.Text = $"Search error: {ex.Message}";
-            // }
+                _tableView.Table = new DataTableSource(filteredTable);
+                UpdateStatusForFilteredData(filteredTable.Rows.Count, searchText);
+            }
+            catch (Exception ex)
+            {
+                _statusLabel.Text = $"Search error: {ex.Message}";
+            }
         }
 
         private void UpdateStatusForOriginalData()
