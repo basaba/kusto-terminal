@@ -34,6 +34,7 @@ namespace KustoTerminal.UI.Panes
             SetupElementFocusHandlers();
             LoadConnections();
             CanFocus = true;
+            TabStop = TabBehavior.TabStop;
         }
 
         private void InitializeComponents()
@@ -63,19 +64,6 @@ namespace KustoTerminal.UI.Panes
             // Set up event handlers
             _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
             _connectionsList.Accepting += (sender, args) => { OnConnectClicked(); args.Handled = true; };
-            // _connectionsList.KeyPress += OnConnectionsListKeyPress;
-            // AddCommand(Command.Accept, () => { OnConnectClicked(); return true; });
-            //KeyBindings.Add(Key)
-            //.ReplaceCommands(Key.Enter, Command.Select);
-
-            _connectionsList.CanFocus = true; ;
-            _connectionsList.KeyDown += (sender, key) =>
-            {
-                if (key == Key.A)
-                {
-                    OnAddClicked();
-                }
-            };
         }
 
         private void SetupLayout()
@@ -121,7 +109,6 @@ namespace KustoTerminal.UI.Panes
         private void OnConnectionSelectedChanged(object? sender, ListViewItemEventArgs args)
         {
             OnConnectionSelected(args.Item);
-            // OnConnectClicked();
         }
 
         private void OnConnectionSelected(int selectedIndex)

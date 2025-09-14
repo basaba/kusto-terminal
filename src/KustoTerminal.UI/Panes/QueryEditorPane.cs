@@ -31,6 +31,7 @@ namespace KustoTerminal.UI.Panes
             InitializeComponents();
             SetupLayout();
             CanFocus = true;
+            TabStop = TabBehavior.TabStop;
         }
 
         private void InitializeComponents()
@@ -66,7 +67,6 @@ namespace KustoTerminal.UI.Panes
             };
 
             // Apply shortcut label color scheme using BasePane method
-            ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
             _progressLabel = new Label()
             {
@@ -87,16 +87,11 @@ namespace KustoTerminal.UI.Panes
             };
 
             // Apply color scheme for temporary message
-            ApplyColorSchemeToControl(_temporaryMessageLabel, "warning");
 
-            // Set up key bindings for the TextView
-            //_queryTextView.KeyBindings = new KeyBindings
-            // += OnKeyPress;
-            SetKeyDown();
-
+            SetKeyboard();
         }
 
-        private void SetKeyDown()
+        private void SetKeyboard()
         {
             _queryTextView.KeyDown += (sender, key) =>
             {

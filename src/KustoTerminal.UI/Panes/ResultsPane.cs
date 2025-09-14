@@ -29,6 +29,7 @@ namespace KustoTerminal.UI.Panes
             SetupLayout();
             SetupElementFocusHandlers();
             CanFocus = true;
+            TabStop = TabBehavior.TabStop;
         }
 
         private void InitializeComponents()
@@ -65,7 +66,6 @@ namespace KustoTerminal.UI.Panes
             };
             
             // Apply color scheme using BasePane method
-            ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
             // Initialize search components (initially hidden)
             _searchLabel = new Label()
@@ -130,7 +130,6 @@ namespace KustoTerminal.UI.Panes
         private void SetupElementFocusHandlers()
         {
             // Use BasePane's common focus handling for all controls
-            SetupCommonElementFocusHandlers(_tableView, _searchField, _shortcutsLabel);
         }
 
         // private void OnTableViewKeyPress(KeyEventEventArgs args)
