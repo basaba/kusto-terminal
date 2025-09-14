@@ -54,6 +54,10 @@ namespace KustoTerminal.UI
                     Application.Shutdown();
                     key.Handled = true;
                 }
+                else if (key == Key.Tab)
+                {
+
+                }
                 else if (key == Key.Esc)
                 {
                     key.Handled = true;
@@ -72,7 +76,8 @@ namespace KustoTerminal.UI
                 X = 0,
                 Y = 0,
                 Width = 30,
-                Height = Dim.Fill()
+                Height = Dim.Fill(),
+                TabStop = TabBehavior.TabStop
             };
 
             _rightFrame = new FrameView()
@@ -81,7 +86,8 @@ namespace KustoTerminal.UI
                 X = 31,
                 Y = 0,
                 Width = Dim.Fill(),
-                Height = Dim.Percent(60)
+                Height = Dim.Percent(60),
+                TabStop = TabBehavior.TabStop
             };
 
             _bottomFrame = new FrameView()
@@ -90,7 +96,8 @@ namespace KustoTerminal.UI
                 X = 31,
                 Y = Pos.Bottom(_rightFrame),
                 Width = Dim.Fill(),
-                Height = Dim.Fill()
+                Height = Dim.Fill(),
+                TabStop = TabBehavior.TabStop
             };
 
             // Create panes

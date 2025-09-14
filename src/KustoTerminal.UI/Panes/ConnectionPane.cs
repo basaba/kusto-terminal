@@ -34,7 +34,6 @@ namespace KustoTerminal.UI.Panes
             SetupElementFocusHandlers();
             LoadConnections();
             CanFocus = true;
-            TabStop = TabBehavior.TabStop;
         }
 
         private void InitializeComponents()
@@ -46,7 +45,7 @@ namespace KustoTerminal.UI.Panes
                 Width = Dim.Fill(),
                 Height = Dim.Fill() - 4,
                 AllowsMarking = false,
-                AllowsMultipleSelection = false
+                AllowsMultipleSelection = false,
             };
 
             _shortcutsLabel = new Label()
