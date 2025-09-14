@@ -2,6 +2,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Terminal.Gui;
+using Terminal.Gui.App;
+using Terminal.Gui.Views;
+using Terminal.Gui.ViewBase;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Panes;
@@ -42,30 +45,33 @@ namespace KustoTerminal.UI
             
             InitializeComponents();
             SetupLayout();
-            SetupKeyBindings();
+            // SetupKeyBindings();
         }
 
         private void InitializeComponents()
         {
             // Create frames for layout
-            _leftFrame = new FrameView("Connections")
+            _leftFrame = new FrameView()
             {
+                Title = "Connections",
                 X = 0,
                 Y = 0,
                 Width = 30,
                 Height = Dim.Fill()
             };
 
-            _rightFrame = new FrameView("Query Editor")
+            _rightFrame = new FrameView()
             {
+                Title = "Query Editor",
                 X = 31,
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Percent(60)
             };
 
-            _bottomFrame = new FrameView("Results")
+            _bottomFrame = new FrameView()
             {
+                Title = "Results",
                 X = 31,
                 Y = Pos.Bottom(_rightFrame),
                 Width = Dim.Fill(),
@@ -153,64 +159,64 @@ namespace KustoTerminal.UI
             }
         }
 
-        private void SetupKeyBindings()
-        {
-            // Focus handling for tab navigation
-            CanFocus = true;
+        // private void SetupKeyBindings()
+        // {
+        //     // Focus handling for tab navigation
+        //     CanFocus = true;
             
-            // Global key bindings
-            KeyPress += OnKeyPress;
-        }
+        //     // Global key bindings
+        //     KeyPress += OnKeyPress;
+        // }
         
-        private void OnKeyPress(KeyEventEventArgs args)
-        {
-            // Handle TAB for pane navigation
-            if (args.KeyEvent.Key == Key.Tab)
-            {
-                SwitchToNextPane();
-                args.Handled = true;
-                return;
-            }
+        // private void OnKeyPress(KeyEventEventArgs args)
+        // {
+        //     // Handle TAB for pane navigation
+        //     if (args.KeyEvent.Key == Key.Tab)
+        //     {
+        //         SwitchToNextPane();
+        //         args.Handled = true;
+        //         return;
+        //     }
             
-            // Handle Shift+TAB for reverse pane navigation
-            if (args.KeyEvent.Key == (Key.ShiftMask | Key.Tab))
-            {
-                SwitchToPreviousPane();
-                args.Handled = true;
-                return;
-            }
+        //     // Handle Shift+TAB for reverse pane navigation
+        //     if (args.KeyEvent.Key == (Key.ShiftMask | Key.Tab))
+        //     {
+        //         SwitchToPreviousPane();
+        //         args.Handled = true;
+        //         return;
+        //     }
             
-            // Handle Ctrl+E for edit connection
-            if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
-            {
-                EditConnection();
-                args.Handled = true;
-            }
-            // Handle Ctrl+N for new connection
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
-            {
-                NewConnection();
-                args.Handled = true;
-            }
-            // Handle Ctrl+L for clear query
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.L))
-            {
-                ClearQuery();
-                args.Handled = true;
-            }
-            // Handle Ctrl+S for export results
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
-            {
-                ExportResults();
-                args.Handled = true;
-            }
-            // Handle Delete key for delete connection
-            else if (args.KeyEvent.Key == Key.DeleteChar)
-            {
-                DeleteConnection();
-                args.Handled = true;
-            }
-        }
+        //     // Handle Ctrl+E for edit connection
+        //     if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
+        //     {
+        //         EditConnection();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Ctrl+N for new connection
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
+        //     {
+        //         NewConnection();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Ctrl+L for clear query
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.L))
+        //     {
+        //         ClearQuery();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Ctrl+S for export results
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
+        //     {
+        //         ExportResults();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Delete key for delete connection
+        //     else if (args.KeyEvent.Key == Key.DeleteChar)
+        //     {
+        //         DeleteConnection();
+        //         args.Handled = true;
+        //     }
+        // }
 
         private void SwitchToNextPane()
         {
@@ -260,33 +266,33 @@ namespace KustoTerminal.UI
         private void UpdateFrameBorderColors()
         {
             // Use centralized color scheme factory
-            var normalColorScheme = ColorSchemeFactory.CreateStandard();
-            var activeColorScheme = ColorSchemeFactory.CreateActiveFrame();
+            // var normalColorScheme = ColorSchemeFactory.CreateStandard();
+            // var activeColorScheme = ColorSchemeFactory.CreateActiveFrame();
 
             // Reset all frames to normal color
-            _leftFrame.ColorScheme = normalColorScheme;
-            _rightFrame.ColorScheme = normalColorScheme;
-            _bottomFrame.ColorScheme = normalColorScheme;
+            // _leftFrame.ColorScheme = normalColorScheme;
+            // _rightFrame.ColorScheme = normalColorScheme;
+            // _bottomFrame.ColorScheme = normalColorScheme;
 
             // Highlight the active frame border with a different color than the pane content
             // This creates a layered highlighting effect: yellow frame + cyan pane content
-            switch (_currentPaneIndex)
-            {
-                case 0: // Connection pane
-                    _leftFrame.ColorScheme = activeColorScheme;
-                    break;
-                case 1: // Query editor pane
-                    _rightFrame.ColorScheme = activeColorScheme;
-                    break;
-                case 2: // Results pane
-                    _bottomFrame.ColorScheme = activeColorScheme;
-                    break;
-            }
+            // switch (_currentPaneIndex)
+            // {
+            //     case 0: // Connection pane
+            //         _leftFrame.ColorScheme = activeColorScheme;
+            //         break;
+            //     case 1: // Query editor pane
+            //         _rightFrame.ColorScheme = activeColorScheme;
+            //         break;
+            //     case 2: // Results pane
+            //         _bottomFrame.ColorScheme = activeColorScheme;
+            //         break;
+            // }
 
-            // Force redraw of all frames
-            _leftFrame.SetNeedsDisplay();
-            _rightFrame.SetNeedsDisplay();
-            _bottomFrame.SetNeedsDisplay();
+            // // Force redraw of all frames
+            // _leftFrame.SetNeedsDisplay();
+            // _rightFrame.SetNeedsDisplay();
+            // _bottomFrame.SetNeedsDisplay();
         }
 
         private void OnConnectionSelected(object? sender, KustoConnection connection)
@@ -348,7 +354,7 @@ namespace KustoTerminal.UI
                 Task.Run(async () =>
                 {
                     await _connectionManager.AddConnectionAsync(dialog.Result);
-                    Application.MainLoop.Invoke(() => _connectionPane.RefreshConnections());
+                    Application.Invoke(() => _connectionPane.RefreshConnections());
                 });
             }
         }
@@ -370,7 +376,7 @@ namespace KustoTerminal.UI
                 Task.Run(async () =>
                 {
                     await _connectionManager.UpdateConnectionAsync(dialog.Result);
-                    Application.MainLoop.Invoke(() => _connectionPane.RefreshConnections());
+                    Application.Invoke(() => _connectionPane.RefreshConnections());
                 });
             }
         }
@@ -424,7 +430,7 @@ namespace KustoTerminal.UI
                 Task.Run(async () =>
                 {
                     await _connectionManager.DeleteConnectionAsync(selectedConnection.Id);
-                    Application.MainLoop.Invoke(() => _connectionPane.RefreshConnections());
+                    Application.Invoke(() => _connectionPane.RefreshConnections());
                 });
             }
         }
@@ -453,7 +459,7 @@ namespace KustoTerminal.UI
                 if (connection == null)
                 {
                     UpdateStatusBar("No connection selected");
-                    Application.MainLoop.Invoke(() => _queryEditorPane.SetExecuting(false));
+                    Application.Invoke(() => _queryEditorPane.SetExecuting(false));
                     return;
                 }
 
@@ -462,7 +468,7 @@ namespace KustoTerminal.UI
                 // Create progress handler
                 var progress = new Progress<string>(message =>
                 {
-                    Application.MainLoop.Invoke(() =>
+                    Application.Invoke(() =>
                     {
                         UpdateStatusBar(message);
                         _queryEditorPane.UpdateProgressMessage(message);
@@ -474,7 +480,7 @@ namespace KustoTerminal.UI
                 _currentKustoClient.Dispose();
                 _currentKustoClient = null;
                 
-                Application.MainLoop.Invoke(() =>
+                Application.Invoke(() =>
                 {
                     _queryEditorPane.SetExecuting(false);
                     _resultsPane.DisplayResult(result);
@@ -490,7 +496,7 @@ namespace KustoTerminal.UI
             }
             catch (OperationCanceledException)
             {
-                Application.MainLoop.Invoke(() =>
+                Application.Invoke(() =>
                 {
                     _queryEditorPane.SetExecuting(false);
                     UpdateStatusBar("Query was cancelled");
@@ -498,7 +504,7 @@ namespace KustoTerminal.UI
             }
             catch (Exception ex)
             {
-                Application.MainLoop.Invoke(() =>
+                Application.Invoke(() =>
                 {
                     _queryEditorPane.SetExecuting(false);
                     UpdateStatusBar($"Error: {ex.Message}");
@@ -569,7 +575,7 @@ F1           - Show this help";
         private void UpdateStatusBar(string message)
         {
             // Update status bar with current message
-            Application.MainLoop.Invoke(() =>
+            Application.Invoke(() =>
             {
                 // Terminal.Gui will handle status updates
             });
@@ -577,12 +583,12 @@ F1           - Show this help";
 
         public static void Run(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
         {
-            var top = Application.Top;
+            //var top = Application.Top;
             
             var mainWindow = new MainWindow(connectionManager, authProvider);
-            top.Add(mainWindow);
+            //top.Add(mainWindow);
             
-            Application.Run();
+            Application.Run(mainWindow);
         }
     }
 }

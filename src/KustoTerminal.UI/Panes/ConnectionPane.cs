@@ -2,9 +2,14 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Terminal.Gui;
+using Terminal.Gui.App;
+using Terminal.Gui.Views;
+using Terminal.Gui.ViewBase;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Dialogs;
+using Terminal.Gui.Input;
+using System.Collections.ObjectModel;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -41,8 +46,9 @@ namespace KustoTerminal.UI.Panes
                 AllowsMultipleSelection = false
             };
 
-            _shortcutsLabel = new Label("Ctrl+N: Add\nCtrl+E: Edit\nDel: Delete\nEnter: Connect")
+            _shortcutsLabel = new Label()
             {
+                Text = "Enter: Connect | Ctrl+N: New | Ctrl+E: Edit | Del: Delete",
                 X = 0,
                 Y = Pos.Bottom(_connectionsList),
                 Width = Dim.Fill(),
@@ -53,8 +59,8 @@ namespace KustoTerminal.UI.Panes
             ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
             // Set up event handlers
-            _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
-            _connectionsList.KeyPress += OnConnectionsListKeyPress;
+            // _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
+            // _connectionsList.KeyPress += OnConnectionsListKeyPress;
         }
 
         private void SetupLayout()
@@ -77,9 +83,9 @@ namespace KustoTerminal.UI.Panes
                 
                 var displayItems = _connections.Select(c => 
                     $"{(c.IsDefault ? "* " : "  ")}{c.DisplayName}").ToArray();
-                
-                _connectionsList.SetSource(displayItems);
-                
+
+                _connectionsList.SetSource(new ObservableCollection<string>(displayItems));
+
                 if (_connections.Length > 0)
                 {
                     _connectionsList.SelectedItem = 0;
@@ -110,7 +116,7 @@ namespace KustoTerminal.UI.Panes
                 _selectedConnection = _connections[selectedIndex];
                 
                 // Force a redraw to ensure selection highlighting is visible
-                _connectionsList.SetNeedsDisplay();
+                // _connectionsList.SetNeedsDisplay();
             }
             else
             {
@@ -118,42 +124,42 @@ namespace KustoTerminal.UI.Panes
             }
         }
 
-        private void OnConnectionsListKeyPress(KeyEventEventArgs args)
-        {
-            // Handle Enter key to connect to selected connection
-            if (args.KeyEvent.Key == Key.Enter)
-            {
-                if (_selectedConnection != null)
-                {
-                    ConnectionSelected?.Invoke(this, _selectedConnection);
-                    args.Handled = true;
-                }
-            }
-            // Handle Ctrl+N for new connection
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
-            {
-                OnAddClicked();
-                args.Handled = true;
-            }
-            // Handle Ctrl+E for edit connection
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
-            {
-                if (_selectedConnection != null)
-                {
-                    OnEditClicked();
-                    args.Handled = true;
-                }
-            }
-            // Handle Delete key for delete connection
-            else if (args.KeyEvent.Key == Key.DeleteChar)
-            {
-                if (_selectedConnection != null)
-                {
-                    OnDeleteClicked();
-                    args.Handled = true;
-                }
-            }
-        }
+        // private void OnConnectionsListKeyPress(KeyEventEventArgs args)
+        // {
+        //     // Handle Enter key to connect to selected connection
+        //     if (args.KeyEvent.Key == Key.Enter)
+        //     {
+        //         if (_selectedConnection != null)
+        //         {
+        //             ConnectionSelected?.Invoke(this, _selectedConnection);
+        //             args.Handled = true;
+        //         }
+        //     }
+        //     // Handle Ctrl+N for new connection
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
+        //     {
+        //         OnAddClicked();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Ctrl+E for edit connection
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
+        //     {
+        //         if (_selectedConnection != null)
+        //         {
+        //             OnEditClicked();
+        //             args.Handled = true;
+        //         }
+        //     }
+        //     // Handle Delete key for delete connection
+        //     else if (args.KeyEvent.Key == Key.DeleteChar)
+        //     {
+        //         if (_selectedConnection != null)
+        //         {
+        //             OnDeleteClicked();
+        //             args.Handled = true;
+        //         }
+        //     }
+        // }
 
         private void OnAddClicked()
         {
@@ -165,7 +171,7 @@ namespace KustoTerminal.UI.Panes
                 Task.Run(async () =>
                 {
                     await _connectionManager.AddConnectionAsync(dialog.Result);
-                    Application.MainLoop.Invoke(() => RefreshConnections());
+                    Application.Invoke(() => RefreshConnections());
                 });
             }
         }
@@ -182,7 +188,7 @@ namespace KustoTerminal.UI.Panes
                 Task.Run(async () =>
                 {
                     await _connectionManager.UpdateConnectionAsync(dialog.Result);
-                    Application.MainLoop.Invoke(() => RefreshConnections());
+                    Application.Invoke(() => RefreshConnections());
                 });
             }
         }
@@ -200,7 +206,7 @@ namespace KustoTerminal.UI.Panes
                 Task.Run(async () =>
                 {
                     await _connectionManager.DeleteConnectionAsync(_selectedConnection.Id);
-                    Application.MainLoop.Invoke(() => RefreshConnections());
+                    Application.Invoke(() => RefreshConnections());
                 });
             }
         }

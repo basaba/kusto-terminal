@@ -1,5 +1,9 @@
 using System;
 using Terminal.Gui;
+using Terminal.Gui.App;
+using Terminal.Gui.Views;
+using Terminal.Gui.ViewBase;
+
 using KustoTerminal.Core.Models;
 
 namespace KustoTerminal.UI.Dialogs
@@ -24,76 +28,84 @@ namespace KustoTerminal.UI.Dialogs
             
             InitializeComponents(connection);
             SetupLayout();
-            SetupColorScheme();
+            // SetupColorScheme();
         }
 
         private void InitializeComponents(KustoConnection? connection)
         {
             // Name field
-            var nameLabel = new Label("Name:")
+            var nameLabel = new Label()
             {
+                Text = "Name:",
                 X = 1,
                 Y = 1
             };
             
-            _nameField = new TextField(connection?.Name ?? "")
+            _nameField = new TextField()
             {
+                Text = connection?.Name ?? "",
                 X = 15,
                 Y = 1,
                 Width = 40
             };
 
             // Cluster URI field
-            var clusterLabel = new Label("Cluster URI:")
+            var clusterLabel = new Label()
             {
+                Text = "Cluster URI:",
                 X = 1,
                 Y = 3
             };
             
-            _clusterUriField = new TextField(connection?.ClusterUri ?? "")
+            _clusterUriField = new TextField()
             {
+                Text = connection?.ClusterUri ?? "",
                 X = 15,
                 Y = 3,
                 Width = 40
             };
 
             // Database field
-            var databaseLabel = new Label("Database:")
+            var databaseLabel = new Label()
             {
+                Text = "Database:",
                 X = 1,
                 Y = 5
             };
             
-            _databaseField = new TextField(connection?.Database ?? "")
+            _databaseField = new TextField()
             {
+                Text = connection?.Database ?? "",
                 X = 15,
                 Y = 5,
                 Width = 40
             };
 
             // Default checkbox
-            _isDefaultCheckBox = new CheckBox("Set as default connection")
+            _isDefaultCheckBox = new CheckBox()
             {
+                Text = "Set as default connection",
                 X = 1,
                 Y = 7,
-                Checked = connection?.IsDefault ?? false
+                // Checked = connection?.IsDefault ?? false
             };
 
             // Shortcuts label
-            _shortcutsLabel = new Label("Enter: OK | Esc: Cancel")
+            _shortcutsLabel = new Label()
             {
+                Text = "Enter: OK | Esc: Cancel",
                 X = 1,
                 Y = 9,
                 Width = Dim.Fill() - 2,
                 Height = 1,
-                ColorScheme = ColorSchemeFactory.CreateShortcutLabel()
+                // ColorScheme = ColorSchemeFactory.CreateShortcutLabel()
             };
 
             Add(nameLabel, _nameField, clusterLabel, _clusterUriField,
                 databaseLabel, _databaseField, _isDefaultCheckBox, _shortcutsLabel);
 
             // Set up key bindings
-            KeyPress += OnKeyPress;
+            // KeyPress += OnKeyPress;
         }
 
         private void SetupLayout()
@@ -102,36 +114,36 @@ namespace KustoTerminal.UI.Dialogs
             _nameField.SetFocus();
         }
 
-        private void OnKeyPress(KeyEventEventArgs args)
-        {
-            // Handle Enter key to accept (OK)
-            if (args.KeyEvent.Key == Key.Enter)
-            {
-                OnOkClicked();
-                args.Handled = true;
-            }
-            // Handle Escape key to cancel
-            else if (args.KeyEvent.Key == Key.Esc)
-            {
-                OnCancelClicked();
-                args.Handled = true;
-            }
-        }
+        // private void OnKeyPress(KeyEventEventArgs args)
+        // {
+        //     // Handle Enter key to accept (OK)
+        //     if (args.KeyEvent.Key == Key.Enter)
+        //     {
+        //         OnOkClicked();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Escape key to cancel
+        //     else if (args.KeyEvent.Key == Key.Esc)
+        //     {
+        //         OnCancelClicked();
+        //         args.Handled = true;
+        //     }
+        // }
 
-        private void SetupColorScheme()
-        {
-            // Use centralized color scheme factory
-            ColorScheme = ColorSchemeFactory.CreateStandard();
+        // private void SetupColorScheme()
+        // {
+        //     // Use centralized color scheme factory
+        //     ColorScheme = ColorSchemeFactory.CreateStandard();
 
-            // Apply text field color schemes
-            var textFieldColorScheme = ColorSchemeFactory.CreateTextField();
-            _nameField.ColorScheme = textFieldColorScheme;
-            _clusterUriField.ColorScheme = textFieldColorScheme;
-            _databaseField.ColorScheme = textFieldColorScheme;
+        //     // Apply text field color schemes
+        //     var textFieldColorScheme = ColorSchemeFactory.CreateTextField();
+        //     _nameField.ColorScheme = textFieldColorScheme;
+        //     _clusterUriField.ColorScheme = textFieldColorScheme;
+        //     _databaseField.ColorScheme = textFieldColorScheme;
 
-            // Apply checkbox color scheme (using text field scheme for consistency)
-            _isDefaultCheckBox.ColorScheme = textFieldColorScheme;
-        }
+        //     // Apply checkbox color scheme (using text field scheme for consistency)
+        //     _isDefaultCheckBox.ColorScheme = textFieldColorScheme;
+        // }
 
         private void OnOkClicked()
         {
@@ -171,7 +183,6 @@ namespace KustoTerminal.UI.Dialogs
                     Name = name,
                     ClusterUri = clusterUri,
                     Database = database,
-                    IsDefault = _isDefaultCheckBox.Checked,
                     AuthType = _originalConnection.AuthType,
                     CreatedAt = _originalConnection.CreatedAt,
                     LastUsed = _originalConnection.LastUsed
@@ -185,7 +196,6 @@ namespace KustoTerminal.UI.Dialogs
                     Name = name,
                     ClusterUri = clusterUri,
                     Database = database,
-                    IsDefault = _isDefaultCheckBox.Checked,
                     AuthType = AuthenticationType.AzureCli
                 };
             }

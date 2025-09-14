@@ -1,5 +1,9 @@
 using System;
 using Terminal.Gui;
+using Terminal.Gui.App;
+using Terminal.Gui.Views;
+using Terminal.Gui.ViewBase;
+
 using KustoTerminal.Core.Models;
 
 namespace KustoTerminal.UI.Panes
@@ -29,8 +33,9 @@ namespace KustoTerminal.UI.Panes
 
         private void InitializeComponents()
         {
-            _connectionLabel = new Label("No connection")
+            _connectionLabel = new Label()
             {
+                Text = "No connection",
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
@@ -49,8 +54,9 @@ namespace KustoTerminal.UI.Panes
             // Configure selection highlighting using BasePane method
              ApplyColorSchemeToControl(_queryTextView, "textview_normal");
 
-            _shortcutsLabel = new Label("F5: Execute | Esc: Cancel/Switch | Ctrl+L: Clear | Ctrl+A: Select All")
+            _shortcutsLabel = new Label()
             {
+                Text = "F5: Execute | Esc: Cancel/Switch | Ctrl+L: Clear | Ctrl+A: Select All",
                 X = 0,
                 Y = Pos.Bottom(_queryTextView),
                 Width = Dim.Fill(),
@@ -60,7 +66,7 @@ namespace KustoTerminal.UI.Panes
             // Apply shortcut label color scheme using BasePane method
             ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
-            _progressLabel = new Label("")
+            _progressLabel = new Label()
             {
                 X = 0,
                 Y = Pos.Bottom(_shortcutsLabel),
@@ -69,7 +75,7 @@ namespace KustoTerminal.UI.Panes
                 Visible = false
             };
 
-            _temporaryMessageLabel = new Label("")
+            _temporaryMessageLabel = new Label()
             {
                 X = 0,
                 Y = Pos.Bottom(_progressLabel),
@@ -80,9 +86,10 @@ namespace KustoTerminal.UI.Panes
             
             // Apply color scheme for temporary message
             ApplyColorSchemeToControl(_temporaryMessageLabel, "warning");
-            
+
             // Set up key bindings for the TextView
-             _queryTextView.KeyPress += OnKeyPress;
+            //_queryTextView.KeyBindings = new KeyBindings
+             // += OnKeyPress;
         }
 
         private void SetupElementFocusHandlers()
@@ -93,22 +100,22 @@ namespace KustoTerminal.UI.Panes
 
         protected override void ApplyHighlighting()
         {
-            // Apply highlighting to all controls, with special handling for TextView
-            foreach (View child in Subviews)
-            {
-                if (child is TextView)
-                {
-                    // Apply appropriate TextView color scheme based on highlight state
-                    var colorSchemeType = IsHighlighted ? "textview_highlighted" : "textview_normal";
-                    ApplyColorSchemeToControl(child, colorSchemeType);
-                }
-                else
-                {
-                    ApplyHighlightingToControl(child);
-                }
-            }
+            // // Apply highlighting to all controls, with special handling for TextView
+            // foreach (View child in Subviews)
+            // {
+            //     if (child is TextView)
+            //     {
+            //         // Apply appropriate TextView color scheme based on highlight state
+            //         var colorSchemeType = IsHighlighted ? "textview_highlighted" : "textview_normal";
+            //         ApplyColorSchemeToControl(child, colorSchemeType);
+            //     }
+            //     else
+            //     {
+            //         ApplyHighlightingToControl(child);
+            //     }
+            // }
 
-            SetNeedsDisplay();
+            // SetNeedsDisplay();
         }
 
         private void SetupLayout()
@@ -119,40 +126,40 @@ namespace KustoTerminal.UI.Panes
             _queryTextView.SetFocus();
         }
 
-        private void OnKeyPress(KeyEventEventArgs e)
-        {
-            // Handle F5 for query execution
-            if (e.KeyEvent.Key == Key.F5)
-            {
-                OnExecuteClicked();
-                e.Handled = true;
-            }
-            // Handle Ctrl+L for clear
-            else if (e.KeyEvent.Key == (Key.CtrlMask | Key.L))
-            {
-                OnClearClicked();
-                e.Handled = true;
-            }
-            // Handle Ctrl+A for select all
-            else if (e.KeyEvent.Key == (Key.CtrlMask | Key.A))
-            {
-                _queryTextView.SelectAll();
-                e.Handled = true;
-            }
-            // Handle ESC - cancel query if executing, otherwise switch focus to results pane
-            else if (e.KeyEvent.Key == Key.Esc)
-            {
-                if (_isExecuting)
-                {
-                    QueryCancelRequested?.Invoke(this, EventArgs.Empty);
-                }
-                else
-                {
-                    EscapePressed?.Invoke(this, EventArgs.Empty);
-                }
-                e.Handled = true;
-            }
-        }
+        // private void OnKeyPress(KeyEventEventArgs e)
+        // {
+        //     // Handle F5 for query execution
+        //     if (e.KeyEvent.Key == Key.F5)
+        //     {
+        //         OnExecuteClicked();
+        //         e.Handled = true;
+        //     }
+        //     // Handle Ctrl+L for clear
+        //     else if (e.KeyEvent.Key == (Key.CtrlMask | Key.L))
+        //     {
+        //         OnClearClicked();
+        //         e.Handled = true;
+        //     }
+        //     // Handle Ctrl+A for select all
+        //     else if (e.KeyEvent.Key == (Key.CtrlMask | Key.A))
+        //     {
+        //         _queryTextView.SelectAll();
+        //         e.Handled = true;
+        //     }
+        //     // Handle ESC - cancel query if executing, otherwise switch focus to results pane
+        //     else if (e.KeyEvent.Key == Key.Esc)
+        //     {
+        //         if (_isExecuting)
+        //         {
+        //             QueryCancelRequested?.Invoke(this, EventArgs.Empty);
+        //         }
+        //         else
+        //         {
+        //             EscapePressed?.Invoke(this, EventArgs.Empty);
+        //         }
+        //         e.Handled = true;
+        //     }
+        // }
 
         private void OnExecuteClicked()
         {
@@ -230,7 +237,7 @@ namespace KustoTerminal.UI.Panes
 
         private void UpdateSpinner(object? state)
         {
-            Application.MainLoop.Invoke(() =>
+            Application.Invoke(() =>
             {
                 if (_isExecuting && _progressLabel.Visible)
                 {
@@ -239,7 +246,7 @@ namespace KustoTerminal.UI.Panes
                     // Extract the message part (everything after the spinner character and space)
                     var messagePart = currentMessage.Length > 2 ? currentMessage.Substring(2) : "Running query...";
                     _progressLabel.Text = $"{_spinnerFrames[_spinnerIndex]} {messagePart}";
-                    _progressLabel.SetNeedsDisplay();
+                    //_progressLabel.SetNeedsDisplay();
                 }
             });
         }
@@ -249,7 +256,7 @@ namespace KustoTerminal.UI.Panes
             if (_isExecuting && _progressLabel.Visible)
             {
                 _progressLabel.Text = $"{_spinnerFrames[_spinnerIndex]} {message}";
-                _progressLabel.SetNeedsDisplay();
+                // _progressLabel.SetNeedsDisplay();
             }
         }
 
@@ -261,18 +268,18 @@ namespace KustoTerminal.UI.Panes
             // Show the message
             _temporaryMessageLabel.Text = message;
             _temporaryMessageLabel.Visible = true;
-            _temporaryMessageLabel.SetNeedsDisplay();
+            //_temporaryMessageLabel.SetNeedsDisplay();
             
             // Set up timer to hide the message after the specified duration
-            _temporaryMessageTimer = new System.Threading.Timer(HideTemporaryMessage, null, durationMs, Timeout.Infinite);
+            _temporaryMessageTimer = new System.Threading.Timer(HideTemporaryMessage, null, durationMs, System.Threading.Timeout.Infinite);
         }
 
         private void HideTemporaryMessage(object? state)
         {
-            Application.MainLoop.Invoke(() =>
+            Application.Invoke(() =>
             {
                 _temporaryMessageLabel.Visible = false;
-                _temporaryMessageLabel.SetNeedsDisplay();
+                //_temporaryMessageLabel.SetNeedsDisplay();
                 _temporaryMessageTimer?.Dispose();
                 _temporaryMessageTimer = null;
             });

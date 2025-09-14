@@ -2,6 +2,10 @@ using System;
 using System.Data;
 using System.Linq;
 using Terminal.Gui;
+using Terminal.Gui.App;
+using Terminal.Gui.Views;
+using Terminal.Gui.ViewBase;
+
 using KustoTerminal.Core.Models;
 
 namespace KustoTerminal.UI.Panes
@@ -27,8 +31,9 @@ namespace KustoTerminal.UI.Panes
 
         private void InitializeComponents()
         {
-            _statusLabel = new Label("No results")
+            _statusLabel = new Label()
             {
+                Text = "No results",
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
@@ -46,10 +51,11 @@ namespace KustoTerminal.UI.Panes
             };
 
             // Add event handlers to ensure proper cursor visibility
-            _tableView.SelectedCellChanged += OnSelectedCellChanged;
+            // _tableView.SelectedCellChanged += OnSelectedCellChanged;
 
-            _shortcutsLabel = new Label("/: Filter | Ctrl+S: Export")
+            _shortcutsLabel = new Label()
             {
+                Text = "/: Filter | Ctrl+S: Export",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
@@ -60,8 +66,9 @@ namespace KustoTerminal.UI.Panes
             ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
             // Initialize search components (initially hidden)
-            _searchLabel = new Label("Filter:")
+            _searchLabel = new Label()
             {
+                Text = "Search:",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = 8,
@@ -69,7 +76,7 @@ namespace KustoTerminal.UI.Panes
                 Visible = false
             };
 
-            _searchField = new TextField("")
+            _searchField = new TextField()
             {
                 X = Pos.Right(_searchLabel) + 1,
                 Y = Pos.Bottom(_tableView),
@@ -79,14 +86,16 @@ namespace KustoTerminal.UI.Panes
             };
 
             // Set up search field event handlers
-            _searchField.TextChanged += (oldText) => OnSearchTextChanged();
-            _searchField.KeyPress += OnSearchFieldKeyPress;
+            _searchField.TextChanged += OnSearchTextChanged;
+            //_searchField.KeyPress += OnSearch
+            // += (oldText) => OnSearchTextChanged();
+            // _searchField.KeyPress += OnSearchFieldKeyPress;
 
-            // Set up key bindings on the table view itself
-            _tableView.KeyPress += OnTableViewKeyPress;
+            // // Set up key bindings on the table view itself
+            // _tableView.KeyPress += OnTableViewKeyPress;
             
-            // Also set up key bindings on the pane for when other elements have focus
-            KeyPress += OnKeyPress;
+            // // Also set up key bindings on the pane for when other elements have focus
+            // KeyPress += OnKeyPress;
         }
 
         private void SetupLayout()
@@ -100,79 +109,79 @@ namespace KustoTerminal.UI.Panes
             SetupCommonElementFocusHandlers(_tableView, _searchField, _shortcutsLabel);
         }
 
-        private void OnTableViewKeyPress(KeyEventEventArgs args)
-        {
-            // Handle key presses when the table view has focus
-            HandleKeyPress(args);
-        }
+        // private void OnTableViewKeyPress(KeyEventEventArgs args)
+        // {
+        //     // Handle key presses when the table view has focus
+        //     HandleKeyPress(args);
+        // }
 
-        private void OnKeyPress(KeyEventEventArgs args)
-        {
-            // Handle key presses when other elements in the pane have focus
-            HandleKeyPress(args);
-        }
+        // private void OnKeyPress(KeyEventEventArgs args)
+        // {
+        //     // Handle key presses when other elements in the pane have focus
+        //     HandleKeyPress(args);
+        // }
 
-        private void OnSearchFieldKeyPress(KeyEventEventArgs args)
-        {
-            // Handle Enter key in search field to focus on results table
-            if (args.KeyEvent.Key == Key.Enter)
-            {
-                _tableView.SetFocus();
-                args.Handled = true;
-            }
-            // Handle Escape to close search
-            else if (args.KeyEvent.Key == Key.Esc)
-            {
-                HideSearch();
-                args.Handled = true;
-            }
-        }
+        // private void OnSearchFieldKeyPress(KeyEventEventArgs args)
+        // {
+        //     // Handle Enter key in search field to focus on results table
+        //     if (args.KeyEvent.Key == Key.Enter)
+        //     {
+        //         _tableView.SetFocus();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Escape to close search
+        //     else if (args.KeyEvent.Key == Key.Esc)
+        //     {
+        //         HideSearch();
+        //         args.Handled = true;
+        //     }
+        // }
 
-        private void HandleKeyPress(KeyEventEventArgs args)
-        {
-            // Handle "/" for search toggle
-            if (args.KeyEvent.Key == (Key)'/')
-            {
-                ToggleSearch();
-                args.Handled = true;
-            }
-            // Handle Escape to close search
-            else if (args.KeyEvent.Key == Key.Esc)
-            {
-                if (_searchVisible)
-                {
-                    HideSearch();
-                    args.Handled = true;
-                }
-            }
-            // Handle Ctrl+S for export
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
-            {
-                if (_currentResult?.Data != null)
-                {
-                    OnExportClicked();
-                    args.Handled = true;
-                }
-            }
-            // Handle Ctrl+C for copy cell
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.C))
-            {
-                OnCopyCellClicked();
-                args.Handled = true;
-            }
-            // Handle Ctrl+A for copy row
-            else if (args.KeyEvent.Key == (Key.CtrlMask | Key.A))
-            {
-                OnCopyRowClicked();
-                args.Handled = true;
-            }
-            // Handle Enter for view cell (only when table view has focus)
-            else if (args.KeyEvent.Key == Key.Enter && Application.Top.MostFocused == _tableView)
-            {
-                OnViewCellClicked();
-                args.Handled = true;
-            }
-        }
+        // private void HandleKeyPress(KeyEventEventArgs args)
+        // {
+        //     // Handle "/" for search toggle
+        //     if (args.KeyEvent.Key == (Key)'/')
+        //     {
+        //         ToggleSearch();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Escape to close search
+        //     else if (args.KeyEvent.Key == Key.Esc)
+        //     {
+        //         if (_searchVisible)
+        //         {
+        //             HideSearch();
+        //             args.Handled = true;
+        //         }
+        //     }
+        //     // Handle Ctrl+S for export
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
+        //     {
+        //         if (_currentResult?.Data != null)
+        //         {
+        //             OnExportClicked();
+        //             args.Handled = true;
+        //         }
+        //     }
+        //     // Handle Ctrl+C for copy cell
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.C))
+        //     {
+        //         OnCopyCellClicked();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Ctrl+A for copy row
+        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.A))
+        //     {
+        //         OnCopyRowClicked();
+        //         args.Handled = true;
+        //     }
+        //     // Handle Enter for view cell (only when table view has focus)
+        //     else if (args.KeyEvent.Key == Key.Enter && Application.Top.MostFocused == _tableView)
+        //     {
+        //         OnViewCellClicked();
+        //         args.Handled = true;
+        //     }
+        // }
 
         public void DisplayResult(QueryResult result)
         {
@@ -199,7 +208,7 @@ namespace KustoTerminal.UI.Panes
             {
                 var dataTable = result.Data!;
                 _originalData = dataTable.Copy(); // Keep a copy of the original data
-                _tableView.Table = dataTable;
+                _tableView.Table = new DataTableSource(dataTable);
 
                 _statusLabel.Text = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
             }
@@ -214,7 +223,7 @@ namespace KustoTerminal.UI.Panes
             _statusLabel.Text = $"Query failed: {result.ErrorMessage} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
             
             // Clear the table
-            _tableView.Table = new DataTable();
+            _tableView.Table = new DataTableSource(new DataTable());
         }
 
         private void DisplayEmpty(QueryResult result)
@@ -224,11 +233,11 @@ namespace KustoTerminal.UI.Panes
             // Show empty table with column headers if available
             if (result.Data != null && result.Data.Columns.Count > 0)
             {
-                _tableView.Table = result.Data;
+                _tableView.Table = new DataTableSource(result.Data);
             }
             else
             {
-                _tableView.Table = new DataTable();
+                _tableView.Table = new DataTableSource(new DataTable());
             }
             
         }
@@ -237,7 +246,7 @@ namespace KustoTerminal.UI.Panes
         {
             _currentResult = null;
             _originalData = null;
-            _tableView.Table = new DataTable();
+            _tableView.Table = new DataTableSource(new DataTable());
             _statusLabel.Text = "No results";
             HideSearch();
         }
@@ -246,26 +255,29 @@ namespace KustoTerminal.UI.Panes
         {
             if (_currentResult?.Data == null) return;
 
-            var dialog = new SaveDialog("Export Results", "Save results to file")
+            var dialog = new SaveDialog()
             {
-                NameFieldLabel = "File name:",
-                AllowedFileTypes = new[] { ".csv", ".json", ".tsv" }
+                Title = "Export Results",
+                
+                // Message = "Save results to file",
+                // NameFieldLabel = "File name:",
+                // AllowedFileTypes = new[] { ".csv", ".json", ".tsv" }
             };
 
             Application.Run(dialog);
 
-            if (!dialog.Canceled && !dialog.FileName.IsEmpty)
-            {
-                try
-                {
-                    ExportData(_currentResult.Data, dialog.FileName.ToString());
-                    MessageBox.Query("Export", "Results exported successfully!", "OK");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.ErrorQuery("Export Error", $"Failed to export results: {ex.Message}", "OK");
-                }
-            }
+            // if (!dialog.Canceled && !dialog.FileName.IsEmpty)
+            // {
+            //     try
+            //     {
+            //         ExportData(_currentResult.Data, dialog.FileName.ToString());
+            //         MessageBox.Query("Export", "Results exported successfully!", "OK");
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         MessageBox.ErrorQuery("Export Error", $"Failed to export results: {ex.Message}", "OK");
+            //     }
+            // }
         }
 
         private void ExportData(DataTable dataTable, string fileName)
@@ -348,17 +360,12 @@ namespace KustoTerminal.UI.Panes
                 return;
             }
 
+            // _tableView.Table.
+
             var selectedRow = _tableView.SelectedRow;
             var selectedCol = _tableView.SelectedColumn;
 
-            if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count ||
-                selectedCol < 0 || selectedCol >= _tableView.Table.Columns.Count)
-            {
-                MessageBox.ErrorQuery("Copy Error", "No cell selected.", "OK");
-                return;
-            }
-
-            var cellValue = _tableView.Table.Rows[selectedRow][selectedCol]?.ToString() ?? "";
+            var cellValue = _tableView.Table[selectedRow,selectedCol]?.ToString() ?? "";
             
             try
             {
@@ -374,39 +381,39 @@ namespace KustoTerminal.UI.Panes
 
         private void OnCopyRowClicked()
         {
-            if (_currentResult?.Data == null || _tableView.Table == null)
-            {
-                MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
-                return;
-            }
+            // if (_currentResult?.Data == null || _tableView.Table == null)
+            // {
+            //     MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
+            //     return;
+            // }
 
-            var selectedRow = _tableView.SelectedRow;
+            // var selectedRow = _tableView.SelectedRow;
 
-            if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count)
-            {
-                MessageBox.ErrorQuery("Copy Error", "No row selected.", "OK");
-                return;
-            }
+            // if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count)
+            // {
+            //     MessageBox.ErrorQuery("Copy Error", "No row selected.", "OK");
+            //     return;
+            // }
 
-            var row = _tableView.Table.Rows[selectedRow];
-            var rowValues = new string[_tableView.Table.Columns.Count];
+            // var row = _tableView.Table.Rows[selectedRow];
+            // var rowValues = new string[_tableView.Table.Columns.Count];
             
-            for (int i = 0; i < _tableView.Table.Columns.Count; i++)
-            {
-                rowValues[i] = row[i]?.ToString() ?? "";
-            }
+            // for (int i = 0; i < _tableView.Table.Columns.Count; i++)
+            // {
+            //     rowValues[i] = row[i]?.ToString() ?? "";
+            // }
 
-            var rowText = string.Join("\t", rowValues);
+            // var rowText = string.Join("\t", rowValues);
             
-            try
-            {
-                Clipboard.Contents = rowText;
-                MessageBox.Query("Copy", $"Row copied to clipboard (tab-separated)", "OK");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.ErrorQuery("Copy Error", $"Failed to copy to clipboard: {ex.Message}", "OK");
-            }
+            // try
+            // {
+            //     Clipboard.Contents = rowText;
+            //     MessageBox.Query("Copy", $"Row copied to clipboard (tab-separated)", "OK");
+            // }
+            // catch (Exception ex)
+            // {
+            //     MessageBox.ErrorQuery("Copy Error", $"Failed to copy to clipboard: {ex.Message}", "OK");
+            // }
         }
 
         private void OnViewCellClicked()
@@ -420,23 +427,19 @@ namespace KustoTerminal.UI.Panes
             var selectedRow = _tableView.SelectedRow;
             var selectedCol = _tableView.SelectedColumn;
 
-            if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count ||
-                selectedCol < 0 || selectedCol >= _tableView.Table.Columns.Count)
-            {
-                MessageBox.ErrorQuery("View Error", "No cell selected.", "OK");
-                return;
-            }
-
-            var cellValue = _tableView.Table.Rows[selectedRow][selectedCol]?.ToString() ?? "";
-            var columnName = _tableView.Table.Columns[selectedCol].ColumnName;
+            var cellValue = _tableView.Table[selectedRow, selectedCol]?.ToString() ?? "";
+            var columnName = _tableView.Table.ColumnNames.ElementAt(selectedCol);
 
             ShowCellDetailDialog(columnName, cellValue);
         }
 
         private void ShowCellDetailDialog(string columnName, string cellValue)
         {
-            var dialog = new Dialog($"Cell Content: {columnName}", 80, 20)
+            var dialog = new Dialog()
             {
+                Title = $"Cell Content: {columnName}",
+                Height = 20,
+                Width = 80,
                 Modal = true
             };
 
@@ -451,32 +454,36 @@ namespace KustoTerminal.UI.Panes
                 WordWrap = true
             };
 
-            var copyButton = new Button("Copy All")
+            var copyButton = new Button()
             {
+                Text = "Copy",
                 X = 1,
                 Y = Pos.Bottom(textView) + 1
             };
 
-            var closeButton = new Button("Close")
+            var closeButton = new Button()
             {
+                Text = "Close",
                 X = Pos.Right(copyButton) + 2,
                 Y = Pos.Bottom(textView) + 1
             };
 
-            copyButton.Clicked += () =>
-            {
-                try
-                {
-                    Clipboard.Contents = cellValue;
-                    MessageBox.Query("Copy", "Cell content copied to clipboard!", "OK");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.ErrorQuery("Copy Error", $"Failed to copy: {ex.Message}", "OK");
-                }
-            };
+            // copyButton.Accepting += 
 
-            closeButton.Clicked += () => dialog.RequestStop();
+            // () =>
+            // {
+            //     try
+            //     {
+            //         Clipboard.Contents = cellValue;
+            //         MessageBox.Query("Copy", "Cell content copied to clipboard!", "OK");
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         MessageBox.ErrorQuery("Copy Error", $"Failed to copy: {ex.Message}", "OK");
+            //     }
+            // };
+
+            // closeButton.Clicked += () => dialog.RequestStop();
 
             dialog.Add(textView, copyButton, closeButton);
 
@@ -486,11 +493,11 @@ namespace KustoTerminal.UI.Panes
             Application.Run(dialog);
         }
 
-        private void OnSelectedCellChanged(TableView.SelectedCellChangedEventArgs args)
-        {
-            // Force a redraw to ensure cursor visibility when cell selection changes
-            _tableView.SetNeedsDisplay();
-        }
+        // private void OnSelectedCellChanged(TableView.SelectedCellChangedEventArgs args)
+        // {
+        //     // Force a redraw to ensure cursor visibility when cell selection changes
+        //     _tableView.SetNeedsDisplay();
+        // }
 
         private void ToggleSearch()
         {
@@ -522,86 +529,86 @@ namespace KustoTerminal.UI.Panes
             _shortcutsLabel.Y = Pos.Bottom(_searchField);
             
             _searchField.SetFocus();
-            SetNeedsDisplay();
+            // SetNeedsDisplay();
         }
 
         private void HideSearch()
         {
-            _searchVisible = false;
-            _searchLabel.Visible = false;
-            _searchField.Visible = false;
-            _searchField.Text = "";
+            // _searchVisible = false;
+            // _searchLabel.Visible = false;
+            // _searchField.Visible = false;
+            // _searchField.Text = "";
             
-            // Restore original table height
-            _tableView.Height = Dim.Fill() - 3;
+            // // Restore original table height
+            // _tableView.Height = Dim.Fill() - 3;
             
-            // Restore shortcuts position
-            _shortcutsLabel.Y = Pos.Bottom(_tableView);
+            // // Restore shortcuts position
+            // _shortcutsLabel.Y = Pos.Bottom(_tableView);
             
-            // Restore original data if we have it
-            if (_originalData != null)
-            {
-                _tableView.Table = _originalData;
-                UpdateStatusForOriginalData();
-            }
+            // // Restore original data if we have it
+            // if (_originalData != null)
+            // {
+            //     _tableView.Table = _originalData;
+            //     UpdateStatusForOriginalData();
+            // }
             
-            _tableView.SetFocus();
-            SetNeedsDisplay();
+            // _tableView.SetFocus();
+            // // SetNeedsDisplay();
         }
 
-        private void OnSearchTextChanged()
+        private void OnSearchTextChanged(object? sender, EventArgs e)
         {
             PerformSearch();
         }
 
         private void PerformSearch()
         {
-            if (_originalData == null || !_searchVisible)
-                return;
+            // if (_originalData == null || !_searchVisible)
+            //     return;
 
-            var searchText = _searchField.Text.ToString();
+            // var searchText = _searchField.Text.ToString();
             
-            if (string.IsNullOrWhiteSpace(searchText))
-            {
-                // Show all data when search is empty
-                _tableView.Table = _originalData;
-                UpdateStatusForOriginalData();
-                return;
-            }
+            // if (string.IsNullOrWhiteSpace(searchText))
+            // {
+            //     // Show all data when search is empty
+            //     _tableView.Table = _originalData;
+            //     UpdateStatusForOriginalData();
+            //     return;
+            // }
 
-            try
-            {
-                // Create a filtered view of the data
-                var filteredTable = _originalData.Clone();
+            // try
+            // {
+            //     // Create a filtered view of the data
+            //     var filteredTable = _originalData.Clone();
                 
-                foreach (DataRow row in _originalData.Rows)
-                {
-                    bool rowMatches = false;
+            //     foreach (DataRow row in _originalData.Rows)
+            //     {
+            //         bool rowMatches = false;
                     
-                    // Check each column for the search text (case-insensitive)
-                    foreach (var item in row.ItemArray)
-                    {
-                        var cellValue = item?.ToString() ?? "";
-                        if (cellValue.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            rowMatches = true;
-                            break;
-                        }
-                    }
+            //         // Check each column for the search text (case-insensitive)
+            //         foreach (var item in row.ItemArray)
+            //         {
+            //             var cellValue = item?.ToString() ?? "";
+            //             if (cellValue.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+            //             {
+            //                 rowMatches = true;
+            //                 break;
+            //             }
+            //         }
                     
-                    if (rowMatches)
-                    {
-                        filteredTable.ImportRow(row);
-                    }
-                }
+            //         if (rowMatches)
+            //         {
+            //             filteredTable.ImportRow(row);
+            //         }
+            //     }
                 
-                _tableView.Table = filteredTable;
-                UpdateStatusForFilteredData(filteredTable.Rows.Count, searchText);
-            }
-            catch (Exception ex)
-            {
-                _statusLabel.Text = $"Search error: {ex.Message}";
-            }
+            //     _tableView.Table = filteredTable;
+            //     UpdateStatusForFilteredData(filteredTable.Rows.Count, searchText);
+            // }
+            // catch (Exception ex)
+            // {
+            //     _statusLabel.Text = $"Search error: {ex.Message}";
+            // }
         }
 
         private void UpdateStatusForOriginalData()
