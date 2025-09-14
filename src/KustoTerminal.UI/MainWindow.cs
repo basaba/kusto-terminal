@@ -333,9 +333,7 @@ namespace KustoTerminal.UI
 
         private void OnQueryEditorEscapePressed(object? sender, EventArgs e)
         {
-            // Switch focus to results pane when ESC is pressed in query editor
-            _currentPaneIndex = 2; // Results pane is at index 2
-            // SetFocusToCurrentPane();
+            _resultsPane.SetFocus();
         }
 
         private async void OnQueryCancelRequested(object? sender, EventArgs e)

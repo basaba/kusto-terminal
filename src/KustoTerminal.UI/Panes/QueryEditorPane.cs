@@ -99,6 +99,11 @@ namespace KustoTerminal.UI.Panes
                 {
                     OnExecuteClicked();
                 }
+                else if (key == Key.Esc)
+                {
+                    EscapePressed?.Invoke(this, EventArgs.Empty) ;
+                    key.Handled = true;
+                }
             };
         }
 
