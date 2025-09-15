@@ -56,7 +56,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "/: Filter | Ctrl+S: Export",
+                Text = "/: Filter | Ctrl+S: Export | Ctrl+T: Row Select",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
@@ -115,6 +115,14 @@ namespace KustoTerminal.UI.Panes
                 if (key == (KeyCode.CtrlMask | Key.C.KeyCode))
                 {
                     OnCopyCellClicked();
+                    key.Handled = true;
+                } else if (key == (KeyCode.CtrlMask | Key.T.KeyCode))
+                {
+                    SwitchToRowMode();
+                    key.Handled = true;
+                } else if (key == Key.Esc)
+                {
+                    SwitchToCellMode();
                     key.Handled = true;
                 }
             };
@@ -317,6 +325,18 @@ namespace KustoTerminal.UI.Panes
                 Clipboard.Contents = cellValue;
             }
             catch { }
+        }
+
+        private void SwitchToRowMode()
+        {
+            _tableView.FullRowSelect = true;
+            _tableView.SetNeedsLayout();
+        }
+
+        private void SwitchToCellMode()
+        {
+            _tableView.FullRowSelect = false;
+            _tableView.SetNeedsLayout();
         }
 
         private void OnViewCellClicked()
