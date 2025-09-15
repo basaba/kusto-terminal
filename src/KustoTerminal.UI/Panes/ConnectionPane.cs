@@ -50,7 +50,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "Enter: Connect | Ctrl+N: New | Ctrl+E: Edit | Del: Delete",
+                Text = "Enter: Connect\nCtrl+N: New\nCtrl+E: Edit\nDel: Delete",
                 X = 0,
                 Y = Pos.Bottom(_connectionsList),
                 Width = Dim.Fill(),

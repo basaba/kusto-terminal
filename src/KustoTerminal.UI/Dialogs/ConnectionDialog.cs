@@ -25,7 +25,7 @@ namespace KustoTerminal.UI.Dialogs
             Title = connection == null ? "Add Connection" : "Edit Connection";
             Width = 60;
             Height = 15;
-            
+
             InitializeComponents(connection);
             SetupLayout();
             // SetupColorScheme();
@@ -103,9 +103,6 @@ namespace KustoTerminal.UI.Dialogs
 
             Add(nameLabel, _nameField, clusterLabel, _clusterUriField,
                 databaseLabel, _databaseField, _isDefaultCheckBox, _shortcutsLabel);
-
-            // Set up key bindings
-            // KeyPress += OnKeyPress;
         }
 
         private void SetupLayout()

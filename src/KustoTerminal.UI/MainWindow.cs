@@ -49,7 +49,8 @@ namespace KustoTerminal.UI
 
             KeyDown += (o, key) =>
             {
-                if (key.IsCtrl && (key.KeyCode & Key.Q.KeyCode) != 0)
+                if (key.IsCtrl && (key.KeyCode & Key.Q.KeyCode) != 0
+                || (key.IsCtrl && (key.KeyCode & Key.C.KeyCode) != 0))
                 {
                     Application.Shutdown();
                     key.Handled = true;
