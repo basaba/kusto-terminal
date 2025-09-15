@@ -316,7 +316,6 @@ namespace KustoTerminal.UI.Panes
         {
             if (_currentResult?.Data == null || _tableView.Table == null)
             {
-                MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
                 return;
             }
 
@@ -348,7 +347,6 @@ namespace KustoTerminal.UI.Panes
         {
             if (_currentResult?.Data == null || _tableView.Table == null)
             {
-                MessageBox.ErrorQuery("View Error", "No data available to view.", "OK");
                 return;
             }
 
@@ -368,9 +366,8 @@ namespace KustoTerminal.UI.Panes
                 Title = $"Cell Content: {columnName}",
                 Height = 20,
                 Width = 80,
-                Modal = true
+                Modal = true,
             };
-
             var textView = new TextView()
             {
                 X = 1,
@@ -392,8 +389,6 @@ namespace KustoTerminal.UI.Panes
         {
             if (_searchVisible)
             {
-                // If search is already visible, just focus on the search field
-                // and preserve the current search text
                 _searchField.SetFocus();
             }
             else
@@ -410,13 +405,7 @@ namespace KustoTerminal.UI.Panes
             _searchVisible = true;
             _searchLabel.Visible = true;
             _searchField.Visible = true;
-            
-            
-            // Update shortcuts position
-            // _shortcutsLabel.Y = Pos.Bottom(_searchField);
-            
             _searchField.SetFocus();
-            // SetNeedsDisplay();
         }
 
         private void HideSearch()
@@ -425,11 +414,6 @@ namespace KustoTerminal.UI.Panes
             _searchLabel.Visible = false;
             _searchField.Visible = false;
             _searchField.Text = "";
-            
-            // Restore shortcuts position
-            // _shortcutsLabel.Y = Pos.Bottom(_tableView);
-            
-            // Restore original data if we have it
             if (_originalData != null)
             {
                 _tableView.Table = new DataTableSource(_originalData);
