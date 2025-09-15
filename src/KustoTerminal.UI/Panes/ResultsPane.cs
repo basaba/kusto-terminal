@@ -93,7 +93,8 @@ namespace KustoTerminal.UI.Panes
                 {
                     ToggleSearch();
                     key.Handled = true;
-                } else if (key.KeyCode == (KeyCode.CtrlMask| Key.S.KeyCode))
+                }
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.S.KeyCode))
                 {
                     OnExportClicked();
                     key.Handled = true;
@@ -105,6 +106,15 @@ namespace KustoTerminal.UI.Panes
                 if (key == Key.Esc)
                 {
                     HideSearch();
+                    key.Handled = true;
+                }
+            };
+
+            _tableView.KeyDown += (sender, key) =>
+            {
+                if (key == (KeyCode.CtrlMask | Key.C.KeyCode))
+                {
+                    OnCopyCellClicked();
                     key.Handled = true;
                 }
             };
@@ -293,23 +303,16 @@ namespace KustoTerminal.UI.Panes
                 return;
             }
 
-            // _tableView.Table.
-
             var selectedRow = _tableView.SelectedRow;
             var selectedCol = _tableView.SelectedColumn;
 
             var cellValue = _tableView.Table[selectedRow,selectedCol]?.ToString() ?? "";
-            
+
             try
             {
-                // Copy to clipboard using Terminal.Gui's Clipboard
                 Clipboard.Contents = cellValue;
-                MessageBox.Query("Copy", $"Cell value copied to clipboard: {(cellValue.Length > 50 ? cellValue.Substring(0, 50) + "..." : cellValue)}", "OK");
             }
-            catch (Exception ex)
-            {
-                MessageBox.ErrorQuery("Copy Error", $"Failed to copy to clipboard: {ex.Message}", "OK");
-            }
+            catch { }
         }
 
         private void OnViewCellClicked()

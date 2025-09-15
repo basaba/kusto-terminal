@@ -84,8 +84,8 @@ namespace KustoTerminal.UI.Panes
 
         private void SetKeyboard()
         {
-            _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CtrlMask| Key.V.KeyCode, Command.Paste);
-            _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CtrlMask| Key.C.KeyCode, Command.Copy);
+            _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CtrlMask | Key.V.KeyCode, Command.Paste);
+            _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CtrlMask | Key.C.KeyCode, Command.Copy);
 
             _queryTextView.KeyDown += (sender, key) =>
             {
