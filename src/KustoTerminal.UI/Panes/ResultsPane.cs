@@ -52,6 +52,7 @@ namespace KustoTerminal.UI.Panes
                 Height = Dim.Fill() - 1,
                 FullRowSelect = false,
                 MultiSelect = false,
+                MaxCellWidth = 50,
             };
 
             _shortcutsLabel = new Label()
@@ -123,6 +124,10 @@ namespace KustoTerminal.UI.Panes
                 } else if (key == Key.Esc)
                 {
                     SwitchToCellMode();
+                    key.Handled = true;
+                } else if (key == Key.Enter)
+                {
+                    OnViewCellClicked();
                     key.Handled = true;
                 }
             };
@@ -377,23 +382,7 @@ namespace KustoTerminal.UI.Panes
                 WordWrap = true
             };
 
-            var copyButton = new Button()
-            {
-                Text = "Copy",
-                X = 1,
-                Y = Pos.Bottom(textView) + 1
-            };
-
-            var closeButton = new Button()
-            {
-                Text = "Close",
-                X = Pos.Right(copyButton) + 2,
-                Y = Pos.Bottom(textView) + 1
-            };
-
-            dialog.Add(textView, copyButton, closeButton);
-
-            // Set focus to text view so user can select text
+            dialog.Add(textView);
             textView.SetFocus();
 
             Application.Run(dialog);
