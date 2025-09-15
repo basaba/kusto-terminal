@@ -10,6 +10,7 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Dialogs;
 using Terminal.Gui.Input;
 using System.Collections.ObjectModel;
+using Terminal.Gui.Drivers;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -31,7 +32,7 @@ namespace KustoTerminal.UI.Panes
 
             InitializeComponents();
             SetupLayout();
-            SetupElementFocusHandlers();
+            SetKeyboard();
             LoadConnections();
             CanFocus = true;
         }
@@ -63,17 +64,34 @@ namespace KustoTerminal.UI.Panes
             // Set up event handlers
             _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
             _connectionsList.Accepting += (sender, args) => { OnConnectClicked(); args.Handled = true; };
+
+        }
+
+        private void SetKeyboard()
+        {
+            _connectionsList.KeyDown += (o, key) =>
+            {
+                if (key.KeyCode == (Key.N.KeyCode | KeyCode.CtrlMask))
+                {
+                    OnAddClicked();
+                    key.Handled = true;
+                }
+                else if (key.KeyCode == (Key.E.KeyCode | KeyCode.CtrlMask))
+                {
+                    OnEditClicked();
+                    key.Handled = true;
+                }
+                else if (key == Key.DeleteChar)
+                {
+                    OnDeleteClicked();
+                    key.Handled = true;
+                }
+            };
         }
 
         private void SetupLayout()
         {
             Add(_connectionsList, _shortcutsLabel);
-        }
-
-        private void SetupElementFocusHandlers()
-        {
-            // Use BasePane's common focus handling for all controls
-            // SetupCommonElementFocusHandlers(_connectionsList, _shortcutsLabel);
         }
 
         private async void LoadConnections()
@@ -124,43 +142,6 @@ namespace KustoTerminal.UI.Panes
                 _selectedConnection = null;
             }
         }
-
-        // private void OnConnectionsListKeyPress(KeyEventEventArgs args)
-        // {
-        //     // Handle Enter key to connect to selected connection
-        //     if (args.KeyEvent.Key == Key.Enter)
-        //     {
-        //         if (_selectedConnection != null)
-        //         {
-        //             ConnectionSelected?.Invoke(this, _selectedConnection);
-        //             args.Handled = true;
-        //         }
-        //     }
-        //     // Handle Ctrl+N for new connection
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
-        //     {
-        //         OnAddClicked();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Ctrl+E for edit connection
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
-        //     {
-        //         if (_selectedConnection != null)
-        //         {
-        //             OnEditClicked();
-        //             args.Handled = true;
-        //         }
-        //     }
-        //     // Handle Delete key for delete connection
-        //     else if (args.KeyEvent.Key == Key.DeleteChar)
-        //     {
-        //         if (_selectedConnection != null)
-        //         {
-        //             OnDeleteClicked();
-        //             args.Handled = true;
-        //         }
-        //     }
-        // }
 
         private void OnAddClicked()
         {

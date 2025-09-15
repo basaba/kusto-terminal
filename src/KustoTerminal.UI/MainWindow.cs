@@ -10,6 +10,7 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Panes;
 using KustoTerminal.UI.Dialogs;
 using Terminal.Gui.Input;
+using Terminal.Gui.Drivers;
 
 namespace KustoTerminal.UI
 {
@@ -49,23 +50,17 @@ namespace KustoTerminal.UI
 
             KeyDown += (o, key) =>
             {
-                if (key.IsCtrl && (key.KeyCode & Key.Q.KeyCode) != 0
-                || (key.IsCtrl && (key.KeyCode & Key.C.KeyCode) != 0))
+                if (key.KeyCode == (KeyCode.CtrlMask | Key.Q.KeyCode)
+                || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
                 {
                     Application.Shutdown();
                     key.Handled = true;
-                }
-                else if (key == Key.Tab)
-                {
-
                 }
                 else if (key == Key.Esc)
                 {
                     key.Handled = true;
                 }
             };
-            // SetupKeyBindings();
-            // TabStop = TabBehavior.TabGroup;
         }
 
         private void InitializeComponents()
@@ -143,179 +138,11 @@ namespace KustoTerminal.UI
             // Set initial focus to connection pane
             _connectionPane.SetFocus();
 
-            // Initialize frame border colors and highlighting
-            UpdateFrameBorderColors();
-            SetupPaneEventHandlers();
-
             // Set up events
             _connectionPane.ConnectionSelected += OnConnectionSelected;
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
             _queryEditorPane.EscapePressed += OnQueryEditorEscapePressed;
             _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
-        }
-
-        private void SetupPaneEventHandlers()
-        {
-            // Subscribe to focus change events from each pane
-            // _connectionPane.FocusChanged += OnPaneFocusChanged;
-            _queryEditorPane.FocusChanged += OnPaneFocusChanged;
-            _resultsPane.FocusChanged += OnPaneFocusChanged;
-        }
-
-        private void OnPaneFocusChanged(object? sender, bool hasFocus)
-        {
-            if (sender is BasePane pane && hasFocus)
-            {
-                // Update current pane index when a pane receives focus
-                for (int i = 0; i < _navigablePanes.Length; i++)
-                {
-                    if (_navigablePanes[i] == pane)
-                    {
-                        _currentPaneIndex = i;
-                        break;
-                    }
-                }
-                
-                // Update frame highlighting
-                UpdateFrameTitles();
-                UpdateFrameBorderColors();
-            }
-        }
-
-        // private void SetupKeyBindings()
-        // {
-        //     // Focus handling for tab navigation
-        //     CanFocus = true;
-            
-        //     // Global key bindings
-        //     KeyPress += OnKeyPress;
-        // }
-        
-        // private void OnKeyPress(KeyEventEventArgs args)
-        // {
-        //     // Handle TAB for pane navigation
-        //     if (args.KeyEvent.Key == Key.Tab)
-        //     {
-        //         SwitchToNextPane();
-        //         args.Handled = true;
-        //         return;
-        //     }
-            
-        //     // Handle Shift+TAB for reverse pane navigation
-        //     if (args.KeyEvent.Key == (Key.ShiftMask | Key.Tab))
-        //     {
-        //         SwitchToPreviousPane();
-        //         args.Handled = true;
-        //         return;
-        //     }
-            
-        //     // Handle Ctrl+E for edit connection
-        //     if (args.KeyEvent.Key == (Key.CtrlMask | Key.E))
-        //     {
-        //         EditConnection();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Ctrl+N for new connection
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.N))
-        //     {
-        //         NewConnection();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Ctrl+L for clear query
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.L))
-        //     {
-        //         ClearQuery();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Ctrl+S for export results
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
-        //     {
-        //         ExportResults();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Delete key for delete connection
-        //     else if (args.KeyEvent.Key == Key.DeleteChar)
-        //     {
-        //         DeleteConnection();
-        //         args.Handled = true;
-        //     }
-        // }
-
-        // private void SwitchToNextPane()
-        // {
-        //     _currentPaneIndex = (_currentPaneIndex + 1) % _navigablePanes.Length;
-        //     SetFocusToCurrentPane();
-        // }
-
-        // private void SwitchToPreviousPane()
-        // {
-        //     _currentPaneIndex = (_currentPaneIndex - 1 + _navigablePanes.Length) % _navigablePanes.Length;
-        //     SetFocusToCurrentPane();
-        // }
-
-        // private void SetFocusToCurrentPane()
-        // {
-        //     var currentPane = _navigablePanes[_currentPaneIndex];
-        //     currentPane.SetFocus();
-            
-        //     // The pane highlighting will be handled by the OnPaneFocusChanged event
-        //     // But we still need to update frame titles and borders
-        //     UpdateFrameTitles();
-        //     UpdateFrameBorderColors();
-        // }
-
-        private void UpdateFrameTitles()
-        {
-            // Reset all frame titles
-            _leftFrame.Title = "Connections";
-            _rightFrame.Title = "Query Editor";
-            _bottomFrame.Title = "Results";
-            
-            // Highlight the active frame title
-            switch (_currentPaneIndex)
-            {
-                case 0: // Connection pane
-                    _leftFrame.Title = "▶ Connections";
-                    break;
-                case 1: // Query editor pane
-                    _rightFrame.Title = "▶ Query Editor";
-                    break;
-                case 2: // Results pane
-                    _bottomFrame.Title = "▶ Results";
-                    break;
-            }
-        }
-
-        private void UpdateFrameBorderColors()
-        {
-            // Use centralized color scheme factory
-            // var normalColorScheme = ColorSchemeFactory.CreateStandard();
-            // var activeColorScheme = ColorSchemeFactory.CreateActiveFrame();
-
-            // Reset all frames to normal color
-            // _leftFrame.ColorScheme = normalColorScheme;
-            // _rightFrame.ColorScheme = normalColorScheme;
-            // _bottomFrame.ColorScheme = normalColorScheme;
-
-            // Highlight the active frame border with a different color than the pane content
-            // This creates a layered highlighting effect: yellow frame + cyan pane content
-            // switch (_currentPaneIndex)
-            // {
-            //     case 0: // Connection pane
-            //         _leftFrame.ColorScheme = activeColorScheme;
-            //         break;
-            //     case 1: // Query editor pane
-            //         _rightFrame.ColorScheme = activeColorScheme;
-            //         break;
-            //     case 2: // Results pane
-            //         _bottomFrame.ColorScheme = activeColorScheme;
-            //         break;
-            // }
-
-            // // Force redraw of all frames
-            // _leftFrame.SetNeedsDisplay();
-            // _rightFrame.SetNeedsDisplay();
-            // _bottomFrame.SetNeedsDisplay();
         }
 
         private void OnConnectionSelected(object? sender, KustoConnection connection)
@@ -363,104 +190,6 @@ namespace KustoTerminal.UI
             }
         }
 
-        private void NewConnection()
-        {
-            var dialog = new ConnectionDialog();
-            Application.Run(dialog);
-
-            if (dialog.Result != null)
-            {
-                Task.Run(async () =>
-                {
-                    await _connectionManager.AddConnectionAsync(dialog.Result);
-                    Application.Invoke(() => _connectionPane.RefreshConnections());
-                });
-            }
-        }
-
-        private void EditConnection()
-        {
-            var selectedConnection = _connectionPane.GetSelectedConnection();
-            if (selectedConnection == null)
-            {
-                MessageBox.ErrorQuery("Error", "No connection selected. Please select a connection to edit.", "OK");
-                return;
-            }
-
-            var dialog = new ConnectionDialog(selectedConnection);
-            Application.Run(dialog);
-
-            if (dialog.Result != null)
-            {
-                Task.Run(async () =>
-                {
-                    await _connectionManager.UpdateConnectionAsync(dialog.Result);
-                    Application.Invoke(() => _connectionPane.RefreshConnections());
-                });
-            }
-        }
-
-        private void Copy()
-        {
-            if (MostFocused is TextView textView)
-            {
-                textView.Copy();
-            }
-        }
-
-        private void Paste()
-        {
-            if (MostFocused is TextView textView)
-            {
-                textView.Paste();
-            }
-        }
-
-        private void ExecuteQuery()
-        {
-            var query = _queryEditorPane.GetCurrentQuery();
-            if (!string.IsNullOrWhiteSpace(query))
-            {
-                Task.Run(() => ExecuteQueryAsync(query));
-            }
-        }
-
-        private void ClearQuery()
-        {
-            _queryEditorPane.FocusEditor();
-            // The actual clear will be handled by the QueryEditorPane's Ctrl+L handler
-        }
-
-        private void DeleteConnection()
-        {
-            var selectedConnection = _connectionPane.GetSelectedConnection();
-            if (selectedConnection == null)
-            {
-                MessageBox.ErrorQuery("Error", "No connection selected. Please select a connection to delete.", "OK");
-                return;
-            }
-
-            var result = MessageBox.Query("Confirm Delete",
-                $"Are you sure you want to delete connection '{selectedConnection.DisplayName}'?",
-                "Yes", "No");
-
-            if (result == 0) // Yes
-            {
-                Task.Run(async () =>
-                {
-                    await _connectionManager.DeleteConnectionAsync(selectedConnection.Id);
-                    Application.Invoke(() => _connectionPane.RefreshConnections());
-                });
-            }
-        }
-
-        private void ExportResults()
-        {
-            // Focus on results pane to trigger export
-            _currentPaneIndex = 2; // Results pane
-            // SetFocusToCurrentPane();
-            // The actual export will be handled by the ResultsPane's Ctrl+S handler
-        }
 
         private async Task ExecuteQueryAsync(string query)
         {
@@ -544,51 +273,6 @@ namespace KustoTerminal.UI
                     _currentKustoClient = null;
                 }
             }
-        }
-
-        private void ClearResults()
-        {
-            _resultsPane.Clear();
-            UpdateStatusBar("Results cleared");
-        }
-
-        private void ShowAbout()
-        {
-            MessageBox.Query("About", "Kusto Terminal v1.0\nAzure Data Explorer CLI Client\n\nInspired by k9s", "OK");
-        }
-
-        private void ShowHelp()
-        {
-            var helpText = @"Kusto Terminal - Keyboard Shortcuts
-
-Query Editor:
-F5           - Execute query
-Esc          - Cancel running query / Switch to results pane
-Ctrl+L       - Clear query
-Ctrl+A       - Select all text
-
-Connections:
-Ctrl+N       - Add new connection
-Ctrl+E       - Edit selected connection
-Del          - Delete selected connection
-Enter        - Connect to selected connection
-
-Results:
-Ctrl+S       - Export results
-
-Dialog Navigation:
-Enter        - Accept/OK
-Esc          - Cancel
-
-General:
-Tab          - Switch to next pane
-Shift+Tab    - Switch to previous pane
-Ctrl+C       - Copy
-Ctrl+V       - Paste
-Ctrl+Q       - Quit application
-F1           - Show this help";
-
-            MessageBox.Query("Help", helpText, "OK");
         }
 
         private void UpdateStatusBar(string message)

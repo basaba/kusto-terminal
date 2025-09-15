@@ -30,8 +30,8 @@ namespace KustoTerminal.UI.Panes
         {
             InitializeComponents();
             SetupLayout();
+            SetKeyboard();
             CanFocus = true;
-            TabStop = TabBehavior.TabStop;
         }
 
         private void InitializeComponents()
@@ -54,19 +54,14 @@ namespace KustoTerminal.UI.Panes
                 Text = "",
             };
 
-            // Configure selection highlighting using BasePane method
-            // ApplyColorSchemeToControl(_queryTextView, "textview_normal");
-
             _shortcutsLabel = new Label()
             {
-                Text = "F5: Execute | Esc: Cancel/Switch | Ctrl+L: Clear | Ctrl+A: Select All",
+                Text = "F5: Execute",
                 X = 0,
                 Y = Pos.Bottom(_queryTextView),
                 Width = Dim.Fill(),
                 Height = 1
             };
-
-            // Apply shortcut label color scheme using BasePane method
 
             _progressLabel = new Label()
             {
@@ -85,10 +80,6 @@ namespace KustoTerminal.UI.Panes
                 Height = 1,
                 Visible = false
             };
-
-            // Apply color scheme for temporary message
-
-            SetKeyboard();
         }
 
         private void SetKeyboard()
@@ -110,45 +101,7 @@ namespace KustoTerminal.UI.Panes
         private void SetupLayout()
         {
             Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel, _temporaryMessageLabel);
-            
-            // Focus on the text view
-            // _queryTextView.SetFocus();
         }
-
-        // private void OnKeyPress(KeyEventEventArgs e)
-        // {
-        //     // Handle F5 for query execution
-        //     if (e.KeyEvent.Key == Key.F5)
-        //     {
-        //         OnExecuteClicked();
-        //         e.Handled = true;
-        //     }
-        //     // Handle Ctrl+L for clear
-        //     else if (e.KeyEvent.Key == (Key.CtrlMask | Key.L))
-        //     {
-        //         OnClearClicked();
-        //         e.Handled = true;
-        //     }
-        //     // Handle Ctrl+A for select all
-        //     else if (e.KeyEvent.Key == (Key.CtrlMask | Key.A))
-        //     {
-        //         _queryTextView.SelectAll();
-        //         e.Handled = true;
-        //     }
-        //     // Handle ESC - cancel query if executing, otherwise switch focus to results pane
-        //     else if (e.KeyEvent.Key == Key.Esc)
-        //     {
-        //         if (_isExecuting)
-        //         {
-        //             QueryCancelRequested?.Invoke(this, EventArgs.Empty);
-        //         }
-        //         else
-        //         {
-        //             EscapePressed?.Invoke(this, EventArgs.Empty);
-        //         }
-        //         e.Handled = true;
-        //     }
-        // }
 
         private void OnExecuteClicked()
         {
@@ -239,8 +192,7 @@ namespace KustoTerminal.UI.Panes
             if (_isExecuting && _progressLabel.Visible)
             {
                 _progressLabel.Text = $"{_spinnerFrames[_spinnerIndex]} {message}";
-                // _progressLabel.SetNeedsDisplay();
-            }
+             }
         }
 
         public void ShowTemporaryMessage(string message, int durationMs = 2000)
@@ -261,7 +213,6 @@ namespace KustoTerminal.UI.Panes
             Application.Invoke(() =>
             {
                 _temporaryMessageLabel.Visible = false;
-                //_temporaryMessageLabel.SetNeedsDisplay();
                 _temporaryMessageTimer?.Dispose();
                 _temporaryMessageTimer = null;
             });

@@ -8,6 +8,7 @@ using Terminal.Gui.ViewBase;
 
 using KustoTerminal.Core.Models;
 using Terminal.Gui.Input;
+using Terminal.Gui.Drivers;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -27,7 +28,7 @@ namespace KustoTerminal.UI.Panes
         {
             InitializeComponents();
             SetupLayout();
-            SetupElementFocusHandlers();
+            SetKeyboard();
             CanFocus = true;
             TabStop = TabBehavior.TabStop;
         }
@@ -53,9 +54,6 @@ namespace KustoTerminal.UI.Panes
                 MultiSelect = false,
             };
 
-            // Add event handlers to ensure proper cursor visibility
-            // _tableView.SelectedCellChanged += OnSelectedCellChanged;
-
             _shortcutsLabel = new Label()
             {
                 Text = "/: Filter | Ctrl+S: Export",
@@ -65,9 +63,6 @@ namespace KustoTerminal.UI.Panes
                 Height = 1
             };
             
-            // Apply color scheme using BasePane method
-
-            // Initialize search components (initially hidden)
             _searchLabel = new Label()
             {
                 Text = "Search:",
@@ -87,18 +82,7 @@ namespace KustoTerminal.UI.Panes
                 Visible = false
             };
 
-            // Set up search field event handlers
             _searchField.TextChanged += OnSearchTextChanged;
-            //_searchField.KeyPress += OnSearch
-            // += (oldText) => OnSearchTextChanged();
-            // _searchField.KeyPress += OnSearchFieldKeyPress;
-
-            // // Set up key bindings on the table view itself
-            // _tableView.KeyPress += OnTableViewKeyPress;
-            
-            // // Also set up key bindings on the pane for when other elements have focus
-            // KeyPress += OnKeyPress;
-            SetKeyboard();
         }
 
         private void SetKeyboard()
@@ -108,6 +92,10 @@ namespace KustoTerminal.UI.Panes
                 if (Key.TryParse("/", out var k) && key == k)
                 {
                     ToggleSearch();
+                    key.Handled = true;
+                } else if (key.KeyCode == (KeyCode.CtrlMask| Key.S.KeyCode))
+                {
+                    OnExportClicked();
                     key.Handled = true;
                 }
             };
@@ -126,85 +114,6 @@ namespace KustoTerminal.UI.Panes
         {
             Add(_statusLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
         }
-
-        private void SetupElementFocusHandlers()
-        {
-            // Use BasePane's common focus handling for all controls
-        }
-
-        // private void OnTableViewKeyPress(KeyEventEventArgs args)
-        // {
-        //     // Handle key presses when the table view has focus
-        //     HandleKeyPress(args);
-        // }
-
-        // private void OnKeyPress(KeyEventEventArgs args)
-        // {
-        //     // Handle key presses when other elements in the pane have focus
-        //     HandleKeyPress(args);
-        // }
-
-        // private void OnSearchFieldKeyPress(KeyEventEventArgs args)
-        // {
-        //     // Handle Enter key in search field to focus on results table
-        //     if (args.KeyEvent.Key == Key.Enter)
-        //     {
-        //         _tableView.SetFocus();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Escape to close search
-        //     else if (args.KeyEvent.Key == Key.Esc)
-        //     {
-        //         HideSearch();
-        //         args.Handled = true;
-        //     }
-        // }
-
-        // private void HandleKeyPress(KeyEventEventArgs args)
-        // {
-        //     // Handle "/" for search toggle
-        //     if (args.KeyEvent.Key == (Key)'/')
-        //     {
-        //         ToggleSearch();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Escape to close search
-        //     else if (args.KeyEvent.Key == Key.Esc)
-        //     {
-        //         if (_searchVisible)
-        //         {
-        //             HideSearch();
-        //             args.Handled = true;
-        //         }
-        //     }
-        //     // Handle Ctrl+S for export
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.S))
-        //     {
-        //         if (_currentResult?.Data != null)
-        //         {
-        //             OnExportClicked();
-        //             args.Handled = true;
-        //         }
-        //     }
-        //     // Handle Ctrl+C for copy cell
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.C))
-        //     {
-        //         OnCopyCellClicked();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Ctrl+A for copy row
-        //     else if (args.KeyEvent.Key == (Key.CtrlMask | Key.A))
-        //     {
-        //         OnCopyRowClicked();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Enter for view cell (only when table view has focus)
-        //     else if (args.KeyEvent.Key == Key.Enter && Application.Top.MostFocused == _tableView)
-        //     {
-        //         OnViewCellClicked();
-        //         args.Handled = true;
-        //     }
-        // }
 
         public void DisplayResult(QueryResult result)
         {
@@ -281,6 +190,7 @@ namespace KustoTerminal.UI.Panes
             var dialog = new SaveDialog()
             {
                 Title = "Export Results",
+                
                 
                 // Message = "Save results to file",
                 // NameFieldLabel = "File name:",
@@ -402,43 +312,6 @@ namespace KustoTerminal.UI.Panes
             }
         }
 
-        private void OnCopyRowClicked()
-        {
-            // if (_currentResult?.Data == null || _tableView.Table == null)
-            // {
-            //     MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
-            //     return;
-            // }
-
-            // var selectedRow = _tableView.SelectedRow;
-
-            // if (selectedRow < 0 || selectedRow >= _tableView.Table.Rows.Count)
-            // {
-            //     MessageBox.ErrorQuery("Copy Error", "No row selected.", "OK");
-            //     return;
-            // }
-
-            // var row = _tableView.Table.Rows[selectedRow];
-            // var rowValues = new string[_tableView.Table.Columns.Count];
-            
-            // for (int i = 0; i < _tableView.Table.Columns.Count; i++)
-            // {
-            //     rowValues[i] = row[i]?.ToString() ?? "";
-            // }
-
-            // var rowText = string.Join("\t", rowValues);
-            
-            // try
-            // {
-            //     Clipboard.Contents = rowText;
-            //     MessageBox.Query("Copy", $"Row copied to clipboard (tab-separated)", "OK");
-            // }
-            // catch (Exception ex)
-            // {
-            //     MessageBox.ErrorQuery("Copy Error", $"Failed to copy to clipboard: {ex.Message}", "OK");
-            // }
-        }
-
         private void OnViewCellClicked()
         {
             if (_currentResult?.Data == null || _tableView.Table == null)
@@ -491,23 +364,6 @@ namespace KustoTerminal.UI.Panes
                 Y = Pos.Bottom(textView) + 1
             };
 
-            // copyButton.Accepting += 
-
-            // () =>
-            // {
-            //     try
-            //     {
-            //         Clipboard.Contents = cellValue;
-            //         MessageBox.Query("Copy", "Cell content copied to clipboard!", "OK");
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         MessageBox.ErrorQuery("Copy Error", $"Failed to copy: {ex.Message}", "OK");
-            //     }
-            // };
-
-            // closeButton.Clicked += () => dialog.RequestStop();
-
             dialog.Add(textView, copyButton, closeButton);
 
             // Set focus to text view so user can select text
@@ -515,12 +371,6 @@ namespace KustoTerminal.UI.Panes
 
             Application.Run(dialog);
         }
-
-        // private void OnSelectedCellChanged(TableView.SelectedCellChangedEventArgs args)
-        // {
-        //     // Force a redraw to ensure cursor visibility when cell selection changes
-        //     _tableView.SetNeedsDisplay();
-        // }
 
         private void ToggleSearch()
         {
@@ -561,9 +411,6 @@ namespace KustoTerminal.UI.Panes
             _searchLabel.Visible = false;
             _searchField.Visible = false;
             _searchField.Text = "";
-            
-            // Restore original table height
-            //_tableView.Height = Dim.Fill() - 3;
             
             // Restore shortcuts position
             _shortcutsLabel.Y = Pos.Bottom(_tableView);
