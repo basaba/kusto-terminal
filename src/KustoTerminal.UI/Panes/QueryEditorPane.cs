@@ -50,7 +50,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 4,
+                Height = Dim.Fill() - 1,
                 Text = "",
             };
 
@@ -66,7 +66,7 @@ namespace KustoTerminal.UI.Panes
             _progressLabel = new Label()
             {
                 X = 0,
-                Y = Pos.Bottom(_shortcutsLabel),
+                Y = Pos.Bottom(_shortcutsLabel) - 1,
                 Width = Dim.Fill(),
                 Height = 1,
                 Visible = false
@@ -75,7 +75,7 @@ namespace KustoTerminal.UI.Panes
             _temporaryMessageLabel = new Label()
             {
                 X = 0,
-                Y = Pos.Bottom(_progressLabel),
+                Y = Pos.Bottom(_progressLabel) - 1,
                 Width = Dim.Fill(),
                 Height = 1,
                 Visible = false

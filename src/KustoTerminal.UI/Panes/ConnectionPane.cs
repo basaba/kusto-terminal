@@ -18,7 +18,7 @@ namespace KustoTerminal.UI.Panes
     {
         private readonly IConnectionManager _connectionManager;
         private ListView _connectionsList;
-        private Label _shortcutsLabel;
+        private Label[] _shortcutsLabels;
 
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
@@ -44,22 +44,37 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 4,
+                Height = Dim.Fill(),
                 AllowsMarking = false,
                 AllowsMultipleSelection = false,
             };
 
-            _shortcutsLabel = new Label()
-            {
-                Text = "Enter: Connect\nCtrl+N: New\nCtrl+E: Edit\nDel: Delete",
-                X = 0,
-                Y = Pos.Bottom(_connectionsList),
-                Width = Dim.Fill(),
-                Height = 1
+            _shortcutsLabels = new[]{
+                new Label()
+                {
+                    Text = "Ctrl+N: New",
+                    X = 0,
+                    Y = Pos.Bottom(_connectionsList) - 3,
+                    Width = Dim.Fill(),
+                    Height = 1
+                },
+                new Label()
+                {
+                    Text = "Ctrl+E: Edit",
+                    X = 0,
+                    Y = Pos.Bottom(_connectionsList) - 2,
+                    Width = Dim.Fill(),
+                    Height = 1
+                },
+                new Label()
+                {
+                    Text = "Del: Delete",
+                    X = 0,
+                    Y = Pos.Bottom(_connectionsList) - 1,
+                    Width = Dim.Fill(),
+                    Height = 1
+                }
             };
-
-            // Apply color schemes using BasePane methods
-            // ApplyColorSchemeToControl(_shortcutsLabel, "shortcut");
 
             // Set up event handlers
             _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
@@ -91,7 +106,8 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_connectionsList, _shortcutsLabel);
+            Add(_connectionsList);
+            _shortcutsLabels.ToList().ForEach(label => Add(label));
         }
 
         private async void LoadConnections()

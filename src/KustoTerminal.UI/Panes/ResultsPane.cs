@@ -49,7 +49,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 3,
+                Height = Dim.Fill() - 1,
                 FullRowSelect = false,
                 MultiSelect = false,
             };
@@ -75,8 +75,8 @@ namespace KustoTerminal.UI.Panes
 
             _searchField = new TextField()
             {
-                X = Pos.Right(_searchLabel) + 1,
-                Y = Pos.Bottom(_tableView),
+                X = 0,
+                Y = Pos.Bottom(_tableView) - 1,
                 Width = Dim.Fill(),
                 Height = 1,
                 Visible = false
@@ -395,11 +395,9 @@ namespace KustoTerminal.UI.Panes
             _searchLabel.Visible = true;
             _searchField.Visible = true;
             
-            // Adjust table height to make room for search
-            _tableView.Height = Dim.Fill() - 4;
             
             // Update shortcuts position
-            _shortcutsLabel.Y = Pos.Bottom(_searchField);
+            // _shortcutsLabel.Y = Pos.Bottom(_searchField);
             
             _searchField.SetFocus();
             // SetNeedsDisplay();
@@ -413,7 +411,7 @@ namespace KustoTerminal.UI.Panes
             _searchField.Text = "";
             
             // Restore shortcuts position
-            _shortcutsLabel.Y = Pos.Bottom(_tableView);
+            // _shortcutsLabel.Y = Pos.Bottom(_tableView);
             
             // Restore original data if we have it
             if (_originalData != null)
