@@ -47,20 +47,7 @@ namespace KustoTerminal.UI
 
             InitializeComponents();
             SetupLayout();
-
-            KeyDown += (o, key) =>
-            {
-                if (key.KeyCode == (KeyCode.CtrlMask | Key.Q.KeyCode)
-                || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
-                {
-                    Application.Shutdown();
-                    key.Handled = true;
-                }
-                else if (key == Key.Esc)
-                {
-                    key.Handled = true;
-                }
-            };
+            SetKeyboard();
         }
 
         private void InitializeComponents()
@@ -145,11 +132,28 @@ namespace KustoTerminal.UI
             _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
         }
 
+        private void SetKeyboard()
+        {
+            KeyDown += (o, key) =>
+            {
+                if (key.KeyCode == (KeyCode.CtrlMask | Key.Q.KeyCode)
+                || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
+                {
+                    Application.Shutdown();
+                    key.Handled = true;
+                }
+                else if (key == Key.Esc)
+                {
+                    key.Handled = true;
+                }
+            };
+        }
+
         private void OnConnectionSelected(object? sender, KustoConnection connection)
         {
             _queryEditorPane.SetConnection(connection);
             UpdateStatusBar($"Connected to: {connection.DisplayName}");
-            
+
             _currentPaneIndex = 1; // Query editor is at index 1
             _queryEditorPane.FocusEditor();
         }
@@ -287,12 +291,8 @@ namespace KustoTerminal.UI
         }
 
         public static void Run(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
-        {
-            //var top = Application.Top;
-            
-            var mainWindow = new MainWindow(connectionManager, authProvider);
-            //top.Add(mainWindow);
-            
+        {            
+            var mainWindow = new MainWindow(connectionManager, authProvider);          
             Application.Run(mainWindow);
         }
     }
