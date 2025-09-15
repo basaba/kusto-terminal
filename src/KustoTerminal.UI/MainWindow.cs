@@ -118,10 +118,7 @@ namespace KustoTerminal.UI
             _leftFrame.Add(_connectionPane);
             _rightFrame.Add(_queryEditorPane);
             _bottomFrame.Add(_resultsPane);
-
-            // Set up navigable panes array for TAB navigation
-            // _navigablePanes = new BasePane[] { _connectionPane, _queryEditorPane, _resultsPane };
-
+            
             // Set initial focus to connection pane
             _connectionPane.SetFocus();
 

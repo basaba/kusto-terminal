@@ -200,27 +200,31 @@ namespace KustoTerminal.UI.Panes
             var dialog = new SaveDialog()
             {
                 Title = "Export Results",
-                
-                
-                // Message = "Save results to file",
-                // NameFieldLabel = "File name:",
-                // AllowedFileTypes = new[] { ".csv", ".json", ".tsv" }
+                AllowedTypes = new List<IAllowedType>()
+                {
+                    new AllowedType("csv", ".csv"),
+                    new AllowedType("json", ".json"),
+                    new AllowedType("tsv", ".tsv"),
+                },
+                OpenMode = OpenMode.File,
             };
+
+            dialog.Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "results.csv");
 
             Application.Run(dialog);
 
-            // if (!dialog.Canceled && !dialog.FileName.IsEmpty)
-            // {
-            //     try
-            //     {
-            //         ExportData(_currentResult.Data, dialog.FileName.ToString());
-            //         MessageBox.Query("Export", "Results exported successfully!", "OK");
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         MessageBox.ErrorQuery("Export Error", $"Failed to export results: {ex.Message}", "OK");
-            //     }
-            // }
+            if (!dialog.Canceled && !string.IsNullOrEmpty(dialog.FileName))
+            {
+                try
+                {
+                    ExportData(_currentResult.Data, dialog.FileName.ToString());
+                    MessageBox.Query("Export", "Results exported successfully!", "OK");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.ErrorQuery("Export Error", $"Failed to export results: {ex.Message}", "OK");
+                }
+            }
         }
 
         private void ExportData(DataTable dataTable, string fileName)
