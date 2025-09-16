@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Terminal.Gui;
@@ -7,6 +8,7 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 
 using KustoTerminal.Core.Models;
+using KustoTerminal.UI.Dialogs;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 
@@ -22,6 +24,7 @@ namespace KustoTerminal.UI.Panes
         
         private QueryResult? _currentResult;
         private DataTable? _originalData;
+        private HashSet<string> _selectedColumns = new HashSet<string>();
         private bool _searchVisible = false;
 
         public event EventHandler? MaximizeToggleRequested;
@@ -59,7 +62,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "/: Filter | Ctrl+S: Export | Ctrl+T: Row Select | F11: Maximize/Restore",
+                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+T: Row Select | F11: Maximize/Restore",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
@@ -107,6 +110,11 @@ namespace KustoTerminal.UI.Panes
                     MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
                     key.Handled = true;
                 }
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.L.KeyCode))
+                {
+                    OnColumnSelectorClicked();
+                    key.Handled = true;
+                }
             };
 
             _searchField.KeyDown += (sender, key) =>
@@ -139,6 +147,10 @@ namespace KustoTerminal.UI.Panes
                 } else if (key == Key.Enter)
                 {
                     OnViewCellClicked();
+                    key.Handled = true;
+                } else if (key.KeyCode == (KeyCode.CtrlMask | Key.L.KeyCode))
+                {
+                    OnColumnSelectorClicked();
                     key.Handled = true;
                 }
             };
@@ -174,7 +186,19 @@ namespace KustoTerminal.UI.Panes
             {
                 var dataTable = result.Data!;
                 _originalData = dataTable.Copy(); // Keep a copy of the original data
-                _tableView.Table = new DataTableSource(dataTable);
+                
+                // Initialize selected columns if not set
+                if (_selectedColumns.Count == 0)
+                {
+                    foreach (DataColumn column in dataTable.Columns)
+                    {
+                        _selectedColumns.Add(column.ColumnName);
+                    }
+                }
+                
+                // Apply column filtering
+                var filteredTable = ApplyColumnFilter(dataTable);
+                _tableView.Table = new DataTableSource(filteredTable);
 
                 _statusLabel.Text = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
             }
@@ -212,6 +236,7 @@ namespace KustoTerminal.UI.Panes
         {
             _currentResult = null;
             _originalData = null;
+            _selectedColumns.Clear();
             _tableView.Table = new DataTableSource(new DataTable());
             _statusLabel.Text = "No results";
             HideSearch();
@@ -503,6 +528,56 @@ namespace KustoTerminal.UI.Panes
             {
                 _statusLabel.Text = $"Filtered: {filteredRowCount:N0} of {_currentResult.RowCount:N0} rows | Search: \"{searchText}\" | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
             }
+        }
+
+        private void OnColumnSelectorClicked()
+        {
+            if (_originalData == null) return;
+
+            var dialog = new ColumnSelectorDialog(_originalData, _selectedColumns);
+            Application.Run(dialog);
+
+            // Update selected columns and refresh display
+            _selectedColumns = dialog.SelectedColumns;
+            
+            if (_currentResult != null)
+            {
+                DisplayData(_currentResult);
+            }
+        }
+
+        private DataTable ApplyColumnFilter(DataTable sourceTable)
+        {
+            if (_selectedColumns.Count == 0 || _selectedColumns.Count == sourceTable.Columns.Count)
+            {
+                // If no columns selected or all columns selected, return the original table
+                return sourceTable;
+            }
+
+            // Create a new table with only selected columns
+            var filteredTable = new DataTable();
+            
+            // Add selected columns to the new table
+            foreach (DataColumn column in sourceTable.Columns)
+            {
+                if (_selectedColumns.Contains(column.ColumnName))
+                {
+                    filteredTable.Columns.Add(column.ColumnName, column.DataType);
+                }
+            }
+
+            // Copy rows with only selected columns
+            foreach (DataRow sourceRow in sourceTable.Rows)
+            {
+                var newRow = filteredTable.NewRow();
+                foreach (DataColumn column in filteredTable.Columns)
+                {
+                    newRow[column.ColumnName] = sourceRow[column.ColumnName];
+                }
+                filteredTable.Rows.Add(newRow);
+            }
+
+            return filteredTable;
         }
     }
 }
