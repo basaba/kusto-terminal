@@ -7,6 +7,7 @@ using Terminal.Gui.ViewBase;
 using KustoTerminal.Core.Services;
 using KustoTerminal.Auth;
 using KustoTerminal.UI;
+using System.Runtime.InteropServices;
 
 namespace KustoTerminal.CLI
 {
@@ -56,10 +57,14 @@ namespace KustoTerminal.CLI
                 await Task.Delay(1000);
 
                 // Initialize Terminal.Gui
-                Application.Init(driverName: "NetDriver");
-                
-                // Set up black background color scheme
-                // SetupBlackColorScheme();
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Application.Init();
+                }
+                else
+                {
+                    Application.Init(driverName: "NetDriver");
+                }
                 
                 try
                 {
