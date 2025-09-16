@@ -31,44 +31,7 @@ namespace KustoTerminal.CLI
                 await connectionManager.LoadConnectionsAsync();
                 var connections = await connectionManager.GetConnectionsAsync();
                 
-                // Check if there are any authenticated connections that require Azure CLI
-                var hasAuthenticatedConnections = connections.Any(c => c.AuthType == Core.Models.AuthenticationType.AzureCli);
-                
-                if (hasAuthenticatedConnections)
-                {
-                    // Check Azure CLI authentication only if there are connections that need it
-                    if (!authProvider.IsAuthenticated())
-                    {
-                        Console.WriteLine("Azure CLI authentication not detected.");
-                        Console.WriteLine("Note: You can still use unauthenticated connections.");
-                        Console.WriteLine("For authenticated connections, please run 'az login' first.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Azure CLI authentication detected.");
-                        
-                        // Validate authentication
-                        var isValidAuth = await authProvider.ValidateAuthenticationAsync();
-                        if (!isValidAuth)
-                        {
-                            Console.WriteLine("Failed to validate Azure authentication.");
-                            Console.WriteLine("Note: You can still use unauthenticated connections.");
-                            Console.WriteLine("For authenticated connections, please run 'az login' again.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Authentication validated successfully.");
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("No authenticated connections configured. Azure CLI authentication not required.");
-                }
                 Console.WriteLine("Starting Terminal UI...");
-
-                // Small delay to let user read the messages
-                await Task.Delay(1000);
 
                 // Initialize Terminal.Gui
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
