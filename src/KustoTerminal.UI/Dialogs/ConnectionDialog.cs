@@ -5,6 +5,7 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 
 using KustoTerminal.Core.Models;
+using Terminal.Gui.Input;
 
 namespace KustoTerminal.UI.Dialogs
 {
@@ -28,7 +29,7 @@ namespace KustoTerminal.UI.Dialogs
 
             InitializeComponents(connection);
             SetupLayout();
-            // SetupColorScheme();
+            SetKeyboard();
         }
 
         private void InitializeComponents(KustoConnection? connection)
@@ -111,36 +112,13 @@ namespace KustoTerminal.UI.Dialogs
             _nameField.SetFocus();
         }
 
-        // private void OnKeyPress(KeyEventEventArgs args)
-        // {
-        //     // Handle Enter key to accept (OK)
-        //     if (args.KeyEvent.Key == Key.Enter)
-        //     {
-        //         OnOkClicked();
-        //         args.Handled = true;
-        //     }
-        //     // Handle Escape key to cancel
-        //     else if (args.KeyEvent.Key == Key.Esc)
-        //     {
-        //         OnCancelClicked();
-        //         args.Handled = true;
-        //     }
-        // }
-
-        // private void SetupColorScheme()
-        // {
-        //     // Use centralized color scheme factory
-        //     ColorScheme = ColorSchemeFactory.CreateStandard();
-
-        //     // Apply text field color schemes
-        //     var textFieldColorScheme = ColorSchemeFactory.CreateTextField();
-        //     _nameField.ColorScheme = textFieldColorScheme;
-        //     _clusterUriField.ColorScheme = textFieldColorScheme;
-        //     _databaseField.ColorScheme = textFieldColorScheme;
-
-        //     // Apply checkbox color scheme (using text field scheme for consistency)
-        //     _isDefaultCheckBox.ColorScheme = textFieldColorScheme;
-        // }
+        private void SetKeyboard()
+        {
+            KeyBindings.ReplaceCommands(Key.Enter, Command.Accept);
+            AddCommand(Command.Accept, () => { OnOkClicked(); return true; });
+            KeyBindings.ReplaceCommands(Key.Esc, Command.Cancel);
+            AddCommand(Command.Cancel, () => { OnCancelClicked(); return true; });
+        }
 
         private void OnOkClicked()
         {
