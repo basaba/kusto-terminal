@@ -36,6 +36,7 @@ namespace KustoTerminal.UI
         
         // Maximize state
         private bool _isQueryEditorMaximized = false;
+        private bool _isResultsPaneMaximized = false;
         private Dim _originalRightFrameHeight;
         private Pos _originalBottomFrameY;
         private Dim _originalBottomFrameHeight;
@@ -133,7 +134,8 @@ namespace KustoTerminal.UI
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
             _queryEditorPane.EscapePressed += OnQueryEditorEscapePressed;
             _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
-            _queryEditorPane.MaximizeToggleRequested += OnMaximizeToggleRequested;
+            _queryEditorPane.MaximizeToggleRequested += OnQueryEditorMaximizeToggleRequested;
+            _resultsPane.MaximizeToggleRequested += OnResultsPaneMaximizeToggleRequested;
             
             // Store original dimensions for restore
             _originalRightFrameHeight = _rightFrame.Height;
@@ -153,7 +155,7 @@ namespace KustoTerminal.UI
                 }
                 else if (key == Key.F11)
                 {
-                    ToggleQueryEditorMaximize();
+                    ToggleMaximizeBasedOnFocus();
                     key.Handled = true;
                 }
                 else if (key == Key.Esc)
@@ -208,16 +210,35 @@ namespace KustoTerminal.UI
             }
         }
 
-        private void OnMaximizeToggleRequested(object? sender, EventArgs e)
+        private void OnQueryEditorMaximizeToggleRequested(object? sender, EventArgs e)
         {
             ToggleQueryEditorMaximize();
+        }
+
+        private void OnResultsPaneMaximizeToggleRequested(object? sender, EventArgs e)
+        {
+            ToggleResultsPaneMaximize();
+        }
+
+        private void ToggleMaximizeBasedOnFocus()
+        {
+            // Determine which pane has focus and toggle accordingly
+            if (_resultsPane.HasFocus)
+            {
+                ToggleResultsPaneMaximize();
+            }
+            else
+            {
+                // Default to query editor if focus is unclear
+                ToggleQueryEditorMaximize();
+            }
         }
 
         private void ToggleQueryEditorMaximize()
         {
             if (_isQueryEditorMaximized)
             {
-                RestoreQueryEditor();
+                RestoreNormalLayout();
             }
             else
             {
@@ -225,8 +246,26 @@ namespace KustoTerminal.UI
             }
         }
 
+        private void ToggleResultsPaneMaximize()
+        {
+            if (_isResultsPaneMaximized)
+            {
+                RestoreNormalLayout();
+            }
+            else
+            {
+                MaximizeResultsPane();
+            }
+        }
+
         private void MaximizeQueryEditor()
         {
+            // First restore any existing maximized state
+            if (_isResultsPaneMaximized)
+            {
+                _isResultsPaneMaximized = false;
+            }
+            
             _isQueryEditorMaximized = true;
             
             // Hide connection and results frames
@@ -246,26 +285,56 @@ namespace KustoTerminal.UI
             SetNeedsLayout();
         }
 
-        private void RestoreQueryEditor()
+        private void MaximizeResultsPane()
+        {
+            // First restore any existing maximized state
+            if (_isQueryEditorMaximized)
+            {
+                _isQueryEditorMaximized = false;
+            }
+            
+            _isResultsPaneMaximized = true;
+            
+            // Hide connection and query editor frames
+            _leftFrame.Visible = false;
+            _rightFrame.Visible = false;
+            
+            // Expand results frame to fill entire window
+            _bottomFrame.X = 0;
+            _bottomFrame.Y = 0;
+            _bottomFrame.Width = Dim.Fill();
+            _bottomFrame.Height = Dim.Fill();
+            _bottomFrame.Title = "Results (Maximized - F11 to restore)";
+            
+            // Ensure results pane gets focus
+            _resultsPane.SetFocus();
+            
+            // Trigger layout refresh
+            SetNeedsLayout();
+        }
+
+        private void RestoreNormalLayout()
         {
             _isQueryEditorMaximized = false;
+            _isResultsPaneMaximized = false;
             
-            // Show connection and results frames
+            // Show all frames
             _leftFrame.Visible = true;
+            _rightFrame.Visible = true;
             _bottomFrame.Visible = true;
             
-            // Restore original dimensions
+            // Restore original dimensions for query editor frame
             _rightFrame.X = 31;
             _rightFrame.Width = Dim.Fill();
             _rightFrame.Height = _originalRightFrameHeight;
             _rightFrame.Title = "Query Editor";
             
-            // Restore bottom frame position and size
+            // Restore original dimensions for results frame
+            _bottomFrame.X = 31;
             _bottomFrame.Y = _originalBottomFrameY;
+            _bottomFrame.Width = Dim.Fill();
             _bottomFrame.Height = _originalBottomFrameHeight;
-            
-            // Ensure query editor gets focus
-            _queryEditorPane.FocusEditor();
+            _bottomFrame.Title = "Results";
             
             // Trigger layout refresh
             SetNeedsLayout();

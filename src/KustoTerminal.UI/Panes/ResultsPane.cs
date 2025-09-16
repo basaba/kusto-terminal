@@ -24,6 +24,8 @@ namespace KustoTerminal.UI.Panes
         private DataTable? _originalData;
         private bool _searchVisible = false;
 
+        public event EventHandler? MaximizeToggleRequested;
+
         public ResultsPane()
         {
             InitializeComponents();
@@ -57,7 +59,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "/: Filter | Ctrl+S: Export | Ctrl+T: Row Select",
+                Text = "/: Filter | Ctrl+S: Export | Ctrl+T: Row Select | F11: Maximize/Restore",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
@@ -100,6 +102,11 @@ namespace KustoTerminal.UI.Panes
                     OnExportClicked();
                     key.Handled = true;
                 }
+                else if (key == Key.F4)
+                {
+                    MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
+                    key.Handled = true;
+                }
             };
 
             _searchField.KeyDown += (sender, key) =>
@@ -120,6 +127,10 @@ namespace KustoTerminal.UI.Panes
                 } else if (key == (KeyCode.CtrlMask | Key.T.KeyCode))
                 {
                     SwitchToRowMode();
+                    key.Handled = true;
+                } else if (key == Key.F11)
+                {
+                    MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
                     key.Handled = true;
                 } else if (key == Key.Esc)
                 {
