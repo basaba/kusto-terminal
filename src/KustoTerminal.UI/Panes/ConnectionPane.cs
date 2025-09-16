@@ -55,7 +55,6 @@ namespace KustoTerminal.UI.Panes
                 {
                     ExpandableSymbol = Glyphs.RightArrow,
                     CollapseableSymbol = Glyphs.DownArrow,
-                    //ColorExpandSymbol = true
                 }
             };
 
