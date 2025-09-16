@@ -14,7 +14,6 @@ namespace KustoTerminal.UI.Dialogs
         private TextField _nameField;
         private TextField _clusterUriField;
         private TextField _databaseField;
-        private CheckBox _isDefaultCheckBox;
         private Label _shortcutsLabel;
         private readonly KustoConnection? _originalConnection;
         
@@ -82,15 +81,6 @@ namespace KustoTerminal.UI.Dialogs
                 Width = 40
             };
 
-            // Default checkbox
-            _isDefaultCheckBox = new CheckBox()
-            {
-                Text = "Set as default connection",
-                X = 1,
-                Y = 7,
-                // Checked = connection?.IsDefault ?? false
-            };
-
             // Shortcuts label
             _shortcutsLabel = new Label()
             {
@@ -103,7 +93,7 @@ namespace KustoTerminal.UI.Dialogs
             };
 
             Add(nameLabel, _nameField, clusterLabel, _clusterUriField,
-                databaseLabel, _databaseField, _isDefaultCheckBox, _shortcutsLabel);
+                databaseLabel, _databaseField, _shortcutsLabel);
         }
 
         private void SetupLayout()
