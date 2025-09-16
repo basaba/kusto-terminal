@@ -56,7 +56,7 @@ namespace KustoTerminal.CLI
                 await Task.Delay(1000);
 
                 // Initialize Terminal.Gui
-                Application.Init();
+                Application.Init(driverName: "NetDriver");
                 
                 // Set up black background color scheme
                 // SetupBlackColorScheme();
