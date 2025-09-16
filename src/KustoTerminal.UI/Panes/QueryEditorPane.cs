@@ -134,7 +134,44 @@ namespace KustoTerminal.UI.Panes
 
         public string GetCurrentQuery()
         {
-            return _queryTextView.Text?.ToString() ?? "";
+            var fullText = _queryTextView.Text?.ToString() ?? "";
+            if (string.IsNullOrEmpty(fullText))
+                return "";
+
+            // Get cursor position (Point with X=column, Y=row)
+            var cursorPos = _queryTextView.CursorPosition;
+            
+            // Split text into lines
+            var lines = fullText.Split('\n');
+            
+            // The cursor position Y gives us the line index directly
+            int currentLineIndex = Math.Min(cursorPos.Y, lines.Length - 1);
+            
+            // Find the query block that contains the current line
+            // A query block is separated by empty lines
+            int queryStartLine = currentLineIndex;
+            int queryEndLine = currentLineIndex;
+            
+            // Find start of query block (go backwards until empty line or start)
+            while (queryStartLine > 0 && !string.IsNullOrWhiteSpace(lines[queryStartLine - 1]))
+            {
+                queryStartLine--;
+            }
+            
+            // Find end of query block (go forwards until empty line or end)
+            while (queryEndLine < lines.Length - 1 && !string.IsNullOrWhiteSpace(lines[queryEndLine + 1]))
+            {
+                queryEndLine++;
+            }
+            
+            // Extract the query block
+            var queryLines = new string[queryEndLine - queryStartLine + 1];
+            Array.Copy(lines, queryStartLine, queryLines, 0, queryLines.Length);
+            
+            var query = string.Join("\n", queryLines).Trim();
+            
+            // If no query block found at cursor position, fallback to entire text
+            return string.IsNullOrWhiteSpace(query) ? fullText : query;
         }
 
         public void SetConnection(KustoConnection connection)
