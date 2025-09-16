@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Terminal.Gui;
@@ -7,22 +8,27 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
+using KustoTerminal.Core.Services;
 using KustoTerminal.UI.Dialogs;
+using KustoTerminal.UI.Models;
 using Terminal.Gui.Input;
 using System.Collections.ObjectModel;
 using Terminal.Gui.Drivers;
+using Kusto.Cloud.Platform.Utils;
+using Terminal.Gui.Drawing;
 
 namespace KustoTerminal.UI.Panes
 {
     public class ConnectionPane : View
     {
         private readonly IConnectionManager _connectionManager;
-        private ListView _connectionsList;
+        private TreeView _connectionsTree;
         private Label[] _shortcutsLabels;
 
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
         private KustoConnection? _selectedConnection;
+        private readonly Dictionary<string, IKustoClient> _kustoClients = new();
 
         public event EventHandler<KustoConnection>? ConnectionSelected;
 
@@ -39,14 +45,18 @@ namespace KustoTerminal.UI.Panes
 
         private void InitializeComponents()
         {
-            _connectionsList = new ListView()
+            _connectionsTree = new TreeView()
             {
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Fill(),
-                AllowsMarking = false,
-                AllowsMultipleSelection = false,
+                Style = new TreeStyle()
+                {
+                    ExpandableSymbol = Glyphs.RightArrow,
+                    CollapseableSymbol = Glyphs.DownArrow,
+                    //ColorExpandSymbol = true
+                }
             };
 
             _shortcutsLabels = new[]{
@@ -54,7 +64,7 @@ namespace KustoTerminal.UI.Panes
                 {
                     Text = "Ctrl+N: New",
                     X = 0,
-                    Y = Pos.Bottom(_connectionsList) - 3,
+                    Y = Pos.Bottom(_connectionsTree) - 4,
                     Width = Dim.Fill(),
                     Height = 1
                 },
@@ -62,7 +72,7 @@ namespace KustoTerminal.UI.Panes
                 {
                     Text = "Ctrl+E: Edit",
                     X = 0,
-                    Y = Pos.Bottom(_connectionsList) - 2,
+                    Y = Pos.Bottom(_connectionsTree) - 3,
                     Width = Dim.Fill(),
                     Height = 1
                 },
@@ -70,21 +80,28 @@ namespace KustoTerminal.UI.Panes
                 {
                     Text = "Del: Delete",
                     X = 0,
-                    Y = Pos.Bottom(_connectionsList) - 1,
+                    Y = Pos.Bottom(_connectionsTree) - 2,
+                    Width = Dim.Fill(),
+                    Height = 1
+                },
+                new Label()
+                {
+                    Text = "Space: Expand DBs",
+                    X = 0,
+                    Y = Pos.Bottom(_connectionsTree) - 1,
                     Width = Dim.Fill(),
                     Height = 1
                 }
             };
 
             // Set up event handlers
-            _connectionsList.SelectedItemChanged += OnConnectionSelectedChanged;
-            _connectionsList.Accepting += (sender, args) => { OnConnectClicked(); args.Handled = true; };
-
+            _connectionsTree.SelectionChanged += OnTreeSelectionChanged;
+            _connectionsTree.ObjectActivated += OnTreeObjectActivated;
         }
 
         private void SetKeyboard()
         {
-            _connectionsList.KeyDown += (o, key) =>
+            _connectionsTree.KeyDown += (o, key) =>
             {
                 if (key.KeyCode == (Key.N.KeyCode | KeyCode.CtrlMask))
                 {
@@ -101,12 +118,17 @@ namespace KustoTerminal.UI.Panes
                     OnDeleteClicked();
                     key.Handled = true;
                 }
+                else if (key == Key.Space)
+                {
+                    OnExpandDatabases();
+                    key.Handled = true;
+                }
             };
         }
 
         private void SetupLayout()
         {
-            Add(_connectionsList);
+            Add(_connectionsTree);
             _shortcutsLabels.ToList().ForEach(label => Add(label));
         }
 
@@ -117,15 +139,19 @@ namespace KustoTerminal.UI.Panes
                 var connections = await _connectionManager.GetConnectionsAsync();
                 _connections = connections.ToArray();
                 
-                var displayItems = _connections.Select(c => 
-                    $"{(c.IsDefault ? "* " : "  ")}{c.DisplayName}").ToArray();
-
-                _connectionsList.SetSource(new ObservableCollection<string>(displayItems));
+                // Clear existing tree
+                _connectionsTree.ClearObjects();
+                
+                // Add cluster nodes to tree
+                foreach (var connection in _connections)
+                {
+                    var clusterNode = new ClusterTreeNode(connection, GetKustoClient(connection));
+                    _connectionsTree.AddObject(clusterNode);
+                }
 
                 if (_connections.Length > 0)
                 {
-                    _connectionsList.SelectedItem = 0;
-                    OnConnectionSelected(0);
+                    _selectedConnection = _connections[0];
                 }
             }
             catch (Exception ex)
@@ -139,23 +165,59 @@ namespace KustoTerminal.UI.Panes
             LoadConnections();
         }
 
-        private void OnConnectionSelectedChanged(object? sender, ListViewItemEventArgs args)
+        private void OnTreeSelectionChanged(object? sender, SelectionChangedEventArgs<ITreeNode> args)
         {
-            OnConnectionSelected(args.Item);
-        }
-
-        private void OnConnectionSelected(int selectedIndex)
-        {
-            if (selectedIndex >= 0 && selectedIndex < _connections.Length)
+            var selectedNode = _connectionsTree.SelectedObject;
+            
+            if (selectedNode is ClusterTreeNode clusterNode)
             {
-                _selectedConnection = _connections[selectedIndex];
-                
-                // Force a redraw to ensure selection highlighting is visible
-                // _connectionsList.SetNeedsDisplay();
+                _selectedConnection = clusterNode.Connection;
+            }
+            else if (selectedNode is DatabaseTreeNode dbNode)
+            {
+                _selectedConnection = dbNode.ParentConnection;
             }
             else
             {
                 _selectedConnection = null;
+            }
+        }
+
+        private void OnExpandDatabases()
+        {
+            var selectedNode = _connectionsTree.SelectedObject;
+            
+            if (selectedNode is ClusterTreeNode clusterNode)
+            {
+                // Load and expand databases for the selected cluster
+                Task.Run(async () => {
+                    await clusterNode.LoadDatabasesAsync();
+                    Application.Invoke(()=> _connectionsTree.RefreshObject(clusterNode));
+                });
+            }
+        }
+
+        private void OnTreeObjectActivated(object? sender, ObjectActivatedEventArgs<ITreeNode> args)
+        {
+            if (args.ActivatedObject is ClusterTreeNode clusterNode)
+            {
+                OnConnectClicked();
+            }
+            else if (args.ActivatedObject is DatabaseTreeNode dbNode)
+            {
+                // When a database is activated, update the connection's database and connect
+                _selectedConnection = new KustoConnection
+                {
+                    Id = dbNode.ParentConnection.Id,
+                    Name = dbNode.ParentConnection.Name,
+                    ClusterUri = dbNode.ParentConnection.ClusterUri,
+                    Database = dbNode.DatabaseName,
+                    AuthType = dbNode.ParentConnection.AuthType,
+                    CreatedAt = dbNode.ParentConnection.CreatedAt,
+                    LastUsed = DateTime.UtcNow,
+                    IsDefault = dbNode.ParentConnection.IsDefault
+                };
+                OnConnectClicked();
             }
         }
 
@@ -220,6 +282,18 @@ namespace KustoTerminal.UI.Panes
         public KustoConnection? GetSelectedConnection()
         {
             return _selectedConnection;
+        }
+
+        private IKustoClient GetKustoClient(KustoConnection connection)
+        {
+            if (!_kustoClients.TryGetValue(connection.Id, out var client))
+            {
+                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType);
+                client = new KustoClient(connection, authProvider);
+                _kustoClients[connection.Id] = client;
+            }
+
+            return client;
         }
     }
 }

@@ -11,9 +11,7 @@ namespace KustoTerminal.Core.Services
             return authType switch
             {
                 AuthenticationType.None => new NoAuthenticationProvider(),
-                AuthenticationType.AzureCli => null, // Will be handled at higher level
-                AuthenticationType.ServicePrincipal => null, // Will be handled at higher level
-                AuthenticationType.Interactive => null, // Will be handled at higher level
+                AuthenticationType.AzureCli => new AzureCliAuthenticationProvider(), // Will be handled at higher level
                 _ => throw new ArgumentException($"Unknown authentication type: {authType}", nameof(authType))
             };
         }

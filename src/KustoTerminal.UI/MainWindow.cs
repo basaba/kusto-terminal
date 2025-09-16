@@ -39,10 +39,9 @@ namespace KustoTerminal.UI
         private Pos _originalBottomFrameY;
         private Dim _originalBottomFrameHeight;
 
-        public MainWindow(IConnectionManager connectionManager, IAuthenticationProvider authProvider, IUserSettingsManager userSettingsManager)
+        public MainWindow(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
         {
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-            _authProvider = authProvider ?? throw new ArgumentNullException(nameof(authProvider));
             _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
 
             Title = "Kusto Terminal";
@@ -366,20 +365,7 @@ namespace KustoTerminal.UI
                         _queryEditorPane.UpdateProgressMessage(message);
                     });
                 });
-                
-                // Get the appropriate authentication provider for this connection
-                IAuthenticationProvider authProvider;
-                if (connection.AuthType == AuthenticationType.None)
-                {
-                    authProvider = new NoAuthenticationProvider();
-                }
-                else
-                {
-                    // For other auth types, use the injected provider (currently only supports AzureCli)
-                    // In the future, this could be enhanced to support multiple auth providers
-                    authProvider = _authProvider;
-                }
-
+                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType);
                 _currentKustoClient = new Core.Services.KustoClient(connection, authProvider);
                 var result = await _currentKustoClient.ExecuteQueryAsync(query, cancellationToken, progress);
                 _currentKustoClient.Dispose();
@@ -423,9 +409,9 @@ namespace KustoTerminal.UI
         }
 
 
-        public static IDisposable Run(IConnectionManager connectionManager, IAuthenticationProvider authProvider, IUserSettingsManager userSettingsManager)
+        public static IDisposable Run(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
         {
-            var mainWindow = new MainWindow(connectionManager, authProvider, userSettingsManager);
+            var mainWindow = new MainWindow(connectionManager, userSettingsManager);
             Application.Run(mainWindow);
             return mainWindow;
         }

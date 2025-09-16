@@ -6,7 +6,7 @@ using Azure.Identity;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
 
-namespace KustoTerminal.Auth
+namespace KustoTerminal.Core.Services
 {
     public class AzureCliAuthenticationProvider : IAuthenticationProvider
     {

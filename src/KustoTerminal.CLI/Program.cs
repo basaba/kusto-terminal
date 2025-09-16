@@ -7,7 +7,6 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 using KustoTerminal.Core.Services;
 using KustoTerminal.Core.Interfaces;
-using KustoTerminal.Auth;
 using KustoTerminal.UI;
 using System.Runtime.InteropServices;
 
@@ -24,7 +23,6 @@ namespace KustoTerminal.CLI
 
                 // Initialize services
                 var connectionManager = new ConnectionManager();
-                var authProvider = new AzureCliAuthenticationProvider();
                 var userSettingsManager = new UserSettingsManager();
 
                 // Load existing connections
@@ -46,7 +44,7 @@ namespace KustoTerminal.CLI
                 try
                 {
                     // Start the main window
-                    using var window = MainWindow.Run(connectionManager, authProvider, userSettingsManager);
+                    using var window = MainWindow.Run(connectionManager, userSettingsManager);
                 }
                 finally
                 {
