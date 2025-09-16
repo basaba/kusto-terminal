@@ -104,7 +104,15 @@ namespace KustoTerminal.UI.Panes
                 }
                 else if (key == Key.Esc)
                 {
-                    EscapePressed?.Invoke(this, EventArgs.Empty);
+                    if (_isExecuting)
+                    {
+                        QueryCancelRequested?.Invoke(this, EventArgs.Empty);
+                    }
+                    else
+                    {
+                        EscapePressed?.Invoke(this, EventArgs.Empty);
+                    }
+                        
                     key.Handled = true;
                 }
             };

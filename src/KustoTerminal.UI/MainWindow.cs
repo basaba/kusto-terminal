@@ -187,9 +187,7 @@ namespace KustoTerminal.UI
         {
             // Cancel the current query if one is running
             if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                
-                
+            {                
                 // First cancel the token to stop any local processing
                 _queryCancellationTokenSource.Cancel();
                 
