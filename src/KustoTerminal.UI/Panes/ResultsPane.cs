@@ -6,6 +6,7 @@ using Terminal.Gui;
 using Terminal.Gui.App;
 using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
+using Terminal.Gui.Drawing;
 
 using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Dialogs;
@@ -18,6 +19,7 @@ namespace KustoTerminal.UI.Panes
     {
         private TableView _tableView;
         private Label _statusLabel;
+        private TextView _errorLabel;
         private Label _shortcutsLabel;
         private TextField _searchField;
         private Label _searchLabel;
@@ -47,6 +49,18 @@ namespace KustoTerminal.UI.Panes
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = 1
+            };
+
+            _errorLabel = new TextView()
+            {
+                Text = "",
+                X = 0,
+                Y = 1,  // Position where table view is
+                Width = Dim.Fill(),
+                Height = Dim.Fill() - 1,  // Take up the space normally used by table view
+                Visible = false,
+                SchemeName = "Error",
+                ReadOnly = true,
             };
 
             _tableView = new TableView()
@@ -158,7 +172,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_statusLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
+            Add(_statusLabel, _errorLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
         }
 
         public void DisplayResult(QueryResult result)
@@ -184,6 +198,11 @@ namespace KustoTerminal.UI.Panes
         {
             try
             {
+                // Hide error label and show table view
+                _errorLabel.Visible = false;
+                _tableView.Visible = true;
+                _statusLabel.Visible = true;
+                
                 var dataTable = result.Data!;
                 _originalData = dataTable.Copy(); // Keep a copy of the original data
                 
@@ -204,20 +223,32 @@ namespace KustoTerminal.UI.Panes
             }
             catch (Exception ex)
             {
-                _statusLabel.Text = $"Error displaying results: {ex.Message}";
+                // Hide table view and show error label for display errors
+                _tableView.Visible = false;
+                _errorLabel.Visible = true;
+                _errorLabel.Text = $"Error displaying results: {ex.Message}";
+                _statusLabel.Text = $"Error occurred while displaying results | Duration: {result.Duration.TotalMilliseconds:F0}ms";
             }
         }
 
         private void DisplayError(QueryResult result)
         {
-            _statusLabel.Text = $"Query failed: {result.ErrorMessage} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
+            // Hide table view and show error label in its place
+            _tableView.Visible = false;
+            _errorLabel.Visible = true;
+            _errorLabel.Text = $"Query failed: {result.ErrorMessage}";
             
-            // Clear the table
-            _tableView.Table = new DataTableSource(new DataTable());
+            // Keep status label visible for other information
+            _statusLabel.Text = "Error occurred during query execution";
         }
 
         private void DisplayEmpty(QueryResult result)
         {
+            // Hide error label and show table view
+            _errorLabel.Visible = false;
+            _tableView.Visible = true;
+            _statusLabel.Visible = true;
+            
             _statusLabel.Text = $"No results returned | Duration: {result.Duration.TotalMilliseconds:F0}ms";
             
             // Show empty table with column headers if available
@@ -229,7 +260,6 @@ namespace KustoTerminal.UI.Panes
             {
                 _tableView.Table = new DataTableSource(new DataTable());
             }
-            
         }
 
         public new void Clear()
@@ -238,7 +268,13 @@ namespace KustoTerminal.UI.Panes
             _originalData = null;
             _selectedColumns.Clear();
             _tableView.Table = new DataTableSource(new DataTable());
+            
+            // Reset to showing table view and status label, hide error label
+            _errorLabel.Visible = false;
+            _tableView.Visible = true;
+            _statusLabel.Visible = true;
             _statusLabel.Text = "No results";
+            
             HideSearch();
         }
 
@@ -510,7 +546,11 @@ namespace KustoTerminal.UI.Panes
             }
             catch (Exception ex)
             {
-                _statusLabel.Text = $"Search error: {ex.Message}";
+                // Hide table view and show error label for search errors
+                _tableView.Visible = false;
+                _errorLabel.Visible = true;
+                _errorLabel.Text = $"Search error: {ex.Message}";
+                _statusLabel.Text = "Error occurred during search";
             }
         }
 

@@ -446,12 +446,12 @@ namespace KustoTerminal.UI
         private void UpdateStatusBar(string message)
         {
             // Update status bar with current message
-            Application.Invoke(() =>
-            {
-                //_statusBar.SetMessage(message);
-                // Terminal.Gui will handle status updates
-                // Title = $"Kusto Terminal - {message}";
-            });
+            // Application.Invoke(() =>
+            // {
+            //     //_statusBar.SetMessage(message);
+            //     // Terminal.Gui will handle status updates
+            //     // Title = $"Kusto Terminal - {message}";
+            // });
         }
 
         public static IDisposable Run(IConnectionManager connectionManager, IAuthenticationProvider authProvider, IUserSettingsManager userSettingsManager)
