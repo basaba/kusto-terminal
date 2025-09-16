@@ -60,32 +60,5 @@ namespace KustoTerminal.CLI
                 Console.ReadKey();
             }
         }
-
-        // private static void SetupBlackColorScheme()
-        // {
-        //     // Create a custom color scheme with black background
-        //     var blackScheme = new ColorScheme()
-        //     {
-        //         Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-        //         Focus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-        //         HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black),
-        //         HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black),
-        //         Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
-        //     };
-
-        //     // Apply the color scheme to all built-in color schemes
-        //     Colors.TopLevel = blackScheme;
-        //     Colors.Base = blackScheme;
-        //     Colors.Dialog = blackScheme;
-        //     Colors.Menu = blackScheme;
-        //     Colors.Error = new ColorScheme()
-        //     {
-        //         Normal = new Terminal.Gui.Attribute(Color.BrightRed, Color.Black),
-        //         Focus = new Terminal.Gui.Attribute(Color.BrightRed, Color.Black),
-        //         HotNormal = new Terminal.Gui.Attribute(Color.BrightRed, Color.Black),
-        //         HotFocus = new Terminal.Gui.Attribute(Color.BrightRed, Color.Black),
-        //         Disabled = new Terminal.Gui.Attribute(Color.Black, Color.Black)
-        //     };
-        // }
     }
 }
