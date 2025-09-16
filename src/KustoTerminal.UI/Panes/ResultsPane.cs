@@ -76,7 +76,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+T: Row Select | F11: Maximize/Restore",
+                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+T: Row Select | F12: Maximize/Restore",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
@@ -119,7 +119,7 @@ namespace KustoTerminal.UI.Panes
                     OnExportClicked();
                     key.Handled = true;
                 }
-                else if (key == Key.F4)
+                else if (key == Key.F12)
                 {
                     MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
                     key.Handled = true;

@@ -155,7 +155,7 @@ namespace KustoTerminal.UI
                     Application.Shutdown();
                     key.Handled = true;
                 }
-                else if (key == Key.F11)
+                else if (key == Key.F12)
                 {
                     ToggleMaximizeBasedOnFocus();
                     key.Handled = true;
@@ -273,7 +273,7 @@ namespace KustoTerminal.UI
             _rightFrame.X = 0;
             _rightFrame.Width = Dim.Fill();
             _rightFrame.Height = Dim.Fill();
-            _rightFrame.Title = "Query Editor (Maximized - F4 to restore)";
+            _rightFrame.Title = "Query Editor (Maximized - F12 to restore)";
             
             // Ensure query editor gets focus
             _queryEditorPane.FocusEditor();
@@ -301,7 +301,7 @@ namespace KustoTerminal.UI
             _bottomFrame.Y = 0;
             _bottomFrame.Width = Dim.Fill();
             _bottomFrame.Height = Dim.Fill();
-            _bottomFrame.Title = "Results (Maximized - F4 to restore)";
+            _bottomFrame.Title = "Results (Maximized - F12 to restore)";
             
             // Ensure results pane gets focus
             _resultsPane.SetFocus();
