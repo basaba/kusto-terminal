@@ -174,7 +174,7 @@ namespace KustoTerminal.UI
         private void OnConnectionSelected(object? sender, KustoConnection connection)
         {
             _queryEditorPane.SetConnection(connection);
-            UpdateStatusBar($"Connected to: {connection.DisplayName}");
+            
 
             _currentPaneIndex = 1; // Query editor is at index 1
             _queryEditorPane.FocusEditor();
@@ -195,7 +195,7 @@ namespace KustoTerminal.UI
             // Cancel the current query if one is running
             if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
             {
-                UpdateStatusBar("Query cancellation requested...");
+                
                 
                 // First cancel the token to stop any local processing
                 _queryCancellationTokenSource.Cancel();
@@ -210,7 +210,7 @@ namespace KustoTerminal.UI
                     catch (Exception ex)
                     {
                         // Log but don't throw - cancellation errors shouldn't crash the UI
-                        UpdateStatusBar($"Warning: Could not cancel query on server: {ex.Message}");
+                        
                     }
                 }
             }
@@ -361,19 +361,17 @@ namespace KustoTerminal.UI
                 var connection = _connectionPane.GetSelectedConnection();
                 if (connection == null)
                 {
-                    UpdateStatusBar("No connection selected");
                     Application.Invoke(() => _queryEditorPane.SetExecuting(false));
                     return;
                 }
 
-                UpdateStatusBar("Executing query...");
+                
                 
                 // Create progress handler
                 var progress = new Progress<string>(message =>
                 {
                     Application.Invoke(() =>
                     {
-                        UpdateStatusBar(message);
                         _queryEditorPane.UpdateProgressMessage(message);
                     });
                 });
@@ -400,14 +398,6 @@ namespace KustoTerminal.UI
                 {
                     _queryEditorPane.SetExecuting(false);
                     _resultsPane.DisplayResult(result);
-                    if (result.IsSuccess)
-                    {
-                        UpdateStatusBar($"Query executed successfully. {result.RowCount} rows returned in {result.Duration.TotalMilliseconds:F0}ms");
-                    }
-                    else
-                    {
-                        UpdateStatusBar($"Query failed: {result.ErrorMessage}");
-                    }
                 });
             }
             catch (OperationCanceledException)
@@ -415,15 +405,13 @@ namespace KustoTerminal.UI
                 Application.Invoke(() =>
                 {
                     _queryEditorPane.SetExecuting(false);
-                    UpdateStatusBar("Query was cancelled");
                 });
             }
             catch (Exception ex)
             {
                 Application.Invoke(() =>
                 {
-                    _queryEditorPane.SetExecuting(false);
-                    UpdateStatusBar($"Error: {ex.Message}");
+                    _queryEditorPane.SetExecuting(false); 
                 });
             }
             finally
@@ -443,16 +431,6 @@ namespace KustoTerminal.UI
             }
         }
 
-        private void UpdateStatusBar(string message)
-        {
-            // Update status bar with current message
-            // Application.Invoke(() =>
-            // {
-            //     //_statusBar.SetMessage(message);
-            //     // Terminal.Gui will handle status updates
-            //     // Title = $"Kusto Terminal - {message}";
-            // });
-        }
 
         public static IDisposable Run(IConnectionManager connectionManager, IAuthenticationProvider authProvider, IUserSettingsManager userSettingsManager)
         {
