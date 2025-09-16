@@ -7,6 +7,7 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
+using KustoTerminal.Core.Services;
 using KustoTerminal.UI.Panes;
 using KustoTerminal.UI.Dialogs;
 using Terminal.Gui.Input;
@@ -377,7 +378,20 @@ namespace KustoTerminal.UI
                     });
                 });
                 
-                _currentKustoClient = new Core.Services.KustoClient(connection, _authProvider);
+                // Get the appropriate authentication provider for this connection
+                IAuthenticationProvider authProvider;
+                if (connection.AuthType == AuthenticationType.None)
+                {
+                    authProvider = new NoAuthenticationProvider();
+                }
+                else
+                {
+                    // For other auth types, use the injected provider (currently only supports AzureCli)
+                    // In the future, this could be enhanced to support multiple auth providers
+                    authProvider = _authProvider;
+                }
+
+                _currentKustoClient = new Core.Services.KustoClient(connection, authProvider);
                 var result = await _currentKustoClient.ExecuteQueryAsync(query, cancellationToken, progress);
                 _currentKustoClient.Dispose();
                 _currentKustoClient = null;

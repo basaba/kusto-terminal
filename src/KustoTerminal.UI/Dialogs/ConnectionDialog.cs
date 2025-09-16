@@ -14,6 +14,7 @@ namespace KustoTerminal.UI.Dialogs
         private TextField _nameField;
         private TextField _clusterUriField;
         private TextField _databaseField;
+        private RadioGroup _authTypeGroup;
         private Label _shortcutsLabel;
         private readonly KustoConnection? _originalConnection;
         
@@ -24,7 +25,7 @@ namespace KustoTerminal.UI.Dialogs
             _originalConnection = connection;
             Title = connection == null ? "Add Connection" : "Edit Connection";
             Width = 60;
-            Height = 15;
+            Height = 18;
 
             InitializeComponents(connection);
             SetupLayout();
@@ -81,19 +82,47 @@ namespace KustoTerminal.UI.Dialogs
                 Width = 40
             };
 
+            // Auth type selection
+            var authTypeLabel = new Label()
+            {
+                Text = "Auth Type:",
+                X = 1,
+                Y = 7
+            };
+
+            _authTypeGroup = new RadioGroup()
+            {
+                X = 15,
+                Y = 7,
+                Width = 40,
+                Height = 4,
+                RadioLabels = new string[] { "None (Unauthenticated)", "Azure CLI", "Service Principal", "Interactive" }
+            };
+
+            // Set initial auth type selection
+            var authTypeIndex = connection?.AuthType switch
+            {
+                AuthenticationType.None => 0,
+                AuthenticationType.AzureCli => 1,
+                AuthenticationType.ServicePrincipal => 2,
+                AuthenticationType.Interactive => 3,
+                _ => 1 // Default to Azure CLI
+            };
+            _authTypeGroup.SelectedItem = authTypeIndex;
+
             // Shortcuts label
             _shortcutsLabel = new Label()
             {
                 Text = "Enter: OK | Esc: Cancel",
                 X = 1,
-                Y = 9,
+                Y = 12,
                 Width = Dim.Fill() - 2,
                 Height = 1,
                 // ColorScheme = ColorSchemeFactory.CreateShortcutLabel()
             };
 
             Add(nameLabel, _nameField, clusterLabel, _clusterUriField,
-                databaseLabel, _databaseField, _shortcutsLabel);
+                databaseLabel, _databaseField, authTypeLabel, _authTypeGroup, _shortcutsLabel);
         }
 
         private void SetupLayout()
@@ -138,6 +167,16 @@ namespace KustoTerminal.UI.Dialogs
                 return;
             }
 
+            // Get selected auth type
+            var selectedAuthType = _authTypeGroup.SelectedItem switch
+            {
+                0 => AuthenticationType.None,
+                1 => AuthenticationType.AzureCli,
+                2 => AuthenticationType.ServicePrincipal,
+                3 => AuthenticationType.Interactive,
+                _ => AuthenticationType.AzureCli
+            };
+
             // Create result - preserve original ID and timestamps for edits
             if (_originalConnection != null)
             {
@@ -148,7 +187,7 @@ namespace KustoTerminal.UI.Dialogs
                     Name = name,
                     ClusterUri = clusterUri,
                     Database = database,
-                    AuthType = _originalConnection.AuthType,
+                    AuthType = selectedAuthType,
                     CreatedAt = _originalConnection.CreatedAt,
                     LastUsed = _originalConnection.LastUsed
                 };
@@ -161,7 +200,7 @@ namespace KustoTerminal.UI.Dialogs
                     Name = name,
                     ClusterUri = clusterUri,
                     Database = database,
-                    AuthType = AuthenticationType.AzureCli
+                    AuthType = selectedAuthType
                 };
             }
 

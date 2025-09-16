@@ -25,6 +25,7 @@ namespace KustoTerminal.Core.Models
 
     public enum AuthenticationType
     {
+        None,
         AzureCli,
         ServicePrincipal,
         Interactive

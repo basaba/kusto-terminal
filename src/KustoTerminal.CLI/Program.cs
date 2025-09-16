@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Terminal.Gui;
 using Terminal.Gui.App;
@@ -28,31 +29,42 @@ namespace KustoTerminal.CLI
 
                 // Load existing connections
                 await connectionManager.LoadConnectionsAsync();
-
-                // Check Azure CLI authentication
-                if (!authProvider.IsAuthenticated())
-                {
-                    Console.WriteLine("Azure CLI authentication not detected.");
-                    Console.WriteLine("Please run 'az login' first, then restart the application.");
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadKey();
-                    return;
-                }
-
-                Console.WriteLine("Azure CLI authentication detected.");
+                var connections = await connectionManager.GetConnectionsAsync();
                 
-                // Validate authentication
-                var isValidAuth = await authProvider.ValidateAuthenticationAsync();
-                if (!isValidAuth)
+                // Check if there are any authenticated connections that require Azure CLI
+                var hasAuthenticatedConnections = connections.Any(c => c.AuthType == Core.Models.AuthenticationType.AzureCli);
+                
+                if (hasAuthenticatedConnections)
                 {
-                    Console.WriteLine("Failed to validate Azure authentication.");
-                    Console.WriteLine("Please run 'az login' again, then restart the application.");
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadKey();
-                    return;
+                    // Check Azure CLI authentication only if there are connections that need it
+                    if (!authProvider.IsAuthenticated())
+                    {
+                        Console.WriteLine("Azure CLI authentication not detected.");
+                        Console.WriteLine("Note: You can still use unauthenticated connections.");
+                        Console.WriteLine("For authenticated connections, please run 'az login' first.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Azure CLI authentication detected.");
+                        
+                        // Validate authentication
+                        var isValidAuth = await authProvider.ValidateAuthenticationAsync();
+                        if (!isValidAuth)
+                        {
+                            Console.WriteLine("Failed to validate Azure authentication.");
+                            Console.WriteLine("Note: You can still use unauthenticated connections.");
+                            Console.WriteLine("For authenticated connections, please run 'az login' again.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Authentication validated successfully.");
+                        }
+                    }
                 }
-
-                Console.WriteLine("Authentication validated successfully.");
+                else
+                {
+                    Console.WriteLine("No authenticated connections configured. Azure CLI authentication not required.");
+                }
                 Console.WriteLine("Starting Terminal UI...");
 
                 // Small delay to let user read the messages

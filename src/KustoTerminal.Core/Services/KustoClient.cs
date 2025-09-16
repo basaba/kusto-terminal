@@ -240,9 +240,20 @@ namespace KustoTerminal.Core.Services
             if (_queryProvider != null && _adminProvider != null)
                 return;
 
-            var token = await _authProvider.GetAccessTokenAsync(_connection.ClusterUri);
-            var connectionStringBuilder = new KustoConnectionStringBuilder(_connection.ClusterUri)
-                .WithAadUserTokenAuthentication(token);
+            KustoConnectionStringBuilder connectionStringBuilder;
+            
+            if (_connection.AuthType == AuthenticationType.None)
+            {
+                // For unauthenticated connections, create a connection string without authentication
+                connectionStringBuilder = new KustoConnectionStringBuilder(_connection.ClusterUri);
+            }
+            else
+            {
+                // For authenticated connections, get token and use it
+                var token = await _authProvider.GetAccessTokenAsync(_connection.ClusterUri);
+                connectionStringBuilder = new KustoConnectionStringBuilder(_connection.ClusterUri)
+                    .WithAadUserTokenAuthentication(token);
+            }
 
             _queryProvider = KustoClientFactory.CreateCslQueryProvider(connectionStringBuilder);
             _adminProvider = KustoClientFactory.CreateCslAdminProvider(connectionStringBuilder);
