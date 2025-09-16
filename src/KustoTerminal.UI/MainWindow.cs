@@ -18,6 +18,7 @@ namespace KustoTerminal.UI
     {
         private readonly IConnectionManager _connectionManager;
         private readonly IAuthenticationProvider _authProvider;
+        private readonly IUserSettingsManager _userSettingsManager;
         
         private ConnectionPane _connectionPane;
         private QueryEditorPane _queryEditorPane;
@@ -41,10 +42,11 @@ namespace KustoTerminal.UI
         private Pos _originalBottomFrameY;
         private Dim _originalBottomFrameHeight;
 
-        public MainWindow(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
+        public MainWindow(IConnectionManager connectionManager, IAuthenticationProvider authProvider, IUserSettingsManager userSettingsManager)
         {
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
             _authProvider = authProvider ?? throw new ArgumentNullException(nameof(authProvider));
+            _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
 
             Title = "Kusto Terminal";
             X = 0;
@@ -99,7 +101,7 @@ namespace KustoTerminal.UI
                 Height = Dim.Fill()
             };
 
-            _queryEditorPane = new QueryEditorPane()
+            _queryEditorPane = new QueryEditorPane(_userSettingsManager)
             {
                 X = 0,
                 Y = 0,
@@ -141,6 +143,9 @@ namespace KustoTerminal.UI
             _originalRightFrameHeight = _rightFrame.Height;
             _originalBottomFrameY = _bottomFrame.Y;
             _originalBottomFrameHeight = _bottomFrame.Height;
+            
+            // Load last query asynchronously
+            LoadLastQueryAsync();
         }
 
         private void SetKeyboard()
@@ -435,10 +440,43 @@ namespace KustoTerminal.UI
             });
         }
 
-        public static void Run(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
-        {            
-            var mainWindow = new MainWindow(connectionManager, authProvider);          
+        public static IDisposable Run(IConnectionManager connectionManager, IAuthenticationProvider authProvider, IUserSettingsManager userSettingsManager)
+        {
+            var mainWindow = new MainWindow(connectionManager, authProvider, userSettingsManager);
             Application.Run(mainWindow);
+            return mainWindow;
+        }
+        
+        private async void LoadLastQueryAsync()
+        {
+            try
+            {
+                // Load the last query when the window is set up
+                _queryEditorPane.LoadLastQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                // Silently fail - don't crash the app if we can't load the last query
+                Console.WriteLine($"Warning: Failed to load last query: {ex.Message}");
+            }
+        }
+        
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Save current query before disposing
+                try
+                {
+                    _queryEditorPane?.SaveCurrentQueryAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Silently fail - don't crash during shutdown
+                    Console.WriteLine($"Warning: Failed to save query during shutdown: {ex.Message}");
+                }
+            }
+            base.Dispose(disposing);
         }
     }
 }

@@ -5,6 +5,7 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 
 using KustoTerminal.Core.Models;
+using KustoTerminal.Core.Interfaces;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 
@@ -21,14 +22,16 @@ namespace KustoTerminal.UI.Panes
         private KustoConnection? _currentConnection;
         private bool _isExecuting = false;
         private System.Threading.Timer? _temporaryMessageTimer;
+        private readonly IUserSettingsManager? _userSettingsManager;
 
         public event EventHandler<string>? QueryExecuteRequested;
         public event EventHandler? EscapePressed;
         public event EventHandler? QueryCancelRequested;
         public event EventHandler? MaximizeToggleRequested;
 
-        public QueryEditorPane()
+        public QueryEditorPane(IUserSettingsManager? userSettingsManager = null)
         {
+            _userSettingsManager = userSettingsManager;
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
@@ -264,10 +267,62 @@ namespace KustoTerminal.UI.Panes
             });
         }
 
+        public async void LoadLastQueryAsync()
+        {
+            if (_userSettingsManager != null)
+            {
+                try
+                {
+                    var lastQuery = await _userSettingsManager.GetLastQueryAsync();
+                    if (!string.IsNullOrEmpty(lastQuery))
+                    {
+                        Application.Invoke(() =>
+                        {
+                            _queryTextView.Text = lastQuery;
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Silently fail - don't crash the app if settings can't be loaded
+                    Console.WriteLine($"Warning: Failed to load last query: {ex.Message}");
+                }
+            }
+        }
+
+        public async void SaveCurrentQueryAsync()
+        {
+            if (_userSettingsManager != null)
+            {
+                try
+                {
+                    var currentQuery = _queryTextView.Text?.ToString() ?? string.Empty;
+                    await _userSettingsManager.SaveLastQueryAsync(currentQuery);
+                }
+                catch (Exception ex)
+                {
+                    // Silently fail - don't crash the app if settings can't be saved
+                    Console.WriteLine($"Warning: Failed to save query: {ex.Message}");
+                }
+            }
+        }
+
+        public void SetQueryText(string query)
+        {
+            _queryTextView.Text = query ?? string.Empty;
+        }
+
+        public string GetQueryText()
+        {
+            return _queryTextView.Text?.ToString() ?? string.Empty;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                // Save query before disposing
+                SaveCurrentQueryAsync();
                 _temporaryMessageTimer?.Dispose();
                 _spinnerTimer?.Dispose();
             }
