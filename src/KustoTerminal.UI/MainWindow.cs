@@ -28,10 +28,6 @@ namespace KustoTerminal.UI
         private FrameView _rightFrame;
         private FrameView _bottomFrame;
         
-        // Pane navigation
-        private BasePane[] _navigablePanes;
-        private int _currentPaneIndex = 0;
-        
         // Query cancellation
         private CancellationTokenSource? _queryCancellationTokenSource;
         private Core.Services.KustoClient? _currentKustoClient;
@@ -174,9 +170,6 @@ namespace KustoTerminal.UI
         private void OnConnectionSelected(object? sender, KustoConnection connection)
         {
             _queryEditorPane.SetConnection(connection);
-            
-
-            _currentPaneIndex = 1; // Query editor is at index 1
             _queryEditorPane.FocusEditor();
         }
 
