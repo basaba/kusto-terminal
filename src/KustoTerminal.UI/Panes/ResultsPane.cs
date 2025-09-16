@@ -177,6 +177,7 @@ namespace KustoTerminal.UI.Panes
 
         public void DisplayResult(QueryResult result)
         {
+            Clear();
             _currentResult = result;
 
             if (!result.IsSuccess)
