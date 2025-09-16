@@ -48,10 +48,15 @@ namespace KustoTerminal.Core.Services
                 // Check for cancellation after connection setup
                 combinedToken.ThrowIfCancellationRequested();
                 
-                if (_queryProvider == null)
+                // Determine if this is a command (starts with dot) or a query
+                var isCommand = query.TrimStart().StartsWith(".");
+                
+                if (isCommand && _adminProvider == null)
+                    throw new InvalidOperationException("Admin provider is not initialized");
+                else if (!isCommand && _queryProvider == null)
                     throw new InvalidOperationException("Query provider is not initialized");
 
-                progress?.Report("Preparing query...");
+                progress?.Report(isCommand ? "Preparing command..." : "Preparing query...");
                 var clientRequestProperties = new ClientRequestProperties();
                 
                 // Always set up request ID for potential cancellation
@@ -61,15 +66,23 @@ namespace KustoTerminal.Core.Services
                 // Set up cancellation monitoring
                 var cancellationMonitorTask = MonitorCancellationAsync(combinedToken, progress);
                 
-                // Check for cancellation before executing query
+                // Check for cancellation before executing query/command
                 combinedToken.ThrowIfCancellationRequested();
                 
-                progress?.Report("Executing query...");
+                progress?.Report(isCommand ? "Executing command..." : "Executing query...");
                 
-                // Execute query
-                var reader = await _queryProvider.ExecuteQueryAsync(_connection.Database, query, clientRequestProperties);
+                // Execute query or command based on whether it starts with a dot
+                IDataReader reader;
+                if (isCommand)
+                {
+                    reader = await _adminProvider!.ExecuteControlCommandAsync(_connection.Database, query, clientRequestProperties);
+                }
+                else
+                {
+                    reader = await _queryProvider!.ExecuteQueryAsync(_connection.Database, query, clientRequestProperties);
+                }
                 
-                // Check for cancellation after query execution
+                // Check for cancellation after query/command execution
                 combinedToken.ThrowIfCancellationRequested();
                 
                 progress?.Report("Processing results...");
@@ -81,7 +94,7 @@ namespace KustoTerminal.Core.Services
                     dataTable.Load(reader);
                 }, combinedToken);
                 
-                progress?.Report("Query completed successfully");
+                progress?.Report(isCommand ? "Command completed successfully" : "Query completed successfully");
                 stopwatch.Stop();
                 return QueryResult.Success(query, dataTable, stopwatch.Elapsed);
             }
