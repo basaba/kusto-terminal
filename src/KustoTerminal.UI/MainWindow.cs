@@ -33,6 +33,12 @@ namespace KustoTerminal.UI
         // Query cancellation
         private CancellationTokenSource? _queryCancellationTokenSource;
         private Core.Services.KustoClient? _currentKustoClient;
+        
+        // Maximize state
+        private bool _isQueryEditorMaximized = false;
+        private Dim _originalRightFrameHeight;
+        private Pos _originalBottomFrameY;
+        private Dim _originalBottomFrameHeight;
 
         public MainWindow(IConnectionManager connectionManager, IAuthenticationProvider authProvider)
         {
@@ -127,6 +133,12 @@ namespace KustoTerminal.UI
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
             _queryEditorPane.EscapePressed += OnQueryEditorEscapePressed;
             _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
+            _queryEditorPane.MaximizeToggleRequested += OnMaximizeToggleRequested;
+            
+            // Store original dimensions for restore
+            _originalRightFrameHeight = _rightFrame.Height;
+            _originalBottomFrameY = _bottomFrame.Y;
+            _originalBottomFrameHeight = _bottomFrame.Height;
         }
 
         private void SetKeyboard()
@@ -137,6 +149,11 @@ namespace KustoTerminal.UI
                 || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
                 {
                     Application.Shutdown();
+                    key.Handled = true;
+                }
+                else if (key == Key.F11)
+                {
+                    ToggleQueryEditorMaximize();
                     key.Handled = true;
                 }
                 else if (key == Key.Esc)
@@ -191,6 +208,68 @@ namespace KustoTerminal.UI
             }
         }
 
+        private void OnMaximizeToggleRequested(object? sender, EventArgs e)
+        {
+            ToggleQueryEditorMaximize();
+        }
+
+        private void ToggleQueryEditorMaximize()
+        {
+            if (_isQueryEditorMaximized)
+            {
+                RestoreQueryEditor();
+            }
+            else
+            {
+                MaximizeQueryEditor();
+            }
+        }
+
+        private void MaximizeQueryEditor()
+        {
+            _isQueryEditorMaximized = true;
+            
+            // Hide connection and results frames
+            _leftFrame.Visible = false;
+            _bottomFrame.Visible = false;
+            
+            // Expand query editor frame to fill entire window
+            _rightFrame.X = 0;
+            _rightFrame.Width = Dim.Fill();
+            _rightFrame.Height = Dim.Fill();
+            _rightFrame.Title = "Query Editor (Maximized - F11 to restore)";
+            
+            // Ensure query editor gets focus
+            _queryEditorPane.FocusEditor();
+            
+            // Trigger layout refresh
+            SetNeedsLayout();
+        }
+
+        private void RestoreQueryEditor()
+        {
+            _isQueryEditorMaximized = false;
+            
+            // Show connection and results frames
+            _leftFrame.Visible = true;
+            _bottomFrame.Visible = true;
+            
+            // Restore original dimensions
+            _rightFrame.X = 31;
+            _rightFrame.Width = Dim.Fill();
+            _rightFrame.Height = _originalRightFrameHeight;
+            _rightFrame.Title = "Query Editor";
+            
+            // Restore bottom frame position and size
+            _bottomFrame.Y = _originalBottomFrameY;
+            _bottomFrame.Height = _originalBottomFrameHeight;
+            
+            // Ensure query editor gets focus
+            _queryEditorPane.FocusEditor();
+            
+            // Trigger layout refresh
+            SetNeedsLayout();
+        }
 
         private async Task ExecuteQueryAsync(string query)
         {

@@ -25,6 +25,7 @@ namespace KustoTerminal.UI.Panes
         public event EventHandler<string>? QueryExecuteRequested;
         public event EventHandler? EscapePressed;
         public event EventHandler? QueryCancelRequested;
+        public event EventHandler? MaximizeToggleRequested;
 
         public QueryEditorPane()
         {
@@ -56,7 +57,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "F5: Execute",
+                Text = "F5: Execute | F4: Maximize/Restore",
                 X = 0,
                 Y = Pos.Bottom(_queryTextView),
                 Width = Dim.Fill(),
@@ -92,6 +93,11 @@ namespace KustoTerminal.UI.Panes
                 if (key == Key.F5)
                 {
                     OnExecuteClicked();
+                }
+                else if (key == Key.F4)
+                {
+                    MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
+                    key.Handled = true;
                 }
                 else if (key == Key.Esc)
                 {
