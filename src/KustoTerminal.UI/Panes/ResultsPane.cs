@@ -76,7 +76,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+T: Row Select | F12: Maximize/Restore",
+                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+T: Row Select | Ctrl+Shift+C: Copy Table | Enter: View Cell | Ctrl+J: JSON Tree | F12: Maximize/Restore",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
@@ -161,6 +161,10 @@ namespace KustoTerminal.UI.Panes
                 } else if (key == Key.Enter)
                 {
                     OnViewCellClicked();
+                    key.Handled = true;
+                } else if (key.KeyCode == (KeyCode.CtrlMask | Key.Enter.KeyCode))
+                {
+                    OnViewJsonClicked();
                     key.Handled = true;
                 } else if (key.KeyCode == (KeyCode.CtrlMask | Key.L.KeyCode))
                 {
@@ -432,8 +436,34 @@ namespace KustoTerminal.UI.Panes
             ShowCellDetailDialog(columnName, cellValue);
         }
 
+        private void OnViewJsonClicked()
+        {
+            if (_currentResult?.Data == null || _tableView.Table == null)
+            {
+                return;
+            }
+
+            var selectedRow = _tableView.SelectedRow;
+            var selectedCol = _tableView.SelectedColumn;
+
+            var cellValue = _tableView.Table[selectedRow, selectedCol]?.ToString() ?? "";
+            var columnName = _tableView.Table.ColumnNames.ElementAt(selectedCol);
+
+            // Check if content is JSON
+            if (IsValidJson(cellValue))
+            {
+                ShowJsonTreeViewDialog(columnName, cellValue);
+            }
+            else
+            {
+                // Show a brief message that the cell doesn't contain JSON
+                MessageBox.Query("Not JSON", "The selected cell does not contain valid JSON data.", "OK");
+            }
+        }
+
         private void ShowCellDetailDialog(string columnName, string cellValue)
         {
+            // Default text view dialog
             var dialog = new Dialog()
             {
                 Title = $"Cell Content: {columnName}",
@@ -456,6 +486,39 @@ namespace KustoTerminal.UI.Panes
             textView.SetFocus();
 
             Application.Run(dialog);
+        }
+
+        private void ShowJsonTreeViewDialog(string columnName, string jsonContent)
+        {
+            var dialog = new JsonTreeViewDialog(columnName, jsonContent);
+            Application.Run(dialog);
+        }
+
+        private static bool IsValidJson(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            value = value.Trim();
+            
+            // Quick check for JSON-like structure
+            if (!(value.StartsWith("{") && value.EndsWith("}")) &&
+                !(value.StartsWith("[") && value.EndsWith("]")))
+                return false;
+
+            try
+            {
+                System.Text.Json.JsonDocument.Parse(value);
+                return true;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private void ToggleSearch()
