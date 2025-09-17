@@ -51,13 +51,13 @@ namespace KustoTerminal.UI.Dialogs
                 X = 1,
                 Y = 2,
                 Width = Dim.Fill() - 2,
-                Height = Dim.Fill() - 4,
+                Height = Dim.Fill() - 1,
                 CanFocus = true
             };
 
             _shortcutsLabel = new Label()
             {
-                Text = "↑↓: Navigate | →: Expand | ←: Collapse | Ctrl+C: Copy Selected | Ctrl+E: Expand All | Ctrl+R: Collapse All | Esc: Close",
+                Text = "↑↓: Navigate | →: Expand | ←: Collapse | Enter: Show Details | Ctrl+C: Copy Selected | Ctrl+E: Expand All | Ctrl+R: Collapse All | Esc: Close",
                 X = 1,
                 Y = Pos.Bottom(_treeView),
                 Width = Dim.Fill() - 2,
@@ -94,6 +94,11 @@ namespace KustoTerminal.UI.Dialogs
                     OnCollapseAllClicked();
                     key.Handled = true;
                 }
+                else if (key.KeyCode == Key.Enter.KeyCode)
+                {
+                    OnShowPropertyDetails();
+                    key.Handled = true;
+                }
             };
         }
 
@@ -109,7 +114,7 @@ namespace KustoTerminal.UI.Dialogs
 
                 // Parse and build tree
                 var jsonDocument = JsonDocument.Parse(_jsonContent);
-                var rootNode = BuildTreeFromJson("", jsonDocument.RootElement);
+                var rootNode = BuildTreeFromJson("$", jsonDocument.RootElement, "$");
                 
                 _treeView.AddObject(rootNode);
                 _treeView.ExpandAll();
@@ -121,7 +126,7 @@ namespace KustoTerminal.UI.Dialogs
                 _statusLabel.Text = $"Invalid JSON: {ex.Message}";
                 
                 // Create a simple text node with the raw content
-                var errorNode = new JsonTreeNode("Raw Content", _jsonContent);
+                var errorNode = new JsonTreeNode("Raw Content", _jsonContent, "$.RawContent");
                 _treeView.AddObject(errorNode);
             }
             catch (Exception ex)
@@ -130,16 +135,17 @@ namespace KustoTerminal.UI.Dialogs
             }
         }
 
-        private JsonTreeNode BuildTreeFromJson(string name, JsonElement element)
+        private JsonTreeNode BuildTreeFromJson(string name, JsonElement element, string jsonPath)
         {
-            var node = new JsonTreeNode(name, GetJsonElementDisplayValue(element));
+            var node = new JsonTreeNode(name, GetJsonElementDisplayValue(element), jsonPath);
 
             switch (element.ValueKind)
             {
                 case JsonValueKind.Object:
                     foreach (var property in element.EnumerateObject())
                     {
-                        var childNode = BuildTreeFromJson(property.Name, property.Value);
+                        var childPath = jsonPath == "$" ? $"$.{property.Name}" : $"{jsonPath}.{property.Name}";
+                        var childNode = BuildTreeFromJson(property.Name, property.Value, childPath);
                         node.Children.Add(childNode);
                     }
                     break;
@@ -148,7 +154,8 @@ namespace KustoTerminal.UI.Dialogs
                     int index = 0;
                     foreach (var item in element.EnumerateArray())
                     {
-                        var childNode = BuildTreeFromJson($"[{index}]", item);
+                        var childPath = $"{jsonPath}[{index}]";
+                        var childNode = BuildTreeFromJson($"[{index}]", item, childPath);
                         node.Children.Add(childNode);
                         index++;
                     }
@@ -267,6 +274,23 @@ namespace KustoTerminal.UI.Dialogs
             }
         }
 
+        private void OnShowPropertyDetails()
+        {
+            try
+            {
+                var selectedObject = _treeView.SelectedObject;
+                if (selectedObject is JsonTreeNode node)
+                {
+                    var detailsDialog = new PropertyDetailsDialog(node.Name, node.Value, node.JsonPath);
+                    Application.Run(detailsDialog);
+                }
+            }
+            catch (Exception ex)
+            {
+                _statusLabel.Text = $"Show details failed: {ex.Message}";
+            }
+        }
+
         private void OnCloseClicked()
         {
             Application.RequestStop();
@@ -277,17 +301,89 @@ namespace KustoTerminal.UI.Dialogs
     {
         public string Name { get; set; }
         public string Value { get; set; }
+        public string JsonPath { get; set; }
 
-        public JsonTreeNode(string name, string value)
+        public JsonTreeNode(string name, string value, string jsonPath)
             : base(GetDisplayText(name, value))
         {
             Name = name;
             Value = value;
+            JsonPath = jsonPath;
         }
 
         private static string GetDisplayText(string name, string value)
         {
             return $"{name}: {value}";
+        }
+    }
+
+    public class PropertyDetailsDialog : Dialog
+    {
+        public PropertyDetailsDialog(string propertyName, string value, string jsonPath)
+        {
+            Title = "Property Details";
+            Width = Dim.Percent(92);
+            Height = 10;
+            Modal = true;
+
+            var nameLabel = new Label()
+            {
+                Text = "Property Name:",
+                X = 1,
+                Y = 0,
+                Width = Dim.Fill() - 2,
+                Height = 1
+            };
+
+            var nameText = new TextView()
+            {
+                Text = propertyName,
+                X = 1,
+                Y = 1,
+                Width = Dim.Fill() - 2,
+                Height = 1,
+                ReadOnly = true
+            };
+
+            var pathLabel = new Label()
+            {
+                Text = "JSON Path:",
+                X = 1,
+                Y = 2,
+                Width = Dim.Fill() - 2,
+                Height = 1
+            };
+
+            var pathText = new TextView()
+            {
+                Text = jsonPath,
+                X = 1,
+                Y = 3,
+                Width = Dim.Fill() - 2,
+                Height = 1,
+                ReadOnly = true
+            };
+
+            var valueLabel = new Label()
+            {
+                Text = "Value:",
+                X = 1,
+                Y = 4,
+                Width = Dim.Fill() - 2,
+                Height = 1
+            };
+
+            var valueText = new TextView()
+            {
+                Text = value,
+                X = 1,
+                Y = 5,
+                Width = Dim.Fill() - 2,
+                Height = 1,
+                ReadOnly = true,
+            };
+
+            Add(nameLabel, nameText,pathLabel, pathText, valueLabel, valueText);
         }
     }
 }
