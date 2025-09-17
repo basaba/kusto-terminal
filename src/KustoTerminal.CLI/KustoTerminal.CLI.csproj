@@ -3,7 +3,6 @@
   <ItemGroup>
     <ProjectReference Include="..\KustoTerminal.UI\KustoTerminal.UI.csproj" />
     <ProjectReference Include="..\KustoTerminal.Core\KustoTerminal.Core.csproj" />
-    <ProjectReference Include="..\KustoTerminal.Auth\KustoTerminal.Auth.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
