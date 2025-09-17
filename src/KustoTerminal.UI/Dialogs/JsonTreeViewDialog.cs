@@ -126,7 +126,7 @@ namespace KustoTerminal.UI.Dialogs
                 _statusLabel.Text = $"Invalid JSON: {ex.Message}";
                 
                 // Create a simple text node with the raw content
-                var errorNode = new JsonTreeNode("Raw Content", _jsonContent, "$.RawContent");
+                var errorNode = new JsonTreeNode("Raw Content", _jsonContent, "$.RawContent", null);
                 _treeView.AddObject(errorNode);
             }
             catch (Exception ex)
@@ -137,7 +137,7 @@ namespace KustoTerminal.UI.Dialogs
 
         private JsonTreeNode BuildTreeFromJson(string name, JsonElement element, string jsonPath)
         {
-            var node = new JsonTreeNode(name, GetJsonElementDisplayValue(element), jsonPath);
+            var node = new JsonTreeNode(name, GetJsonElementDisplayValue(element), jsonPath, element);
 
             switch (element.ValueKind)
             {
@@ -281,7 +281,7 @@ namespace KustoTerminal.UI.Dialogs
                 var selectedObject = _treeView.SelectedObject;
                 if (selectedObject is JsonTreeNode node)
                 {
-                    var detailsDialog = new PropertyDetailsDialog(node.Name, node.Value, node.JsonPath);
+                    var detailsDialog = new PropertyDetailsDialog(node.Name, node.GetFullValue(), node.JsonPath);
                     Application.Run(detailsDialog);
                 }
             }
@@ -302,18 +302,39 @@ namespace KustoTerminal.UI.Dialogs
         public string Name { get; set; }
         public string Value { get; set; }
         public string JsonPath { get; set; }
+        public JsonElement? OriginalElement { get; set; }
 
-        public JsonTreeNode(string name, string value, string jsonPath)
+        public JsonTreeNode(string name, string value, string jsonPath, JsonElement? originalElement)
             : base(GetDisplayText(name, value))
         {
             Name = name;
             Value = value;
             JsonPath = jsonPath;
+            OriginalElement = originalElement;
         }
 
         private static string GetDisplayText(string name, string value)
         {
             return $"{name}: {value}";
+        }
+
+        public string GetFullValue()
+        {
+            if (OriginalElement.HasValue)
+            {
+                var element = OriginalElement.Value;
+                if (element.ValueKind == JsonValueKind.Object || element.ValueKind == JsonValueKind.Array)
+                {
+                    // For objects and arrays, return formatted JSON
+                    return JsonSerializer.Serialize(element, new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+                }
+            }
+            
+            // For leaf nodes or when no element is available, return the original value
+            return Value ?? string.Empty;
         }
     }
 
@@ -323,7 +344,7 @@ namespace KustoTerminal.UI.Dialogs
         {
             Title = "Property Details";
             Width = Dim.Percent(92);
-            Height = 10;
+            Height = 20;
             Modal = true;
 
             var nameLabel = new Label()
@@ -379,7 +400,7 @@ namespace KustoTerminal.UI.Dialogs
                 X = 1,
                 Y = 5,
                 Width = Dim.Fill() - 2,
-                Height = 1,
+                Height = 10,
                 ReadOnly = true,
             };
 
