@@ -57,7 +57,7 @@ namespace KustoTerminal.UI.Dialogs
 
             _shortcutsLabel = new Label()
             {
-                Text = "↑↓: Navigate | →: Expand | ←: Collapse | Ctrl+C: Copy Selected | Esc: Close",
+                Text = "↑↓: Navigate | →: Expand | ←: Collapse | Ctrl+C: Copy Selected | Ctrl+E: Expand All | Ctrl+R: Collapse All | Esc: Close",
                 X = 1,
                 Y = Pos.Bottom(_treeView),
                 Width = Dim.Fill() - 2,
@@ -82,6 +82,16 @@ namespace KustoTerminal.UI.Dialogs
                 if (key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
                 {
                     OnCopySelectedClicked();
+                    key.Handled = true;
+                }
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.E.KeyCode))
+                {
+                    OnExpandAllClicked();
+                    key.Handled = true;
+                }
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.R.KeyCode))
+                {
+                    OnCollapseAllClicked();
                     key.Handled = true;
                 }
             };
@@ -201,6 +211,59 @@ namespace KustoTerminal.UI.Dialogs
             catch (Exception ex)
             {
                 _statusLabel.Text = $"Copy failed: {ex.Message}";
+            }
+        }
+
+        private void OnExpandAllClicked()
+        {
+            try
+            {
+                _treeView.ExpandAll();
+                _statusLabel.Text = "All nodes expanded";
+            }
+            catch (Exception ex)
+            {
+                _statusLabel.Text = $"Expand all failed: {ex.Message}";
+            }
+        }
+
+        private void OnCollapseAllClicked()
+        {
+            try
+            {
+                CollapseAllRecursively();
+                _statusLabel.Text = "All nodes collapsed recursively";
+            }
+            catch (Exception ex)
+            {
+                _statusLabel.Text = $"Collapse all failed: {ex.Message}";
+            }
+        }
+
+        private void CollapseAllRecursively()
+        {
+            // Get all root objects and collapse them recursively
+            foreach (var rootObject in _treeView.Objects)
+            {
+                if (rootObject is JsonTreeNode rootNode)
+                {
+                    CollapseNodeRecursively(rootNode);
+                }
+            }
+        }
+
+        private void CollapseNodeRecursively(JsonTreeNode node)
+        {
+            // First collapse all children recursively
+            foreach (var child in node.Children.OfType<JsonTreeNode>())
+            {
+                CollapseNodeRecursively(child);
+            }
+            
+            // Then collapse this node if it has children
+            if (node.Children.Any())
+            {
+                _treeView.Collapse(node);
             }
         }
 
