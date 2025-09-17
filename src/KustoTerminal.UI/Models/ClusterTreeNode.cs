@@ -15,6 +15,7 @@ namespace KustoTerminal.UI.Models
         public KustoConnection Connection { get; }
         private readonly IKustoClient _kustoClient;
         private bool _databasesLoaded = false;
+        private bool _isLoadingDatabases = false;
 
         public ClusterTreeNode(KustoConnection connection, IKustoClient kustoClient)
             : base(GetDisplayText(connection))
@@ -29,10 +30,25 @@ namespace KustoTerminal.UI.Models
             return $"{prefix}{connection.DisplayName}";
         }
 
+        private string GetDisplayText()
+        {
+            var prefix = Connection.IsDefault ? "* " : "  ";
+            var suffix = _isLoadingDatabases ? " (Loading...)" : "";
+            return $"{prefix}{Connection.DisplayName}{suffix}";
+        }
+
+        public void SetLoadingState(bool isLoading)
+        {
+            _isLoadingDatabases = isLoading;
+            Text = GetDisplayText();
+        }
+
         public async Task LoadDatabasesAsync()
         {
             if (_databasesLoaded)
                 return;
+
+            SetLoadingState(true);
 
             try
             {
@@ -53,6 +69,10 @@ namespace KustoTerminal.UI.Models
                 // Add an error node if databases couldn't be loaded
                 Children.Clear();
                 Children.Add(new TreeNode($"Error loading databases: {ex.Message}"));
+            }
+            finally
+            {
+                SetLoadingState(false);
             }
         }
 

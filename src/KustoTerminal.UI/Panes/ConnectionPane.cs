@@ -190,8 +190,13 @@ namespace KustoTerminal.UI.Panes
             {
                 // Load and expand databases for the selected cluster
                 Task.Run(async () => {
+                    // Refresh immediately to show loading state
+                    Application.Invoke(() => _connectionsTree.RefreshObject(clusterNode));
+                    
                     await clusterNode.LoadDatabasesAsync();
-                    Application.Invoke(()=> _connectionsTree.RefreshObject(clusterNode));
+                    
+                    // Refresh again after loading is complete
+                    Application.Invoke(() => _connectionsTree.RefreshObject(clusterNode));
                 });
             }
         }

@@ -99,7 +99,7 @@ namespace KustoTerminal.UI.Dialogs
 
                 // Parse and build tree
                 var jsonDocument = JsonDocument.Parse(_jsonContent);
-                var rootNode = BuildTreeFromJson("root", jsonDocument.RootElement);
+                var rootNode = BuildTreeFromJson("", jsonDocument.RootElement);
                 
                 _treeView.AddObject(rootNode);
                 _treeView.ExpandAll();
