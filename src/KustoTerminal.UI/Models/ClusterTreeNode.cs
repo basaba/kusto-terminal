@@ -32,7 +32,7 @@ namespace KustoTerminal.UI.Models
         private string GetDisplayText()
         {
             var prefix = Connection.IsDefault ? "* " : "  ";
-            var suffix = _isLoadingDatabases ? " (Loading...)" : "";
+            var suffix = _isLoadingDatabases ? " (Loading)" : "";
             return $"{prefix}{Connection.DisplayName}{suffix}";
         }
 
