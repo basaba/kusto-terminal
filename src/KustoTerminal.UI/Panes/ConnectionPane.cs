@@ -144,7 +144,7 @@ namespace KustoTerminal.UI.Panes
                 // Add cluster nodes to tree
                 foreach (var connection in _connections)
                 {
-                    var clusterNode = new ClusterTreeNode(connection, GetKustoClient(connection));
+                    var clusterNode = new ClusterTreeNode(connection, GetKustoClient(connection), _connectionManager);
                     _connectionsTree.AddObject(clusterNode);
                 }
 
@@ -220,6 +220,7 @@ namespace KustoTerminal.UI.Panes
                     Name = dbNode.ParentConnection.Name,
                     ClusterUri = dbNode.ParentConnection.ClusterUri,
                     Database = dbNode.DatabaseName,
+                    Databases = dbNode.ParentConnection.Databases,
                     AuthType = dbNode.ParentConnection.AuthType,
                     CreatedAt = dbNode.ParentConnection.CreatedAt,
                     LastUsed = DateTime.UtcNow,

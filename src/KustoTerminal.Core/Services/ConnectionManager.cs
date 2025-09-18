@@ -110,6 +110,27 @@ namespace KustoTerminal.Core.Services
             await SaveConnectionsAsync();
         }
 
+        public async Task RefreshDatabasesAsync(string connectionId, IKustoClient kustoClient)
+        {
+            await LoadConnectionsAsync();
+            
+            var connection = _connections.FirstOrDefault(c => c.Id == connectionId);
+            if (connection != null)
+            {
+                try
+                {
+                    var databases = await kustoClient.GetDatabasesAsync();
+                    connection.Databases = databases.ToList();
+                    await SaveConnectionsAsync();
+                }
+                catch
+                {
+                    // If we can't refresh databases, keep the existing list
+                    // This could happen due to network issues or permissions
+                }
+            }
+        }
+
         public async Task SaveConnectionsAsync()
         {
             try

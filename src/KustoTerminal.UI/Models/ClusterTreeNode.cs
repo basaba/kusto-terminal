@@ -14,13 +14,18 @@ namespace KustoTerminal.UI.Models
     {
         public KustoConnection Connection { get; }
         private readonly IKustoClient _kustoClient;
+        private readonly IConnectionManager _connectionManager;
         private bool _isLoadingDatabases = false;
 
-        public ClusterTreeNode(KustoConnection connection, IKustoClient kustoClient)
+        public ClusterTreeNode(KustoConnection connection, IKustoClient kustoClient, IConnectionManager connectionManager)
             : base(GetDisplayText(connection))
         {
             Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
+            _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+            
+            // Load persisted databases if available
+            LoadPersistedDatabases();
         }
 
         private static string GetDisplayText(KustoConnection connection)
@@ -42,10 +47,27 @@ namespace KustoTerminal.UI.Models
             Text = GetDisplayText();
         }
 
-        public async Task LoadDatabasesAsync()
+        private void LoadPersistedDatabases()
         {
-            // if (_databasesLoaded)
-            //     return;
+            // Load from persisted databases if available
+            if (Connection.Databases != null && Connection.Databases.Any())
+            {
+                Children.Clear();
+                foreach (var database in Connection.Databases)
+                {
+                    Children.Add(new DatabaseTreeNode(database, Connection));
+                }
+            }
+        }
+
+        public async Task LoadDatabasesAsync(bool forceRefresh = false)
+        {
+            // If we have persisted databases and not forcing refresh, use them
+            if (!forceRefresh && Connection.Databases != null && Connection.Databases.Any())
+            {
+                LoadPersistedDatabases();
+                return;
+            }
 
             SetLoadingState(true);
 
@@ -53,9 +75,11 @@ namespace KustoTerminal.UI.Models
             {
                 var databases = await _kustoClient.GetDatabasesAsync();
                 
+                // Update the connection with fresh database list and persist it
+                await _connectionManager.RefreshDatabasesAsync(Connection.Id, _kustoClient);
+                
                 // Clear existing children and add database nodes
                 Children.Clear();
-
                 foreach (var database in databases)
                 {
                     Children.Add(new DatabaseTreeNode(database, Connection));
@@ -71,6 +95,11 @@ namespace KustoTerminal.UI.Models
             {
                 SetLoadingState(false);
             }
+        }
+
+        public async Task RefreshDatabasesAsync()
+        {
+            await LoadDatabasesAsync(forceRefresh: true);
         }
 
         public void RefreshDatabases()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace KustoTerminal.Core.Models
 {
@@ -8,6 +9,7 @@ namespace KustoTerminal.Core.Models
         public string Name { get; set; } = string.Empty;
         public string ClusterUri { get; set; } = string.Empty;
         public string Database { get; set; } = string.Empty;
+        public List<string> Databases { get; set; } = new List<string>();
         public AuthenticationType AuthType { get; set; } = AuthenticationType.AzureCli;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime LastUsed { get; set; } = DateTime.UtcNow;

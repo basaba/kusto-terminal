@@ -13,6 +13,7 @@ namespace KustoTerminal.Core.Interfaces
         Task UpdateConnectionAsync(KustoConnection connection);
         Task DeleteConnectionAsync(string id);
         Task SetDefaultConnectionAsync(string id);
+        Task RefreshDatabasesAsync(string connectionId, IKustoClient kustoClient);
         Task SaveConnectionsAsync();
         Task LoadConnectionsAsync();
     }
