@@ -28,7 +28,6 @@ namespace KustoTerminal.UI.Panes
         private DataTable? _originalData;
         private HashSet<string> _selectedColumns = new HashSet<string>();
         private bool _searchVisible = false;
-        private bool _tableLocked = false;
         public event EventHandler? MaximizeToggleRequested;
 
         public ResultsPane()
@@ -36,20 +35,6 @@ namespace KustoTerminal.UI.Panes
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
-            _tableView.AdvancingFocus += (s, e) =>
-            {
-                if (_tableLocked)
-                {
-                    e.Cancel = true;
-                }
-            };
-            _tableView.HasFocusChanged += (s, e) =>
-            {
-                if (_tableView.HasFocus)
-                {
-                    _tableLocked = true;
-                }
-            };
             
             CanFocus = true;
             TabStop = TabBehavior.TabStop;
@@ -171,7 +156,6 @@ namespace KustoTerminal.UI.Panes
                     key.Handled = true;
                 } else if (key == Key.Esc)
                 {
-                    _tableLocked = false;
                     SwitchToCellMode();
                     key.Handled = true;
                 } else if (key == Key.Enter)
