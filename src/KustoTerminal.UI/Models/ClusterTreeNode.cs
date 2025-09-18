@@ -14,7 +14,6 @@ namespace KustoTerminal.UI.Models
     {
         public KustoConnection Connection { get; }
         private readonly IKustoClient _kustoClient;
-        private bool _databasesLoaded = false;
         private bool _isLoadingDatabases = false;
 
         public ClusterTreeNode(KustoConnection connection, IKustoClient kustoClient)
@@ -45,8 +44,8 @@ namespace KustoTerminal.UI.Models
 
         public async Task LoadDatabasesAsync()
         {
-            if (_databasesLoaded)
-                return;
+            // if (_databasesLoaded)
+            //     return;
 
             SetLoadingState(true);
 
@@ -61,8 +60,6 @@ namespace KustoTerminal.UI.Models
                 {
                     Children.Add(new DatabaseTreeNode(database, Connection));
                 }
-                
-                _databasesLoaded = true;
             }
             catch (Exception ex)
             {
@@ -78,7 +75,6 @@ namespace KustoTerminal.UI.Models
 
         public void RefreshDatabases()
         {
-            _databasesLoaded = false;
             Children.Clear();
         }
     }

@@ -57,7 +57,7 @@ namespace KustoTerminal.UI.Dialogs
 
             _shortcutsLabel = new Label()
             {
-                Text = "↑↓: Navigate | →: Expand | ←: Collapse | Enter: Show Details | Ctrl+C: Copy Selected | Ctrl+E: Expand All | Ctrl+R: Collapse All | Esc: Close",
+                Text = "Ctrl+E: Expand All | Ctrl+R: Collapse All",
                 X = 1,
                 Y = Pos.Bottom(_treeView),
                 Width = Dim.Fill() - 2,

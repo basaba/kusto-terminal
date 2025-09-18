@@ -28,7 +28,7 @@ namespace KustoTerminal.UI.Panes
         private DataTable? _originalData;
         private HashSet<string> _selectedColumns = new HashSet<string>();
         private bool _searchVisible = false;
-
+        private bool _tableLocked = false;
         public event EventHandler? MaximizeToggleRequested;
 
         public ResultsPane()
@@ -36,6 +36,21 @@ namespace KustoTerminal.UI.Panes
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
+            _tableView.AdvancingFocus += (s, e) =>
+            {
+                if (_tableLocked)
+                {
+                    e.Cancel = true;
+                }
+            };
+            _tableView.HasFocusChanged += (s, e) =>
+            {
+                if (_tableView.HasFocus)
+                {
+                    _tableLocked = true;
+                }
+            };
+            
             CanFocus = true;
             TabStop = TabBehavior.TabStop;
         }
@@ -76,7 +91,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+T: Row Select | Ctrl+Shift+C: Copy Table | Enter: View Cell | Ctrl+J: JSON Tree | F12: Maximize/Restore",
+                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+R: Row Select | Ctrl+Shift+C: Copy Table | Enter: View Cell | Ctrl+J: JSON Tree | F12: Maximize/Restore",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
@@ -146,7 +161,7 @@ namespace KustoTerminal.UI.Panes
                 {
                     OnCopyCellClicked();
                     key.Handled = true;
-                } else if (key == (KeyCode.CtrlMask | Key.T.KeyCode))
+                } else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
                 {
                     SwitchToRowMode();
                     key.Handled = true;
@@ -156,6 +171,7 @@ namespace KustoTerminal.UI.Panes
                     key.Handled = true;
                 } else if (key == Key.Esc)
                 {
+                    _tableLocked = false;
                     SwitchToCellMode();
                     key.Handled = true;
                 } else if (key == Key.Enter)

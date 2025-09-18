@@ -196,7 +196,11 @@ namespace KustoTerminal.UI.Panes
                     await clusterNode.LoadDatabasesAsync();
                     
                     // Refresh again after loading is complete
-                    Application.Invoke(() => _connectionsTree.RefreshObject(clusterNode));
+                    Application.Invoke(() =>
+                    {
+                        _connectionsTree.RefreshObject(clusterNode);
+                        _connectionsTree.Expand(clusterNode);
+                    });
                 });
             }
         }
