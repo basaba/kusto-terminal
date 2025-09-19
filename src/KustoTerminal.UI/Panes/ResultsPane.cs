@@ -80,7 +80,8 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
-                Height = 1
+                Height = 1,
+                SchemeName = "TopLevel"
             };
             
             _searchLabel = new Label()

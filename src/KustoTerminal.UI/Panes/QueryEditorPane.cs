@@ -64,7 +64,8 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = Pos.Bottom(_queryTextView),
                 Width = Dim.Fill(),
-                Height = 1
+                Height = 1,
+                SchemeName = "TopLevel"
             };
 
             _progressLabel = new Label()

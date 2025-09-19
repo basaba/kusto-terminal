@@ -65,7 +65,8 @@ namespace KustoTerminal.UI.Panes
                     X = 0,
                     Y = Pos.Bottom(_connectionsTree) - 4,
                     Width = Dim.Fill(),
-                    Height = 1
+                    Height = 1,
+                    SchemeName = "TopLevel"
                 },
                 new Label()
                 {
@@ -73,7 +74,8 @@ namespace KustoTerminal.UI.Panes
                     X = 0,
                     Y = Pos.Bottom(_connectionsTree) - 3,
                     Width = Dim.Fill(),
-                    Height = 1
+                    Height = 1,
+                    SchemeName = "TopLevel"
                 },
                 new Label()
                 {
@@ -81,7 +83,8 @@ namespace KustoTerminal.UI.Panes
                     X = 0,
                     Y = Pos.Bottom(_connectionsTree) - 2,
                     Width = Dim.Fill(),
-                    Height = 1
+                    Height = 1,
+                    SchemeName = "TopLevel"
                 },
                 new Label()
                 {
@@ -89,7 +92,8 @@ namespace KustoTerminal.UI.Panes
                     X = 0,
                     Y = Pos.Bottom(_connectionsTree) - 1,
                     Width = Dim.Fill(),
-                    Height = 1
+                    Height = 1,
+                    SchemeName = "TopLevel"
                 }
             };
 
