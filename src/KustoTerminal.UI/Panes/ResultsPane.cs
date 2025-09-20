@@ -76,7 +76,7 @@ namespace KustoTerminal.UI.Panes
 
             _shortcutsLabel = new Label()
             {
-                Text = "/: Filter | Ctrl+S: Export | Ctrl+L: Columns | Ctrl+R: Row Select | Ctrl+Shift+C: Copy Table | Enter: View Cell | Ctrl+J: JSON Tree | F12: Maximize/Restore",
+                Text = "/: Filter | Ctrl+L: Columns | Ctrl+R: Row Select | Ctrl+J: JSON Viewer | Ctrl+S: Export | F12: Maximize/Restore",
                 X = 0,
                 Y = Pos.Bottom(_tableView),
                 Width = Dim.Fill(),
