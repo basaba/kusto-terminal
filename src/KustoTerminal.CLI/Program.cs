@@ -9,6 +9,8 @@ using KustoTerminal.Core.Services;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.UI;
 using System.Runtime.InteropServices;
+using System.Globalization;
+using System.Threading;
 
 namespace KustoTerminal.CLI
 {
@@ -28,7 +30,9 @@ namespace KustoTerminal.CLI
                 // Load existing connections
                 await connectionManager.LoadConnectionsAsync();
                 var connections = await connectionManager.GetConnectionsAsync();
-                
+
+                SetDateTimeFormatting();
+
                 Console.WriteLine("Starting Terminal UI...");
 
                 // Initialize Terminal.Gui
@@ -40,7 +44,7 @@ namespace KustoTerminal.CLI
                 {
                     Application.Init(driverName: "NetDriver");
                 }
-                
+
                 try
                 {
                     // Start the main window
@@ -57,6 +61,15 @@ namespace KustoTerminal.CLI
                 Console.WriteLine("Press any key to exit...");
                 Console.ReadKey();
             }
+        }
+
+        static void SetDateTimeFormatting()
+        {
+            var customCulture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+            customCulture.DateTimeFormat.ShortDatePattern = "dd-MM-yyyy";
+            customCulture.DateTimeFormat.LongTimePattern = "HH:mm:ss";
+            Thread.CurrentThread.CurrentCulture = customCulture;
+            Thread.CurrentThread.CurrentUICulture = customCulture; 
         }
     }
 }
