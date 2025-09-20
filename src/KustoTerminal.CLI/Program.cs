@@ -58,7 +58,7 @@ namespace KustoTerminal.CLI
         static void SetDateTimeFormatting()
         {
             var customCulture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
-            customCulture.DateTimeFormat.ShortDatePattern = "dd-MM-yyyy";
+            customCulture.DateTimeFormat.ShortDatePattern = "yyyy-MM-dd";
             customCulture.DateTimeFormat.LongTimePattern = "HH:mm:ss";
             Thread.CurrentThread.CurrentCulture = customCulture;
             Thread.CurrentThread.CurrentUICulture = customCulture; 
