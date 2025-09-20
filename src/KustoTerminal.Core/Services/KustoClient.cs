@@ -58,9 +58,9 @@ namespace KustoTerminal.Core.Services
 
                 progress?.Report(isCommand ? "Preparing command..." : "Preparing query...");
                 var clientRequestProperties = new ClientRequestProperties();
-                
+
                 // Always set up request ID for potential cancellation
-                _currentRequestId = Guid.NewGuid().ToString();
+                _currentRequestId = $"KustoTerminal;{Guid.NewGuid().ToString()}";
                 clientRequestProperties.ClientRequestId = _currentRequestId;
                 
                 // Set up cancellation monitoring
@@ -96,7 +96,7 @@ namespace KustoTerminal.Core.Services
                 
                 progress?.Report(isCommand ? "Command completed successfully" : "Query completed successfully");
                 stopwatch.Stop();
-                return QueryResult.Success(query, dataTable, stopwatch.Elapsed);
+                return QueryResult.Success(query, dataTable, stopwatch.Elapsed, _currentRequestId);
             }
             catch (OperationCanceledException)
             {
@@ -107,13 +107,13 @@ namespace KustoTerminal.Core.Services
                 await CancelQueryOnServerAsync();
                 
                 progress?.Report("Query cancelled");
-                return QueryResult.Error(query, "Query was cancelled", stopwatch.Elapsed);
+                return QueryResult.Error(query, "Query was cancelled", stopwatch.Elapsed, _currentRequestId);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
                 progress?.Report($"Query failed: {ex.Message}");
-                return QueryResult.Error(query, ex.Message, stopwatch.Elapsed);
+                return QueryResult.Error(query, ex.Message, stopwatch.Elapsed, _currentRequestId);
             }
             finally
             {
@@ -156,7 +156,7 @@ namespace KustoTerminal.Core.Services
             }
         }
 
-        public async Task CancelCurrentQueryAsync()
+        public Task CancelCurrentQueryAsync()
         {
             if (_internalCancellationSource != null && !_internalCancellationSource.Token.IsCancellationRequested)
             {
@@ -176,6 +176,8 @@ namespace KustoTerminal.Core.Services
                     Console.WriteLine($"Warning: Server-side query cancellation failed: {ex.Message}");
                 }
             });
+            
+            return Task.CompletedTask;
         }
 
         public async Task<bool> TestConnectionAsync()

@@ -7,7 +7,6 @@ using Terminal.Gui.App;
 using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Drawing;
-
 using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Dialogs;
 using Terminal.Gui.Input;
@@ -225,7 +224,12 @@ namespace KustoTerminal.UI.Panes
                 var filteredTable = ApplyColumnFilter(dataTable);
                 _tableView.Table = new DataTableSource(filteredTable);
 
-                _statusLabel.Text = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
+                var statusText = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
+                if (!string.IsNullOrEmpty(result.ClientRequestId))
+                {
+                    statusText += $" | ClientRequestId: {result.ClientRequestId}";
+                }
+                _statusLabel.Text = statusText;
             }
             catch (Exception ex)
             {
@@ -245,7 +249,12 @@ namespace KustoTerminal.UI.Panes
             _errorLabel.Text = $"Query failed: {result.ErrorMessage}";
             
             // Keep status label visible for other information
-            _statusLabel.Text = "Error occurred during query execution";
+            var statusText = "Error occurred during query execution";
+            if (!string.IsNullOrEmpty(result.ClientRequestId))
+            {
+                statusText += $" | ClientRequestId: {result.ClientRequestId}";
+            }
+            _statusLabel.Text = statusText;
         }
 
         private void DisplayEmpty(QueryResult result)
@@ -255,7 +264,12 @@ namespace KustoTerminal.UI.Panes
             _tableView.Visible = true;
             _statusLabel.Visible = true;
             
-            _statusLabel.Text = $"No results returned | Duration: {result.Duration.TotalMilliseconds:F0}ms";
+            var statusText = $"No results returned | Duration: {result.Duration.TotalMilliseconds:F0}ms";
+            if (!string.IsNullOrEmpty(result.ClientRequestId))
+            {
+                statusText += $" | ClientRequestId: {result.ClientRequestId}";
+            }
+            _statusLabel.Text = statusText;
             
             // Show empty table with column headers if available
             if (result.Data != null && result.Data.Columns.Count > 0)
@@ -623,7 +637,12 @@ namespace KustoTerminal.UI.Panes
         {
             if (_currentResult != null)
             {
-                _statusLabel.Text = $"Rows: {_currentResult.RowCount:N0} | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
+                var statusText = $"Rows: {_currentResult.RowCount:N0} | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
+                if (!string.IsNullOrEmpty(_currentResult.ClientRequestId))
+                {
+                    statusText += $" | ClientRequestId: {_currentResult.ClientRequestId}";
+                }
+                _statusLabel.Text = statusText;
             }
         }
 
@@ -631,7 +650,12 @@ namespace KustoTerminal.UI.Panes
         {
             if (_currentResult != null)
             {
-                _statusLabel.Text = $"Filtered: {filteredRowCount:N0} of {_currentResult.RowCount:N0} rows | Search: \"{searchText}\" | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
+                var statusText = $"Filtered: {filteredRowCount:N0} of {_currentResult.RowCount:N0} rows | Search: \"{searchText}\" | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
+                if (!string.IsNullOrEmpty(_currentResult.ClientRequestId))
+                {
+                    statusText += $" | ClientRequestId: {_currentResult.ClientRequestId}";
+                }
+                _statusLabel.Text = statusText;
             }
         }
 
