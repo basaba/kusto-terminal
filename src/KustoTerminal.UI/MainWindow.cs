@@ -27,7 +27,7 @@ namespace KustoTerminal.UI
         private FrameView _leftFrame;
         private FrameView _rightFrame;
         private FrameView _bottomFrame;
-        
+
         // Query cancellation
         private CancellationTokenSource? _queryCancellationTokenSource;
         private Core.Services.KustoClient? _currentKustoClient;
@@ -44,7 +44,7 @@ namespace KustoTerminal.UI
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
             _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
 
-            Title = "Kusto Terminal";
+            Title = "Kusto Terminal - (Ctrl+Q to quit)";
             X = 0;
             Y = 0; // Leave space for menu bar
             Width = Dim.Fill();
@@ -111,6 +111,15 @@ namespace KustoTerminal.UI
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Fill()
+            };
+
+            var _shortcutsLabel = new Label()
+            {
+                Text = "Ctrl+Q to quit",
+                X = 1,
+                Y = Pos.AnchorEnd(1),
+                Width = Dim.Fill(),
+                Height = 1
             };
         }
 
