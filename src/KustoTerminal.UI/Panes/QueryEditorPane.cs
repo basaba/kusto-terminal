@@ -126,12 +126,6 @@ namespace KustoTerminal.UI.Panes
 
         private void OnExecuteClicked()
         {
-            if (_isExecuting)
-            {
-                ShowTemporaryMessage("Query already running. Please wait for it to complete.", 3000);
-                return;
-            }
-
             var query = GetCurrentQuery();
             if (!string.IsNullOrWhiteSpace(query))
             {

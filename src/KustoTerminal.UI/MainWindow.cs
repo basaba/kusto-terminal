@@ -182,26 +182,33 @@ namespace KustoTerminal.UI
             _resultsPane.SetFocus();
         }
 
-        private async void OnQueryCancelRequested(object? sender, EventArgs e)
+        private void OnQueryCancelRequested(object? sender, EventArgs e)
         {
             // Cancel the current query if one is running
             if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
-            {                
+            {
                 // First cancel the token to stop any local processing
                 _queryCancellationTokenSource.Cancel();
                 
-                // Then try to cancel on the server side using the Kusto client
+                // Immediately set executing to false to allow new queries
+                Application.Invoke(() => _queryEditorPane.SetExecuting(false));
+                
+                // Then try to cancel on the server side using the Kusto client (fire-and-forget)
                 if (_currentKustoClient != null)
                 {
-                    try
+                    var clientToCancel = _currentKustoClient;
+                    _ = Task.Run(async () =>
                     {
-                        await _currentKustoClient.CancelCurrentQueryAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log but don't throw - cancellation errors shouldn't crash the UI
-                        
-                    }
+                        try
+                        {
+                            await clientToCancel.CancelCurrentQueryAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log but don't throw - cancellation errors shouldn't crash the UI
+                            Console.WriteLine($"Warning: Server-side cancellation failed: {ex.Message}");
+                        }
+                    });
                 }
             }
         }
@@ -338,9 +345,36 @@ namespace KustoTerminal.UI
 
         private async Task ExecuteQueryAsync(string query)
         {
-            // Cancel any existing query
-            _queryCancellationTokenSource?.Cancel();
-            _queryCancellationTokenSource?.Dispose();
+            // If there's an existing query, cancel it but don't wait
+            if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
+            {
+                var oldCancellationSource = _queryCancellationTokenSource;
+                var oldClient = _currentKustoClient;
+                
+                // Cancel the old query
+                oldCancellationSource.Cancel();
+                
+                // Clean up the old resources in the background
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (oldClient != null)
+                        {
+                            await oldClient.CancelCurrentQueryAsync();
+                            oldClient.Dispose();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Warning: Failed to clean up old query: {ex.Message}");
+                    }
+                    finally
+                    {
+                        oldCancellationSource?.Dispose();
+                    }
+                });
+            }
             
             // Create new cancellation token source for this query
             _queryCancellationTokenSource = new CancellationTokenSource();
@@ -355,8 +389,6 @@ namespace KustoTerminal.UI
                     return;
                 }
 
-                
-                
                 // Create progress handler
                 var progress = new Progress<string>(message =>
                 {
@@ -388,7 +420,7 @@ namespace KustoTerminal.UI
             {
                 Application.Invoke(() =>
                 {
-                    _queryEditorPane.SetExecuting(false); 
+                    _queryEditorPane.SetExecuting(false);
                 });
             }
             finally

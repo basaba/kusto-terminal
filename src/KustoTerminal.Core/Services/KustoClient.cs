@@ -163,7 +163,19 @@ namespace KustoTerminal.Core.Services
                 _internalCancellationSource.Cancel();
             }
             
-            await CancelQueryOnServerAsync();
+            // Fire-and-forget server cancellation to avoid blocking
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await CancelQueryOnServerAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't throw - cancellation errors shouldn't affect anything
+                    Console.WriteLine($"Warning: Server-side query cancellation failed: {ex.Message}");
+                }
+            });
         }
 
         public async Task<bool> TestConnectionAsync()
