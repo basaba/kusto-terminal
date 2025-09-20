@@ -35,15 +35,7 @@ namespace KustoTerminal.CLI
 
                 Console.WriteLine("Starting Terminal UI...");
 
-                // Initialize Terminal.Gui
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    Application.Init();
-                }
-                else
-                {
-                    Application.Init(driverName: "NetDriver");
-                }
+                Application.Init(driverName: "NetDriver");
 
                 try
                 {
