@@ -95,8 +95,8 @@ namespace KustoTerminal.UI.Dialogs
                 X = 15,
                 Y = 7,
                 Width = 40,
-                Height = 4,
-                RadioLabels = new string[] { "None (Unauthenticated)", "Azure CLI" }
+                Height = 5,
+                RadioLabels = new string[] { "None (Unauthenticated)", "Azure CLI", "Interactive" }
             };
 
             // Set initial auth type selection
@@ -104,6 +104,7 @@ namespace KustoTerminal.UI.Dialogs
             {
                 AuthenticationType.None => 0,
                 AuthenticationType.AzureCli => 1,
+                AuthenticationType.Interactive => 2,
                 _ => 1 // Default to Azure CLI
             };
             _authTypeGroup.SelectedItem = authTypeIndex;
@@ -170,6 +171,7 @@ namespace KustoTerminal.UI.Dialogs
             {
                 0 => AuthenticationType.None,
                 1 => AuthenticationType.AzureCli,
+                2 => AuthenticationType.Interactive,
                 _ => AuthenticationType.AzureCli
             };
 
