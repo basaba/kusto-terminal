@@ -1,6 +1,6 @@
 # Kusto Terminal
 
-A terminal-style Azure Data Explorer (Kusto) client inspired by k9s, built with .NET 8 and Terminal.Gui.
+A terminal-style Azure Data Explorer (Kusto) client, built with .NET 8 and Terminal.Gui.
 
 ## Prerequisites
 
