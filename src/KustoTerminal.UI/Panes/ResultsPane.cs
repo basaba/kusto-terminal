@@ -493,7 +493,6 @@ namespace KustoTerminal.UI.Panes
                 Height = Dim.Fill(2),
                 Text = cellValue,
                 ReadOnly = true,
-                WordWrap = true
             };
 
             dialog.Add(textView);
