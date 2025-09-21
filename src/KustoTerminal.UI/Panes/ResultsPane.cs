@@ -70,7 +70,6 @@ namespace KustoTerminal.UI.Panes
                 Height = Dim.Fill() - 1,
                 FullRowSelect = false,
                 MultiSelect = false,
-                MaxCellWidth = 50,
             };
 
             _shortcutsLabel = new Label()
@@ -483,7 +482,7 @@ namespace KustoTerminal.UI.Panes
             {
                 Title = $"Cell Content: {columnName}",
                 Height = 20,
-                Width = 80,
+                Width = Dim.Percent(80),
                 Modal = true,
             };
             var textView = new TextView()
