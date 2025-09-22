@@ -25,8 +25,8 @@ namespace KustoTerminal.UI
         private QueryEditorPane _queryEditorPane;
         private ResultsPane _resultsPane;        
         private FrameView _leftFrame;
-        private FrameView _rightFrame;
-        private FrameView _bottomFrame;
+        private FrameView _rightTopFrame;
+        private FrameView _rightBottomFrame;
 
         // Query cancellation
         private CancellationTokenSource? _queryCancellationTokenSource;
@@ -68,7 +68,7 @@ namespace KustoTerminal.UI
                 TabStop = TabBehavior.TabStop
             };
 
-            _rightFrame = new FrameView()
+            _rightTopFrame = new FrameView()
             {
                 Title = "Query Editor",
                 X = 31,
@@ -78,11 +78,11 @@ namespace KustoTerminal.UI
                 TabStop = TabBehavior.TabStop
             };
 
-            _bottomFrame = new FrameView()
+            _rightBottomFrame = new FrameView()
             {
                 Title = "Results",
                 X = 31,
-                Y = Pos.Bottom(_rightFrame),
+                Y = Pos.Bottom(_rightTopFrame),
                 Width = Dim.Fill(),
                 Height = Dim.Fill(),
                 TabStop = TabBehavior.TabStop
@@ -126,12 +126,12 @@ namespace KustoTerminal.UI
         private void SetupLayout()
         {
             // Add frames to window
-            Add(_leftFrame, _rightFrame, _bottomFrame);
+            Add(_leftFrame, _rightTopFrame, _rightBottomFrame);
 
             // Add panes to frames
             _leftFrame.Add(_connectionPane);
-            _rightFrame.Add(_queryEditorPane);
-            _bottomFrame.Add(_resultsPane);
+            _rightTopFrame.Add(_queryEditorPane);
+            _rightBottomFrame.Add(_resultsPane);
             
             // Set initial focus to connection pane
             _connectionPane.SetFocus();
@@ -145,9 +145,9 @@ namespace KustoTerminal.UI
             _resultsPane.MaximizeToggleRequested += OnResultsPaneMaximizeToggleRequested;
             
             // Store original dimensions for restore
-            _originalRightFrameHeight = _rightFrame.Height;
-            _originalBottomFrameY = _bottomFrame.Y;
-            _originalBottomFrameHeight = _bottomFrame.Height;
+            _originalRightFrameHeight = _rightTopFrame.Height;
+            _originalBottomFrameY = _rightBottomFrame.Y;
+            _originalBottomFrameHeight = _rightBottomFrame.Height;
             
             // Load last query asynchronously
             LoadLastQueryAsync();
@@ -176,31 +176,30 @@ namespace KustoTerminal.UI
                 {
                     if (_leftFrame.HasFocus)
                     {
-                        AdvanceFocus(NavigationDirection.Forward, TabBehavior.TabStop);
+                        _rightTopFrame.SetFocus();
                         key.Handled = true;
                     }
                 }
                 else if (key == (KeyCode.AltMask | Key.CursorLeft.KeyCode))
                 {
-                    if (_rightFrame.HasFocus || _bottomFrame.HasFocus)
+                    if (_rightBottomFrame.HasFocus || _rightTopFrame.HasFocus)
                     {
-                        AdvanceFocus(NavigationDirection.Backward, TabBehavior.TabStop);
-                        key.Handled = true;
+                        _leftFrame.SetFocus();
                     }
                 }
                 else if (key == (KeyCode.AltMask | Key.CursorDown.KeyCode))
                 {
-                    if (_rightFrame.HasFocus)
+                    if (_rightTopFrame.HasFocus)
                     {
-                        AdvanceFocus(NavigationDirection.Forward, TabBehavior.TabStop);
+                        _rightBottomFrame.SetFocus();
                         key.Handled = true;
                     }
                 }
                 else if (key == (KeyCode.AltMask | Key.CursorUp.KeyCode))
                 {
-                    if (_bottomFrame.HasFocus)
+                    if (_rightBottomFrame.HasFocus)
                     {
-                        AdvanceFocus(NavigationDirection.Backward, TabBehavior.TabStop);
+                        _rightTopFrame.SetFocus();
                         key.Handled = true;
                     }
                 }
@@ -314,13 +313,13 @@ namespace KustoTerminal.UI
             
             // Hide connection and results frames
             _leftFrame.Visible = false;
-            _bottomFrame.Visible = false;
+            _rightBottomFrame.Visible = false;
             
             // Expand query editor frame to fill entire window
-            _rightFrame.X = 0;
-            _rightFrame.Width = Dim.Fill();
-            _rightFrame.Height = Dim.Fill();
-            _rightFrame.Title = "Query Editor (Maximized - F12 to restore)";
+            _rightTopFrame.X = 0;
+            _rightTopFrame.Width = Dim.Fill();
+            _rightTopFrame.Height = Dim.Fill();
+            _rightTopFrame.Title = "Query Editor (Maximized - F12 to restore)";
             
             // Ensure query editor gets focus
             _queryEditorPane.FocusEditor();
@@ -341,14 +340,14 @@ namespace KustoTerminal.UI
             
             // Hide connection and query editor frames
             _leftFrame.Visible = false;
-            _rightFrame.Visible = false;
+            _rightTopFrame.Visible = false;
             
             // Expand results frame to fill entire window
-            _bottomFrame.X = 0;
-            _bottomFrame.Y = 0;
-            _bottomFrame.Width = Dim.Fill();
-            _bottomFrame.Height = Dim.Fill();
-            _bottomFrame.Title = "Results (Maximized - F12 to restore)";
+            _rightBottomFrame.X = 0;
+            _rightBottomFrame.Y = 0;
+            _rightBottomFrame.Width = Dim.Fill();
+            _rightBottomFrame.Height = Dim.Fill();
+            _rightBottomFrame.Title = "Results (Maximized - F12 to restore)";
             
             // Ensure results pane gets focus
             _resultsPane.SetFocus();
@@ -364,21 +363,21 @@ namespace KustoTerminal.UI
             
             // Show all frames
             _leftFrame.Visible = true;
-            _rightFrame.Visible = true;
-            _bottomFrame.Visible = true;
+            _rightTopFrame.Visible = true;
+            _rightBottomFrame.Visible = true;
             
             // Restore original dimensions for query editor frame
-            _rightFrame.X = 31;
-            _rightFrame.Width = Dim.Fill();
-            _rightFrame.Height = _originalRightFrameHeight;
-            _rightFrame.Title = "Query Editor";
+            _rightTopFrame.X = 31;
+            _rightTopFrame.Width = Dim.Fill();
+            _rightTopFrame.Height = _originalRightFrameHeight;
+            _rightTopFrame.Title = "Query Editor";
             
             // Restore original dimensions for results frame
-            _bottomFrame.X = 31;
-            _bottomFrame.Y = _originalBottomFrameY;
-            _bottomFrame.Width = Dim.Fill();
-            _bottomFrame.Height = _originalBottomFrameHeight;
-            _bottomFrame.Title = "Results";
+            _rightBottomFrame.X = 31;
+            _rightBottomFrame.Y = _originalBottomFrameY;
+            _rightBottomFrame.Width = Dim.Fill();
+            _rightBottomFrame.Height = _originalBottomFrameHeight;
+            _rightBottomFrame.Title = "Results";
             
             // Trigger layout refresh
             SetNeedsLayout();
