@@ -172,6 +172,32 @@ namespace KustoTerminal.UI
                 {
                     key.Handled = true;
                 }
+                else if (key == (KeyCode.AltMask | Key.CursorRight.KeyCode))
+                {
+                    AdvanceFocus(NavigationDirection.Forward, TabBehavior.TabStop);
+                    key.Handled = true;
+                }
+                else if (key == (KeyCode.AltMask | Key.CursorLeft.KeyCode))
+                {
+                    AdvanceFocus(NavigationDirection.Backward, TabBehavior.TabStop);
+                    key.Handled = true;
+                }
+                else if (key == (KeyCode.AltMask | Key.CursorDown.KeyCode))
+                {
+                    if (_rightFrame.HasFocus)
+                    {
+                        AdvanceFocus(NavigationDirection.Forward, TabBehavior.TabStop);
+                        key.Handled = true;
+                    }
+                }
+                else if (key == (KeyCode.AltMask | Key.CursorUp.KeyCode))
+                {
+                    if (_bottomFrame.HasFocus)
+                    {
+                        AdvanceFocus(NavigationDirection.Backward, TabBehavior.TabStop);
+                        key.Handled = true;
+                    }
+                }
             };
         }
 
