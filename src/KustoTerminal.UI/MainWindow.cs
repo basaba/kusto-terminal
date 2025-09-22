@@ -174,13 +174,19 @@ namespace KustoTerminal.UI
                 }
                 else if (key == (KeyCode.AltMask | Key.CursorRight.KeyCode))
                 {
-                    AdvanceFocus(NavigationDirection.Forward, TabBehavior.TabStop);
-                    key.Handled = true;
+                    if (_leftFrame.HasFocus)
+                    {
+                        AdvanceFocus(NavigationDirection.Forward, TabBehavior.TabStop);
+                        key.Handled = true;
+                    }
                 }
                 else if (key == (KeyCode.AltMask | Key.CursorLeft.KeyCode))
                 {
-                    AdvanceFocus(NavigationDirection.Backward, TabBehavior.TabStop);
-                    key.Handled = true;
+                    if (_rightFrame.HasFocus || _bottomFrame.HasFocus)
+                    {
+                        AdvanceFocus(NavigationDirection.Backward, TabBehavior.TabStop);
+                        key.Handled = true;
+                    }
                 }
                 else if (key == (KeyCode.AltMask | Key.CursorDown.KeyCode))
                 {
