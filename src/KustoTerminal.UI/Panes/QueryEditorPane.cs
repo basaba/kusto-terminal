@@ -19,7 +19,6 @@ namespace KustoTerminal.UI.Panes
         private Label _shortcutsLabel;
         private Label _temporaryMessageLabel;
         
-        private KustoConnection? _currentConnection;
         private bool _isExecuting = false;
         private System.Threading.Timer? _temporaryMessageTimer;
         private readonly IUserSettingsManager? _userSettingsManager;
@@ -182,7 +181,6 @@ namespace KustoTerminal.UI.Panes
 
         public void SetConnection(KustoConnection connection)
         {
-            _currentConnection = connection;
             _connectionLabel.Text = $"Connected: {connection.DisplayName} | {connection.Database}";
         }
 
