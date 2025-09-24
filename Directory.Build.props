@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+
+    <Deterministic>true</Deterministic>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Features>strict</Features>
+
+    <!-- Should be enabled once warnings are resolved -->
+	<!-- <TreatWarningsAsErrors>true</TreatWarningsAsErrors> -->
+
+    <!-- Enforce the editorconfig code style rules -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+	<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+  </PropertyGroup>
+</Project>
+
