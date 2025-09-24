@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KustoTerminal.CLI/KustoTerminal.CLI.csproj" />
+    <Project Path="src/KustoTerminal.Core/KustoTerminal.Core.csproj" />
+    <Project Path="src/KustoTerminal.UI/KustoTerminal.UI.csproj" />
+  </Folder>
+</Solution>
