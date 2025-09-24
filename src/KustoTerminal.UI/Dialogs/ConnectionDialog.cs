@@ -11,13 +11,14 @@ namespace KustoTerminal.UI.Dialogs
 {
     public class ConnectionDialog : Dialog
     {
-        private TextField _nameField;
-        private TextField _clusterUriField;
-        private TextField _databaseField;
-        private RadioGroup _authTypeGroup;
-        private Label _shortcutsLabel;
+        private TextField _nameField = null!;
+        private TextField _clusterUriField = null!;
+        private TextField _databaseField = null!;
+        private RadioGroup _authTypeGroup = null!;
+        private Label _shortcutsLabel = null!;
+
         private readonly KustoConnection? _originalConnection;
-        
+
         public KustoConnection? Result { get; private set; }
 
         public ConnectionDialog(KustoConnection? connection = null)
@@ -41,7 +42,7 @@ namespace KustoTerminal.UI.Dialogs
                 X = 1,
                 Y = 1
             };
-            
+
             _nameField = new TextField()
             {
                 Text = connection?.Name ?? "",
@@ -57,7 +58,7 @@ namespace KustoTerminal.UI.Dialogs
                 X = 1,
                 Y = 3
             };
-            
+
             _clusterUriField = new TextField()
             {
                 Text = connection?.ClusterUri ?? "",
@@ -73,7 +74,7 @@ namespace KustoTerminal.UI.Dialogs
                 X = 1,
                 Y = 5
             };
-            
+
             _databaseField = new TextField()
             {
                 Text = connection?.Database ?? "",
@@ -114,7 +115,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Enter: OK | Esc: Cancel",
                 X = 1,
                 Y = 12,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1,
                 // ColorScheme = ColorSchemeFactory.CreateShortcutLabel()
             };
