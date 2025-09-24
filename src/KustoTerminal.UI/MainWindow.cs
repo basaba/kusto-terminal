@@ -172,7 +172,7 @@ namespace KustoTerminal.UI
                 {
                     key.Handled = true;
                 }
-                else if (key == (KeyCode.AltMask | Key.CursorRight.KeyCode))
+                else if (key == (KeyCode.AltMask | KeyCode.CtrlMask | Key.CursorRight.KeyCode))
                 {
                     if (_leftFrame.HasFocus)
                     {
@@ -180,14 +180,14 @@ namespace KustoTerminal.UI
                         key.Handled = true;
                     }
                 }
-                else if (key == (KeyCode.AltMask | Key.CursorLeft.KeyCode))
+                else if (key == (KeyCode.AltMask | KeyCode.CtrlMask | Key.CursorLeft.KeyCode))
                 {
                     if (_rightBottomFrame.HasFocus || _rightTopFrame.HasFocus)
                     {
                         _leftFrame.SetFocus();
                     }
                 }
-                else if (key == (KeyCode.AltMask | Key.CursorDown.KeyCode))
+                else if (key == (KeyCode.AltMask | KeyCode.CtrlMask | Key.CursorDown.KeyCode))
                 {
                     if (_rightTopFrame.HasFocus)
                     {
@@ -195,7 +195,7 @@ namespace KustoTerminal.UI
                         key.Handled = true;
                     }
                 }
-                else if (key == (KeyCode.AltMask | Key.CursorUp.KeyCode))
+                else if (key == (KeyCode.AltMask | KeyCode.CtrlMask | Key.CursorUp.KeyCode))
                 {
                     if (_rightBottomFrame.HasFocus)
                     {
