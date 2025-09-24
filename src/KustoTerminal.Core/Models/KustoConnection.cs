@@ -1,35 +1,34 @@
 using System;
 using System.Collections.Generic;
 
-namespace KustoTerminal.Core.Models
+namespace KustoTerminal.Core.Models;
+
+public class KustoConnection
 {
-    public class KustoConnection
-    {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Name { get; set; } = string.Empty;
-        public string ClusterUri { get; set; } = string.Empty;
-        public string Database { get; set; } = string.Empty;
-        public List<string> Databases { get; set; } = new List<string>();
-        public AuthenticationType AuthType { get; set; } = AuthenticationType.AzureCli;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime LastUsed { get; set; } = DateTime.UtcNow;
-        public bool IsDefault { get; set; } = false;
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = string.Empty;
+    public string ClusterUri { get; set; } = string.Empty;
+    public string Database { get; set; } = string.Empty;
+    public List<string> Databases { get; set; } = new List<string>();
+    public AuthenticationType AuthType { get; set; } = AuthenticationType.AzureCli;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime LastUsed { get; set; } = DateTime.UtcNow;
+    public bool IsDefault { get; set; } = false;
 
-        public string DisplayName => !string.IsNullOrEmpty(Name) ? Name : ClusterUri;
-        
-        public bool IsValid()
-        {
-            return !string.IsNullOrWhiteSpace(ClusterUri) && 
-                   !string.IsNullOrWhiteSpace(Database) &&
-                   Uri.TryCreate(ClusterUri, UriKind.Absolute, out _);
-        }
-    }
-
-    public enum AuthenticationType
+    public string DisplayName => !string.IsNullOrEmpty(Name) ? Name : ClusterUri;
+    
+    public bool IsValid()
     {
-        None,
-        AzureCli,
-        ServicePrincipal,
-        Interactive
+        return !string.IsNullOrWhiteSpace(ClusterUri) && 
+               !string.IsNullOrWhiteSpace(Database) &&
+               Uri.TryCreate(ClusterUri, UriKind.Absolute, out _);
     }
+}
+
+public enum AuthenticationType
+{
+    None,
+    AzureCli,
+    ServicePrincipal,
+    Interactive
 }

@@ -3,15 +3,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using KustoTerminal.Core.Models;
 
-namespace KustoTerminal.Core.Interfaces
+namespace KustoTerminal.Core.Interfaces;
+
+public interface IKustoClient
 {
-    public interface IKustoClient
-    {
-        Task<QueryResult> ExecuteQueryAsync(string query, CancellationToken cancellationToken = default, IProgress<string>? progress = null);
-        Task<bool> TestConnectionAsync();
-        Task<string[]> GetDatabasesAsync();
-        Task<string[]> GetTablesAsync(string database);
-        Task CancelCurrentQueryAsync();
-        void Dispose();
-    }
+    Task<QueryResult> ExecuteQueryAsync(string query, CancellationToken cancellationToken = default, IProgress<string>? progress = null);
+    Task<bool> TestConnectionAsync();
+    Task<string[]> GetDatabasesAsync();
+    Task<string[]> GetTablesAsync(string database);
+    Task CancelCurrentQueryAsync();
+    void Dispose();
 }
