@@ -14,9 +14,9 @@ namespace KustoTerminal.UI.Dialogs
 {
     public class ColumnSelectorDialog : Dialog
     {
-        private ListView _columnsList;
-        private Label _shortcutsLabel;
-        private Label _instructionLabel;
+        private ListView _columnsList = null!;
+        private Label _shortcutsLabel = null!;
+        private Label _instructionLabel = null!;
         private readonly DataTable _dataTable;
         private readonly HashSet<string> _selectedColumns;
 
@@ -52,7 +52,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Use Space to toggle column selection:",
                 X = 1,
                 Y = 1,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 
@@ -60,8 +60,8 @@ namespace KustoTerminal.UI.Dialogs
             {
                 X = 1,
                 Y = 3,
-                Width = Dim.Fill() - 2,
-                Height = Dim.Fill() - 1,
+                Width = Dim.Fill()! - 2,
+                Height = Dim.Fill()! - 1,
                 AllowsMarking = false,
                 AllowsMultipleSelection = false
             };
@@ -74,7 +74,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Space: Toggle | Ctrl+A: All | Ctrl+N: None | Enter: OK | Esc: Cancel",
                 X = 1,
                 Y = Pos.Bottom(_columnsList),
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 

@@ -13,12 +13,12 @@ namespace KustoTerminal.UI.Panes
 {
     public class QueryEditorPane : BasePane
     {
-        private TextView _queryTextView;
-        private Label _connectionLabel;
-        private Label _progressLabel;
-        private Label _shortcutsLabel;
-        private Label _temporaryMessageLabel;
-        
+        private TextView _queryTextView = null!;
+        private Label _connectionLabel = null!;
+        private Label _progressLabel = null!;
+        private Label _shortcutsLabel = null!;
+        private Label _temporaryMessageLabel = null!;
+
         private bool _isExecuting = false;
         private System.Threading.Timer? _temporaryMessageTimer;
         private readonly IUserSettingsManager? _userSettingsManager;
@@ -53,7 +53,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 1,
+                Height = Dim.Fill()! - 1,
                 Text = "",
             };
 
