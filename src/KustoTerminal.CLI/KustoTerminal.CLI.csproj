@@ -12,5 +12,8 @@
     <Nullable>enable</Nullable>
     <AssemblyName>KustoTerminal</AssemblyName>
   </PropertyGroup>
-
+  <ItemGroup>
+    <None Remove="Resources\config.json" />
+    <EmbeddedResource Include="Resources\config.json" />
+  </ItemGroup>
 </Project>

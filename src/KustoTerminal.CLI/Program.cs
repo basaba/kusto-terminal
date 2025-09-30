@@ -5,6 +5,7 @@ using Terminal.Gui;
 using Terminal.Gui.App;
 using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
+using Terminal.Gui.Configuration;
 using KustoTerminal.Core.Services;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.UI;
@@ -34,6 +35,11 @@ namespace KustoTerminal.CLI
                 SetDateTimeFormatting();
 
                 Console.WriteLine("Starting Terminal UI...");
+
+                // Enable ConfigurationManager to load color schemes and themes
+                // This will load from embedded resources and user config files
+                ConfigurationManager.Enable(ConfigLocations.All);
+                ConfigurationManager.Apply();
 
                 Application.Init(driverName: "NetDriver");
 

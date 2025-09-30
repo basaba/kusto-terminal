@@ -1,0 +1,61 @@
+{
+  "$schema": "https://gui-cs.github.io/Terminal.Gui/schemas/tui-config-schema.json",
+  "Themes": [
+    {
+     "Default": {
+      "Schemes": [
+        {
+          "Base": {
+            "Normal": {
+              "Foreground": "LightBlue",
+              "Background": "RaisinBlack",
+              "Style": "None"
+            },
+            "Focus": {
+              "Foreground": "RaisinBlack",
+              "Background": "LightBlue",
+              "Style": "None"
+            }
+          }
+        },
+        {
+          "TopLevel": {
+            "Normal": {
+              "Foreground": "CadetBlue",
+              "Background": "Charcoal",
+              "Style": "None"
+            }
+          }
+        },
+        {
+          "Dialog": {
+            "Normal": {
+              "Foreground": "LightSkyBlue",
+              "Background": "OuterSpace",
+              "Style": "None"
+            }
+          }
+        },
+        {
+          "Menu": {
+            "Normal": {
+              "Foreground": "Charcoal",
+              "Background": "LightBlue",
+              "Style": "Bold"
+            }
+          }
+        },
+        {
+          "Error": {
+            "Normal": {
+              "Foreground": "IndianRed",
+              "Background": "RaisinBlack",
+              "Style": "None"
+            }
+          }
+        }
+      ]
+     }
+    }
+  ]
+}
