@@ -35,6 +35,11 @@ namespace KustoTerminal.UI.Panes
             SetupLayout();
             SetKeyboard();
             CanFocus = true;
+            _queryTextView.DrawingText += (e, a) =>
+            {
+                var syntaxHighlighter = new SyntaxHighlighting.SyntaxHighlighter();
+                syntaxHighlighter.Highlight(_queryTextView);
+            };
         }
 
         private void InitializeComponents()
