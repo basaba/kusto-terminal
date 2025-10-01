@@ -22,8 +22,8 @@ namespace KustoTerminal.UI.Panes
     public class ConnectionPane : View
     {
         private readonly IConnectionManager _connectionManager;
-        private TreeView _connectionsTree;
-        private Label[] _shortcutsLabels;
+        private TreeView _connectionsTree = null!;
+        private Label[] _shortcutsLabels = null!;
 
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
@@ -141,10 +141,10 @@ namespace KustoTerminal.UI.Panes
             {
                 var connections = await _connectionManager.GetConnectionsAsync();
                 _connections = connections.ToArray();
-                
+
                 // Clear existing tree
                 _connectionsTree.ClearObjects();
-                
+
                 // Add cluster nodes to tree
                 foreach (var connection in _connections)
                 {
@@ -163,7 +163,7 @@ namespace KustoTerminal.UI.Panes
             }
         }
 
-        public async void RefreshConnections()
+        public void RefreshConnections()
         {
             LoadConnections();
         }
@@ -171,7 +171,7 @@ namespace KustoTerminal.UI.Panes
         private void OnTreeSelectionChanged(object? sender, SelectionChangedEventArgs<ITreeNode> args)
         {
             var selectedNode = _connectionsTree.SelectedObject;
-            
+
             if (selectedNode is ClusterTreeNode clusterNode)
             {
                 _selectedConnection = clusterNode.Connection;
@@ -189,16 +189,16 @@ namespace KustoTerminal.UI.Panes
         private void OnExpandDatabases()
         {
             var selectedNode = _connectionsTree.SelectedObject;
-            
+
             if (selectedNode is ClusterTreeNode clusterNode)
             {
                 // Load and expand databases for the selected cluster
                 Task.Run(async () => {
                     // Refresh immediately to show loading state
                     Application.Invoke(() => _connectionsTree.RefreshObject(clusterNode));
-                    
+
                     await clusterNode.LoadDatabasesAsync();
-                    
+
                     // Refresh again after loading is complete
                     Application.Invoke(() =>
                     {
@@ -301,7 +301,7 @@ namespace KustoTerminal.UI.Panes
         {
             if (!_kustoClients.TryGetValue(connection.Id, out var client))
             {
-                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType);
+                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
                 client = new KustoClient(connection, authProvider);
                 _kustoClients[connection.Id] = client;
             }

@@ -16,13 +16,13 @@ namespace KustoTerminal.UI.Panes
 {
     public class ResultsPane : BasePane
     {
-        private TableView _tableView;
-        private Label _statusLabel;
-        private TextView _errorLabel;
-        private Label _shortcutsLabel;
-        private TextField _searchField;
-        private Label _searchLabel;
-        
+        private TableView _tableView = null!;
+        private Label _statusLabel = null!;
+        private TextView _errorLabel = null!;
+        private Label _shortcutsLabel = null!;
+        private TextField _searchField = null!;
+        private Label _searchLabel = null!;
+
         private QueryResult? _currentResult;
         private DataTable? _originalData;
         private HashSet<string> _selectedColumns = new HashSet<string>();
@@ -34,7 +34,7 @@ namespace KustoTerminal.UI.Panes
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
-            
+
             CanFocus = true;
             TabStop = TabBehavior.TabStop;
         }
@@ -56,7 +56,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,  // Position where table view is
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 1,  // Take up the space normally used by table view
+                Height = Dim.Fill()! - 1,  // Take up the space normally used by table view
                 Visible = false,
                 SchemeName = "Error",
                 ReadOnly = true,
@@ -67,7 +67,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 1,
+                Height = Dim.Fill()! - 1,
                 FullRowSelect = false,
                 MultiSelect = false,
             };
@@ -81,7 +81,7 @@ namespace KustoTerminal.UI.Panes
                 Height = 1,
                 SchemeName = "TopLevel"
             };
-            
+
             _searchLabel = new Label()
             {
                 Text = "Search:",
@@ -206,10 +206,10 @@ namespace KustoTerminal.UI.Panes
                 _errorLabel.Visible = false;
                 _tableView.Visible = true;
                 _statusLabel.Visible = true;
-                
+
                 var dataTable = result.Data!;
                 _originalData = dataTable.Copy(); // Keep a copy of the original data
-                
+
                 // Initialize selected columns if not set
                 if (_selectedColumns.Count == 0)
                 {
@@ -218,7 +218,7 @@ namespace KustoTerminal.UI.Panes
                         _selectedColumns.Add(column.ColumnName);
                     }
                 }
-                
+
                 // Apply column filtering
                 var filteredTable = ApplyColumnFilter(dataTable);
                 _tableView.Table = new DataTableSource(filteredTable);
@@ -246,7 +246,7 @@ namespace KustoTerminal.UI.Panes
             _tableView.Visible = false;
             _errorLabel.Visible = true;
             _errorLabel.Text = $"Query failed: {result.ErrorMessage}";
-            
+
             // Keep status label visible for other information
             var statusText = "Error occurred during query execution";
             if (!string.IsNullOrEmpty(result.ClientRequestId))
@@ -262,14 +262,14 @@ namespace KustoTerminal.UI.Panes
             _errorLabel.Visible = false;
             _tableView.Visible = true;
             _statusLabel.Visible = true;
-            
+
             var statusText = $"No results returned | Duration: {result.Duration.TotalMilliseconds:F0}ms";
             if (!string.IsNullOrEmpty(result.ClientRequestId))
             {
                 statusText += $" | ClientRequestId: {result.ClientRequestId}";
             }
             _statusLabel.Text = statusText;
-            
+
             // Show empty table with column headers if available
             if (result.Data != null && result.Data.Columns.Count > 0)
             {
@@ -281,19 +281,19 @@ namespace KustoTerminal.UI.Panes
             }
         }
 
-        public new void Clear()
+        public void Clear()
         {
             _currentResult = null;
             _originalData = null;
             _selectedColumns.Clear();
             _tableView.Table = new DataTableSource(new DataTable());
-            
+
             // Reset to showing table view and status label, hide error label
             _errorLabel.Visible = false;
             _tableView.Visible = true;
             _statusLabel.Visible = true;
             _statusLabel.Text = "No results";
-            
+
             HideSearch();
         }
 
@@ -334,7 +334,7 @@ namespace KustoTerminal.UI.Panes
         private void ExportData(DataTable dataTable, string fileName)
         {
             var extension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
-            
+
             switch (extension)
             {
                 case ".csv":
@@ -354,11 +354,11 @@ namespace KustoTerminal.UI.Panes
         private void ExportToCsv(DataTable dataTable, string fileName)
         {
             using var writer = new System.IO.StreamWriter(fileName);
-            
+
             // Write headers
             var headers = dataTable.Columns.Cast<DataColumn>().Select(column => $"\"{column.ColumnName}\"");
             writer.WriteLine(string.Join(",", headers));
-            
+
             // Write rows
             foreach (DataRow row in dataTable.Rows)
             {
@@ -370,11 +370,11 @@ namespace KustoTerminal.UI.Panes
         private void ExportToTsv(DataTable dataTable, string fileName)
         {
             using var writer = new System.IO.StreamWriter(fileName);
-            
+
             // Write headers
             var headers = dataTable.Columns.Cast<DataColumn>().Select(column => column.ColumnName);
             writer.WriteLine(string.Join("\t", headers));
-            
+
             // Write rows
             foreach (DataRow row in dataTable.Rows)
             {
@@ -386,19 +386,19 @@ namespace KustoTerminal.UI.Panes
         private void ExportToJson(DataTable dataTable, string fileName)
         {
             var rows = new System.Collections.Generic.List<object>();
-            
+
             foreach (DataRow row in dataTable.Rows)
             {
                 var rowObject = new System.Collections.Generic.Dictionary<string, object?>();
-                
+
                 for (int i = 0; i < dataTable.Columns.Count; i++)
                 {
                     rowObject[dataTable.Columns[i].ColumnName] = row[i] == DBNull.Value ? null : row[i];
                 }
-                
+
                 rows.Add(rowObject);
             }
-            
+
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(rows, Newtonsoft.Json.Formatting.Indented);
             System.IO.File.WriteAllText(fileName, json);
         }
@@ -514,7 +514,7 @@ namespace KustoTerminal.UI.Panes
                 return false;
 
             value = value.Trim();
-            
+
             // Quick check for JSON-like structure
             if (!(value.StartsWith("{") && value.EndsWith("}")) &&
                 !(value.StartsWith("[") && value.EndsWith("]")))
@@ -569,7 +569,7 @@ namespace KustoTerminal.UI.Panes
                 _tableView.Table = new DataTableSource(_originalData);
                 UpdateStatusForOriginalData();
             }
-            
+
             _tableView.SetFocus();
         }
 
@@ -584,7 +584,7 @@ namespace KustoTerminal.UI.Panes
                 return;
 
             var searchText = _searchField.Text.ToString();
-            
+
             if (string.IsNullOrWhiteSpace(searchText))
             {
                 // Show all data when search is empty
@@ -597,11 +597,11 @@ namespace KustoTerminal.UI.Panes
             {
                 // Create a filtered view of the data
                 var filteredTable = _originalData.Clone();
-                
+
                 foreach (DataRow row in _originalData.Rows)
                 {
                     bool rowMatches = false;
-                    
+
                     // Check each column for the search text (case-insensitive)
                     foreach (var item in row.ItemArray)
                     {
@@ -612,13 +612,13 @@ namespace KustoTerminal.UI.Panes
                             break;
                         }
                     }
-                    
+
                     if (rowMatches)
                     {
                         filteredTable.ImportRow(row);
                     }
                 }
-                
+
                 _tableView.Table = new DataTableSource(filteredTable);
                 UpdateStatusForFilteredData(filteredTable.Rows.Count, searchText);
             }
@@ -667,7 +667,7 @@ namespace KustoTerminal.UI.Panes
 
             // Update selected columns and refresh display
             _selectedColumns = dialog.SelectedColumns;
-            
+
             if (_currentResult != null)
             {
                 DisplayData(_currentResult);
