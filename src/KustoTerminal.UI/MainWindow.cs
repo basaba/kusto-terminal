@@ -10,8 +10,10 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.Core.Services;
 using KustoTerminal.UI.Panes;
 using KustoTerminal.UI.Dialogs;
+using KustoTerminal.Language.Services;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
+using KustoTerminal.UI.SyntaxHighlighting;
 
 namespace KustoTerminal.UI
 {
@@ -20,6 +22,8 @@ namespace KustoTerminal.UI
         private readonly IConnectionManager _connectionManager;
         private readonly IAuthenticationProvider _authProvider;
         private readonly IUserSettingsManager _userSettingsManager;
+        private readonly ClusterSchemaService _clusterSchemaService;
+        private readonly SyntaxHighlighter _syntaxHighlighter;
         
         private ConnectionPane _connectionPane;
         private QueryEditorPane _queryEditorPane;
@@ -44,6 +48,11 @@ namespace KustoTerminal.UI
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
             _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
 
+            // Initialize language service and cluster schema service
+            var languageService = new LanguageService();
+            _syntaxHighlighter = new SyntaxHighlighter(languageService);
+            _clusterSchemaService = new ClusterSchemaService(languageService);
+
             Title = "Kusto Terminal - (Ctrl+Q to quit)";
             X = 0;
             Y = 0; // Leave space for menu bar
@@ -53,6 +62,7 @@ namespace KustoTerminal.UI
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
+            SetupClusterSchemaEvents();
         }
 
         private void InitializeComponents()
@@ -97,7 +107,7 @@ namespace KustoTerminal.UI
                 Height = Dim.Fill()
             };
 
-            _queryEditorPane = new QueryEditorPane(_userSettingsManager)
+            _queryEditorPane = new QueryEditorPane(_userSettingsManager, _syntaxHighlighter)
             {
                 X = 0,
                 Y = 0,
@@ -502,10 +512,42 @@ namespace KustoTerminal.UI
             }
         }
         
+        private void SetupClusterSchemaEvents()
+        {
+            // Subscribe to connection events to automatically fetch cluster schemas
+            _connectionManager.ConnectionAddOrUpdated += OnConnectionAddedOrUpdated;
+            
+            // Load cluster schemas for existing connections on startup
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var connections = await _connectionManager.GetConnectionsAsync();
+                    await _clusterSchemaService.FetchAndUpdateMultipleClusterSchemasAsync(connections);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Warning: Failed to load cluster schemas on startup: {ex.Message}");
+                }
+            });
+        }
+
+        private void OnConnectionAddedOrUpdated(object? sender, KustoConnection connection)
+        {
+            // Fetch cluster schema for the updated connection
+            _ = Task.Run(async () =>
+            {
+                await _clusterSchemaService.FetchAndUpdateClusterSchemaAsync(connection);
+            });
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                // Unsubscribe from events
+                _connectionManager.ConnectionAddOrUpdated -= OnConnectionAddedOrUpdated;
+                
                 // Save current query before disposing
                 try
                 {
@@ -513,8 +555,6 @@ namespace KustoTerminal.UI
                 }
                 catch (Exception ex)
                 {
-                    // Silently fail - don't crash during shutdown
-                    Console.WriteLine($"Warning: Failed to save query during shutdown: {ex.Message}");
                 }
             }
             base.Dispose(disposing);

@@ -10,5 +10,7 @@
     <PackageReference Include="Microsoft.Azure.Kusto.Data" Version="14.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\KustoTerminal.Language\KustoTerminal.Language.csproj" />
+  </ItemGroup>
 </Project>

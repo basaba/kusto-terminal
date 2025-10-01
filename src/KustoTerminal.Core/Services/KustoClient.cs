@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Kusto.Data;
@@ -9,6 +10,7 @@ using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
+using Newtonsoft.Json;
 
 namespace KustoTerminal.Core.Services
 {
@@ -259,6 +261,38 @@ namespace KustoTerminal.Core.Services
             catch
             {
                 return Array.Empty<string>();
+            }
+        }
+
+        public async Task<ClusterSchema?> GetClusterSchemaAsync()
+        {
+            try
+            {
+                await EnsureConnectionAsync();
+                
+                if (_adminProvider == null)
+                    throw new InvalidOperationException("Admin provider is not initialized");
+
+                var query = ".show cluster schema as json";
+                var clientRequestProperties = new ClientRequestProperties();
+                using var reader = await _adminProvider.ExecuteControlCommandAsync(_connection.Database, query, clientRequestProperties);
+                
+                // The result is a single row with a single column containing the JSON schema
+                if (reader.Read())
+                {
+                    var jsonSchema = reader[0]?.ToString();
+                    if (!string.IsNullOrEmpty(jsonSchema))
+                    {
+                        var res = JsonConvert.DeserializeObject<ClusterSchema>(jsonSchema);
+                        return res;
+                    }
+                }
+                
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
 

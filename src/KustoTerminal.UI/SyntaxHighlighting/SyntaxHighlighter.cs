@@ -15,9 +15,10 @@ namespace KustoTerminal.UI.SyntaxHighlighting
 {
     public class SyntaxHighlighter
     {
-        private readonly Dictionary<ClassificationKind, Attribute> _colorMap;
+        private static Dictionary<ClassificationKind, Attribute> _colorMap;
+        private readonly LanguageService _languageService;
         
-        public SyntaxHighlighter()
+        static SyntaxHighlighter()
         {
             // Initialize color mappings for different classification types
             _colorMap = new Dictionary<ClassificationKind, Attribute>
@@ -41,12 +42,16 @@ namespace KustoTerminal.UI.SyntaxHighlighting
             };
         }
 
-        public void Highlight(TextView textView)
+        public SyntaxHighlighter(LanguageService languageService)
+        {
+            _languageService = languageService;
+        }
+
+        public void Highlight(TextView textView, string clusterName, string databaseName)
         {
             var textModel = new TextModel(textView);
-            var languageService = new LanguageService();
-            var classificationResult = languageService.GetClassifications(textModel);
-            
+            var classificationResult = _languageService.GetClassifications(textModel, clusterName, databaseName);
+
             ApplyClassifications(textView, classificationResult.Classifications);
         }
 

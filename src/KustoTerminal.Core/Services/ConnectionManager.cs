@@ -13,6 +13,11 @@ namespace KustoTerminal.Core.Services
     {
         private readonly string _configFilePath;
         private List<KustoConnection> _connections;
+        
+        /// <summary>
+        /// Event raised when a connection is updated
+        /// </summary>
+        public event EventHandler<KustoConnection>? ConnectionAddOrUpdated;
 
         public ConnectionManager()
         {
@@ -56,6 +61,9 @@ namespace KustoTerminal.Core.Services
             
             _connections.Add(connection);
             await SaveConnectionsAsync();
+
+            // Raise the ConnectionUpdated event
+            ConnectionAddOrUpdated?.Invoke(this, connection);
         }
 
         public async Task UpdateConnectionAsync(KustoConnection connection)
@@ -76,6 +84,9 @@ namespace KustoTerminal.Core.Services
                 
                 _connections[existingIndex] = connection;
                 await SaveConnectionsAsync();
+                
+                // Raise the ConnectionUpdated event
+                ConnectionAddOrUpdated?.Invoke(this, connection);
             }
         }
 

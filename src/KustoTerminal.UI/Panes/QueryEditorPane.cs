@@ -8,6 +8,8 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.Core.Interfaces;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
+using KustoTerminal.Language.Services;
+using KustoTerminal.UI.SyntaxHighlighting;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -22,23 +24,26 @@ namespace KustoTerminal.UI.Panes
         private bool _isExecuting = false;
         private System.Threading.Timer? _temporaryMessageTimer;
         private readonly IUserSettingsManager? _userSettingsManager;
+        private readonly SyntaxHighlighter _syntaxHighlighter;
+
+        private KustoConnection _currentConnection;
 
         public event EventHandler<string>? QueryExecuteRequested;
         public event EventHandler? EscapePressed;
         public event EventHandler? QueryCancelRequested;
         public event EventHandler? MaximizeToggleRequested;
 
-        public QueryEditorPane(IUserSettingsManager? userSettingsManager = null)
+        public QueryEditorPane(IUserSettingsManager? userSettingsManager = null, SyntaxHighlighter syntaxHighlighter = null)
         {
             _userSettingsManager = userSettingsManager;
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
             CanFocus = true;
+            _syntaxHighlighter = syntaxHighlighter;
             _queryTextView.DrawingText += (e, a) =>
             {
-                var syntaxHighlighter = new SyntaxHighlighting.SyntaxHighlighter();
-                syntaxHighlighter.Highlight(_queryTextView);
+                _syntaxHighlighter.Highlight(_queryTextView, _currentConnection?.Name ?? "", _currentConnection?.Database ?? "");
             };
         }
 
@@ -187,6 +192,7 @@ namespace KustoTerminal.UI.Panes
         public void SetConnection(KustoConnection connection)
         {
             _connectionLabel.Text = $"Connected: {connection.DisplayName} | {connection.Database}";
+            _currentConnection = connection;
         }
 
         public void FocusEditor()

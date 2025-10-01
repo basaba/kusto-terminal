@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Kusto.Data.Common;
 using KustoTerminal.Core.Models;
 
 namespace KustoTerminal.Core.Interfaces
@@ -11,6 +12,7 @@ namespace KustoTerminal.Core.Interfaces
         Task<bool> TestConnectionAsync();
         Task<string[]> GetDatabasesAsync();
         Task<string[]> GetTablesAsync(string database);
+        Task<ClusterSchema?> GetClusterSchemaAsync();
         Task CancelCurrentQueryAsync();
         void Dispose();
     }
