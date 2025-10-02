@@ -38,7 +38,8 @@ namespace KustoTerminal.UI.SyntaxHighlighting
                 { ClassificationKind.Table, new Attribute(ColorsCollection.SoftGold, Color.Black) },
                 { ClassificationKind.Database, new Attribute(ColorsCollection.SoftGold, Color.Black) },
                 { ClassificationKind.Parameter, new Attribute(ColorsCollection.LightSkyBlue, Color.Black) },
-                { ClassificationKind.Variable, new Attribute(ColorsCollection.LightSkyBlue, Color.Black) }
+                { ClassificationKind.Variable, new Attribute(ColorsCollection.LightSkyBlue, Color.Black) },
+                { ClassificationKind.MaterializedView, new Attribute(ColorsCollection.SoftGold, Color.Black) },
             };
         }
 

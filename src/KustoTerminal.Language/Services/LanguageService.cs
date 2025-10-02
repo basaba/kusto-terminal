@@ -115,10 +115,76 @@ namespace KustoTerminal.Language.Services
                         }
                     }
 
-                    // Combine tables and functions as database members
+                    // Convert materialized views if they exist
+                    var materializedViews = new List<TableSymbol>();
+                    if (dbSchema.MaterializedViews != null)
+                    {
+                        foreach (var materializedViewKvp in dbSchema.MaterializedViews)
+                        {
+                            var materializedViewName = materializedViewKvp.Key;
+                            var materializedViewSchema = materializedViewKvp.Value;
+                            var columns = new List<ColumnSymbol>();
+
+                            // Convert columns if they exist
+                            if (materializedViewSchema.Columns != null)
+                            {
+                                foreach (var columnSchemaKvp in materializedViewSchema.Columns)
+                                {
+                                    var columnName = columnSchemaKvp.Key;
+                                    var columnSchema = columnSchemaKvp.Value;
+                                    var columnSymbol = new ColumnSymbol(
+                                        columnName,
+                                        ScalarTypes.GetSymbol(columnSchema.CslType ?? "string")
+                                    );
+                                    columns.Add(columnSymbol);
+                                }
+                            }
+
+                            // Create a table symbol for the materialized view
+                            // Materialized views are treated as tables in the language service
+                            var materializedViewSymbol = new TableSymbol(
+                                materializedViewName,
+                                columns
+                            );
+                            materializedViews.Add(materializedViewSymbol);
+                        }
+                    }
+
+                    // Convert entity groups if they exist  
+                    var entityGroups = new List<Symbol>();
+                    if (dbSchema.EntityGroups != null && dbSchema.EntityGroups.Count > 0)
+                    {
+                        foreach (var entityGroupKvp in dbSchema.EntityGroups)
+                        {
+                            var entityGroupName = entityGroupKvp.Key;
+                            var entityGroupItems = entityGroupKvp.Value;
+                            
+                            // EntityGroups contains a collection of items (likely table names)
+                            // Create a database symbol to represent the entity group with its items
+                            var entityGroupMembers = new List<Symbol>();
+                            
+                            // For each item in the entity group, create a simple table symbol
+                            // Since we don't have detailed schema, we'll create empty tables
+                            foreach (var itemName in entityGroupItems)
+                            {
+                                var itemSymbol = new TableSymbol(itemName, new List<ColumnSymbol>());
+                                entityGroupMembers.Add(itemSymbol);
+                            }
+
+                            var entityGroupSymbol = new EntityGroupSymbol(
+                                entityGroupName,
+                                entityGroupMembers
+                            );
+                            entityGroups.Add(entityGroupSymbol);
+                        }
+                    }
+
+                    // Combine tables, functions, materialized views, and entity groups as database members
                     var databaseMembers = new List<Symbol>();
                     databaseMembers.AddRange(tables);
                     databaseMembers.AddRange(functions);
+                    databaseMembers.AddRange(materializedViews);
+                    databaseMembers.AddRange(entityGroups);
 
                     var databaseSymbol = new DatabaseSymbol(
                         databaseName,
