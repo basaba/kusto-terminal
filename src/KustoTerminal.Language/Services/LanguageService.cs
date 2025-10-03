@@ -21,7 +21,7 @@ namespace KustoTerminal.Language.Services
         public ClassificationResult GetClassifications(ITextModel textModel, string clusterName, string databaseName)
         {
             _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
-            
+
             var classifications = CodeScript.From(textModel.GetText(), _globalState)
             .Blocks
             .SelectMany(block => block.Service.GetClassifications(block.Start, block.Length).Classifications)
@@ -34,6 +34,19 @@ namespace KustoTerminal.Language.Services
             .ToList();
 
             return new ClassificationResult { Classifications = classifications.ToArray() };
+        }
+
+        public CompletionResult GetCompletions(ITextModel textModel, int position, string clusterName, string databaseName)
+        {
+            _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
+
+            var script = CodeScript.From(textModel.GetText(), _globalState);
+            var block = script.GetBlockAtPosition(position);
+            var completions = block.Service.GetCompletionItems(position)
+                .Items
+                .Select(item => item.DisplayText)
+                .ToList();
+            return new CompletionResult { Items = completions };
         }
 
         public void AddOrUpdateCluster(string clusterName, ClusterSchema schema)

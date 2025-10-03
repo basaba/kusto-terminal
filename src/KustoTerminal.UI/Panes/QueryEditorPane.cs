@@ -8,8 +8,8 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.Core.Interfaces;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
-using KustoTerminal.Language.Services;
 using KustoTerminal.UI.SyntaxHighlighting;
+using KustoTerminal.UI.AutoCompletion;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -25,6 +25,7 @@ namespace KustoTerminal.UI.Panes
         private System.Threading.Timer? _temporaryMessageTimer;
         private readonly IUserSettingsManager? _userSettingsManager;
         private readonly SyntaxHighlighter _syntaxHighlighter;
+        private readonly AutoCompleter _autoCompleter;
 
         private KustoConnection _currentConnection;
 
@@ -33,7 +34,7 @@ namespace KustoTerminal.UI.Panes
         public event EventHandler? QueryCancelRequested;
         public event EventHandler? MaximizeToggleRequested;
 
-        public QueryEditorPane(IUserSettingsManager? userSettingsManager = null, SyntaxHighlighter syntaxHighlighter = null)
+        public QueryEditorPane(IUserSettingsManager? userSettingsManager = null, SyntaxHighlighter syntaxHighlighter = null, AutoCompleter autoCompleter = null)
         {
             _userSettingsManager = userSettingsManager;
             InitializeComponents();
@@ -41,10 +42,37 @@ namespace KustoTerminal.UI.Panes
             SetKeyboard();
             CanFocus = true;
             _syntaxHighlighter = syntaxHighlighter;
+            _autoCompleter = autoCompleter;
             _queryTextView.DrawingText += (e, a) =>
             {
                 _syntaxHighlighter.Highlight(_queryTextView, _currentConnection?.Name ?? "", _currentConnection?.Database ?? "");
             };
+            SetSuggestions();
+            // _queryTextView.DrawingContent += (sender, args) =>
+            // {
+            //     SetSuggestions();
+            // };
+            // _queryTextView.TextChanged += (sender, args) =>
+            // {
+            //     SetSuggestions();
+            // };
+        }
+
+        private void SetSuggestions()
+        {
+            var generator = ((SingleWordSuggestionGenerator)_queryTextView.Autocomplete.SuggestionGenerator);
+            if (generator == null)
+            {
+                return;
+            }
+
+            _queryTextView.Autocomplete.MaxWidth = 30;
+            _queryTextView.Autocomplete.PopupInsideContainer = true;
+            generator
+                .AllSuggestions = new List<string>() { "KustoLogs", "KustoLogs2", "DimClustersMv", "KubernetesContainersStdoutLogs" };
+            // _autoCompleter
+            //     .GetAutoCompleteItems(_queryTextView, _currentConnection?.Name ?? "", _currentConnection?.Database ?? "")
+            //     .ToList();
         }
 
         private void InitializeComponents()
