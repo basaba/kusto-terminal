@@ -7,6 +7,7 @@ using Kusto.Language.Editor;
 using Kusto.Language.Symbols;
 using Kusto.Language.Utils;
 using KustoTerminal.Language.Models;
+using CompletionItem = Kusto.Language.Editor.CompletionItem;
 
 namespace KustoTerminal.Language.Services
 {
@@ -21,7 +22,7 @@ namespace KustoTerminal.Language.Services
         public ClassificationResult GetClassifications(ITextModel textModel, string clusterName, string databaseName)
         {
             _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
-            
+
             var classifications = CodeScript.From(textModel.GetText(), _globalState)
             .Blocks
             .SelectMany(block => block.Service.GetClassifications(block.Start, block.Length).Classifications)
@@ -34,6 +35,33 @@ namespace KustoTerminal.Language.Services
             .ToList();
 
             return new ClassificationResult { Classifications = classifications.ToArray() };
+        }
+
+        public CompletionResult GetCompletions(ITextModel textModel, int position, string clusterName, string databaseName)
+        {
+            _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
+
+            var script = CodeScript.From(textModel.GetText(normalize: true), _globalState);
+            var block = script.GetBlockAtPosition(position);
+            var completions = block.Service.GetCompletionItems(position)
+                .Items
+                .Select(item => new KustoTerminal.Language.Models.CompletionItem{DisplayText = item.DisplayText, ApplyText  = string.Concat(item.ApplyTexts.Select(x=>x.Text)),OrderText = item.OrderText})
+                .ToList();
+            return new CompletionResult { Items = completions };
+        }
+
+        public bool IsEmptyBlock(ITextModel textModel, int position, string clusterName, string databaseName)
+        {
+            _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
+            
+            var script = CodeScript.From(textModel.GetText(normalize: true), _globalState);
+            var block = script.GetBlockAtPosition(position);
+            if (string.IsNullOrWhiteSpace(block.Text))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public void AddOrUpdateCluster(string clusterName, ClusterSchema schema)

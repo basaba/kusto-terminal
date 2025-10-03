@@ -11,6 +11,7 @@ using KustoTerminal.Core.Services;
 using KustoTerminal.UI.Panes;
 using KustoTerminal.UI.Dialogs;
 using KustoTerminal.Language.Services;
+using KustoTerminal.UI.AutoCompletion;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 using KustoTerminal.UI.SyntaxHighlighting;
@@ -24,6 +25,7 @@ namespace KustoTerminal.UI
         private readonly IUserSettingsManager _userSettingsManager;
         private readonly ClusterSchemaService _clusterSchemaService;
         private readonly SyntaxHighlighter _syntaxHighlighter;
+        private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
         
         private ConnectionPane _connectionPane;
         private QueryEditorPane _queryEditorPane;
@@ -52,6 +54,7 @@ namespace KustoTerminal.UI
             var languageService = new LanguageService();
             _syntaxHighlighter = new SyntaxHighlighter(languageService);
             _clusterSchemaService = new ClusterSchemaService(languageService);
+            _autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
 
             Title = "Kusto Terminal - (Ctrl+Q to quit)";
             X = 0;
@@ -115,7 +118,7 @@ namespace KustoTerminal.UI
                 SchemeName = "Base"
             };
 
-            _queryEditorPane = new QueryEditorPane(_userSettingsManager, _syntaxHighlighter)
+            _queryEditorPane = new QueryEditorPane(_userSettingsManager, _syntaxHighlighter, _autocompleteSuggestionGenerator)
             {
                 X = 0,
                 Y = 0,
