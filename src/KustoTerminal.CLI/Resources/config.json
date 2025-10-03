@@ -53,6 +53,34 @@
               "Style": "None"
             }
           }
+        },
+        {
+          "MainWindow": {
+            "Normal": {
+              "Foreground": "LightBlue",
+              "Background": "RaisinBlack",
+              "Style": "None"
+            },
+            "Focus": {
+              "Foreground": "LightBlue",
+              "Background": "RaisinBlack",
+              "Style": "None"
+            }
+          }
+        },
+        {
+          "FrameView": {
+            "Normal": {
+              "Foreground": "LightBlue",
+              "Background": "RaisinBlack",
+              "Style": "None"
+            },
+            "Focus": {
+              "Foreground": "DarkOrange",
+              "Background": "RaisinBlack",
+              "Style": "None"
+            }
+          }
         }
       ]
      }

@@ -58,6 +58,7 @@ namespace KustoTerminal.UI
             Y = 0; // Leave space for menu bar
             Width = Dim.Fill();
             Height = Dim.Fill() - 1; // Leave space for status bar
+            SchemeName = "MainWindow";
 
             InitializeComponents();
             SetupLayout();
@@ -75,7 +76,9 @@ namespace KustoTerminal.UI
                 Y = 0,
                 Width = 30,
                 Height = Dim.Fill(),
-                TabStop = TabBehavior.TabStop
+                TabStop = TabBehavior.TabStop,
+                SchemeName = "FrameView",
+                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
             };
 
             _rightTopFrame = new FrameView()
@@ -85,7 +88,9 @@ namespace KustoTerminal.UI
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Percent(60),
-                TabStop = TabBehavior.TabStop
+                TabStop = TabBehavior.TabStop,
+                SchemeName = "FrameView",
+                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
             };
 
             _rightBottomFrame = new FrameView()
@@ -95,7 +100,9 @@ namespace KustoTerminal.UI
                 Y = Pos.Bottom(_rightTopFrame),
                 Width = Dim.Fill(),
                 Height = Dim.Fill(),
-                TabStop = TabBehavior.TabStop
+                TabStop = TabBehavior.TabStop,
+                SchemeName = "FrameView",
+                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single
             };
 
             // Create panes
@@ -104,7 +111,8 @@ namespace KustoTerminal.UI
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
-                Height = Dim.Fill()
+                Height = Dim.Fill(),
+                SchemeName = "Base"
             };
 
             _queryEditorPane = new QueryEditorPane(_userSettingsManager, _syntaxHighlighter)
@@ -112,7 +120,8 @@ namespace KustoTerminal.UI
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
-                Height = Dim.Fill()
+                Height = Dim.Fill(),
+                SchemeName = "Base"
             };
 
             _resultsPane = new ResultsPane()
@@ -120,16 +129,8 @@ namespace KustoTerminal.UI
                 X = 0,
                 Y = 0,
                 Width = Dim.Fill(),
-                Height = Dim.Fill()
-            };
-
-            var _shortcutsLabel = new Label()
-            {
-                Text = "Ctrl+Q to quit",
-                X = 1,
-                Y = Pos.AnchorEnd(1),
-                Width = Dim.Fill(),
-                Height = 1
+                Height = Dim.Fill(),
+                SchemeName = "Base"
             };
         }
 
