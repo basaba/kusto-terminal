@@ -13,9 +13,15 @@ namespace KustoTerminal.UI.SyntaxHighlighting
             _textView = textView;
         }
 
-        public string GetText()
+        public string GetText(bool normalize = false)
         {
-            return _textView.Text;
+            var text = _textView.Text;
+            if (normalize)
+            {
+                text = text.Replace("\r\n", "\n");
+            }
+
+            return text;
         }
     }
 }

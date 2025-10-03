@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using Terminal.Gui;
 using Terminal.Gui.App;
 using Terminal.Gui.Views;
@@ -8,8 +9,8 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.Core.Interfaces;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
-using KustoTerminal.Language.Services;
 using KustoTerminal.UI.SyntaxHighlighting;
+using KustoTerminal.UI.AutoCompletion;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -25,6 +26,7 @@ namespace KustoTerminal.UI.Panes
         private System.Threading.Timer? _temporaryMessageTimer;
         private readonly IUserSettingsManager? _userSettingsManager;
         private readonly SyntaxHighlighter _syntaxHighlighter;
+        private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
 
         private KustoConnection _currentConnection;
 
@@ -33,20 +35,18 @@ namespace KustoTerminal.UI.Panes
         public event EventHandler? QueryCancelRequested;
         public event EventHandler? MaximizeToggleRequested;
 
-        public QueryEditorPane(IUserSettingsManager? userSettingsManager = null, SyntaxHighlighter syntaxHighlighter = null)
+        public QueryEditorPane(IUserSettingsManager? userSettingsManager = null, SyntaxHighlighter syntaxHighlighter = null, AutocompleteSuggestionGenerator autocompleteSuggestionGenerator = null)
         {
             _userSettingsManager = userSettingsManager;
+            _syntaxHighlighter = syntaxHighlighter;
+            _autocompleteSuggestionGenerator = autocompleteSuggestionGenerator;
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
             CanFocus = true;
-            _syntaxHighlighter = syntaxHighlighter;
-            _queryTextView.DrawingText += (e, a) =>
-            {
-                _syntaxHighlighter.Highlight(_queryTextView, _currentConnection?.Name ?? "", _currentConnection?.Database ?? "");
-            };
+            SetupAutocomplete();
         }
-
+        
         private void InitializeComponents()
         {
             _connectionLabel = new Label()
@@ -120,7 +120,7 @@ namespace KustoTerminal.UI.Panes
                     }
                     else
                     {
-                        EscapePressed?.Invoke(this, EventArgs.Empty);
+                        // EscapePressed?.Invoke(this, EventArgs.Empty);
                     }
                         
                     key.Handled = true;
@@ -131,6 +131,37 @@ namespace KustoTerminal.UI.Panes
         private void SetupLayout()
         {
             Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel, _temporaryMessageLabel);
+        }
+        
+        private void SetupAutocomplete()
+        {
+            _queryTextView.Autocomplete.MaxWidth = 30;
+            _queryTextView.Autocomplete.MaxHeight = 10;
+            _autocompleteSuggestionGenerator.SetQueryTextView(_queryTextView);
+            _queryTextView.Autocomplete.SuggestionGenerator = _autocompleteSuggestionGenerator;
+            
+            _queryTextView.DrawingText += (e, a) =>
+            {
+                _syntaxHighlighter.Highlight(_queryTextView, _currentConnection?.Name ?? "", _currentConnection?.Database ?? "");
+            };
+            
+            _queryTextView.DrawingContent += (sender, args) =>
+            {
+                OnQueryTextViewDrawing();
+            };
+        }
+
+        private void OnQueryTextViewDrawing()
+        {
+            if (!_queryTextView.Autocomplete.Visible || _queryTextView.SelectedLength > 0)
+            {
+                return;
+            }
+            
+            // A workaround for bug in Terminal.Gui where the popup is displayed only once.
+            var cursorPosition = _queryTextView.CursorPosition;
+            var renderPosition = new Point(cursorPosition.X, cursorPosition.Y + 1 - _queryTextView.TopRow);
+            _queryTextView.Autocomplete.RenderOverlay(renderPosition);
         }
 
         private void OnExecuteClicked()
@@ -193,6 +224,7 @@ namespace KustoTerminal.UI.Panes
         {
             _connectionLabel.Text = $"Connected: {connection.DisplayName} | {connection.Database}";
             _currentConnection = connection;
+            _autocompleteSuggestionGenerator.SetClusterContext(connection.Name, connection.Database);
         }
 
         public void FocusEditor()
@@ -317,16 +349,6 @@ namespace KustoTerminal.UI.Panes
                     Console.WriteLine($"Warning: Failed to save query: {ex.Message}");
                 }
             }
-        }
-
-        public void SetQueryText(string query)
-        {
-            _queryTextView.Text = query ?? string.Empty;
-        }
-
-        public string GetQueryText()
-        {
-            return _queryTextView.Text?.ToString() ?? string.Empty;
         }
 
         protected override void Dispose(bool disposing)
