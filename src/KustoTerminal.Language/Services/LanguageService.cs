@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kusto.Cloud.Platform.Utils;
 using Kusto.Data.Common;
 using Kusto.Language;
 using Kusto.Language.Editor;
@@ -197,16 +198,61 @@ namespace KustoTerminal.Language.Services
             {
                 var functionName = functionSchemaKvp.Key;
                 var functionSchema = functionSchemaKvp.Value;
-                // Create a basic function symbol - function conversion might need more sophisticated logic
-                // depending on the function signature complexity
+                
+                // Convert function parameters to Parameter objects
+                var parameters = ConvertFunctionParameters(functionSchema.InputParameters);
+                
+                // Create function symbol with the signature
                 var functionSymbol = new FunctionSymbol(
                     functionName,
-                    functionSchema.Body ?? string.Empty
+                    functionSchema.Body ?? string.Empty,
+                    parameters
                 );
                 functions.Add(functionSymbol);
             }
 
             return functions;
+        }
+
+        /// <summary>
+        /// Converts function parameter schemas to parameter symbols
+        /// </summary>
+        /// <param name="inputParameters">List of input parameter schemas</param>
+        /// <returns>List of parameter symbols</returns>
+        private static List<Parameter> ConvertFunctionParameters(IList<FunctionParameterSchema>? inputParameters)
+        {
+            if (inputParameters == null || inputParameters.Count == 0)
+                return new List<Parameter>();
+
+            return inputParameters.Select(CreateParameterSymbol).ToList();
+        }
+
+        private static Parameter CreateParameterSymbol(FunctionParameterSchema parameterSchema)
+        {
+            var parameterName = parameterSchema.Name;
+
+            if (parameterSchema.Columns == null)
+            {
+                var parameterType = ScalarTypes.GetSymbol(parameterSchema.CslType ?? "string");
+                //var parameter = new Parameter(parameterName, parameterType);
+                var expression = !string.IsNullOrEmpty(parameterSchema.CslDefaultValue)
+                    ? Kusto.Language.Parsing.QueryParser.ParseLiteral(parameterSchema.CslDefaultValue)
+                    : null;
+                return new Parameter(name: parameterName, type: parameterType, defaultValue:  expression);
+            }
+
+            if (parameterSchema.Columns.Count() == 0)
+            {
+                return new Parameter(name: parameterName, typeKind: ParameterTypeKind.Tabular, argumentKind: ArgumentKind.Expression);
+            }
+
+            var argumentType = new TableSymbol(parameterSchema.Columns.Select(c => CreateColumnSymbol(c)));
+            return new Parameter(parameterName, argumentType);
+        }
+
+        private static ColumnSymbol CreateColumnSymbol(ColumnSchema schema)
+        {
+            return new ColumnSymbol(schema.Name, ScalarTypes.GetSymbol(schema.CslType), schema.DocString);
         }
 
         /// <summary>
