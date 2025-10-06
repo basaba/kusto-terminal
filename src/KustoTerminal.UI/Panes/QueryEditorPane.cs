@@ -31,7 +31,6 @@ namespace KustoTerminal.UI.Panes
         private KustoConnection _currentConnection;
 
         public event EventHandler<string>? QueryExecuteRequested;
-        public event EventHandler? EscapePressed;
         public event EventHandler? QueryCancelRequested;
         public event EventHandler? MaximizeToggleRequested;
 
@@ -117,10 +116,6 @@ namespace KustoTerminal.UI.Panes
                     if (_isExecuting)
                     {
                         QueryCancelRequested?.Invoke(this, EventArgs.Empty);
-                    }
-                    else
-                    {
-                        // EscapePressed?.Invoke(this, EventArgs.Empty);
                     }
                         
                     key.Handled = true;

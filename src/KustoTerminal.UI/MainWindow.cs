@@ -153,7 +153,6 @@ namespace KustoTerminal.UI
             // Set up events
             _connectionPane.ConnectionSelected += OnConnectionSelected;
             _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
-            _queryEditorPane.EscapePressed += OnQueryEditorEscapePressed;
             _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
             _queryEditorPane.MaximizeToggleRequested += OnQueryEditorMaximizeToggleRequested;
             _resultsPane.MaximizeToggleRequested += OnResultsPaneMaximizeToggleRequested;
@@ -229,11 +228,6 @@ namespace KustoTerminal.UI
         private async void OnQueryExecuteRequested(object? sender, string query)
         {
             await ExecuteQueryAsync(query);
-        }
-
-        private void OnQueryEditorEscapePressed(object? sender, EventArgs e)
-        {
-            _resultsPane.SetFocus();
         }
 
         private void OnQueryCancelRequested(object? sender, EventArgs e)
