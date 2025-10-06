@@ -13,8 +13,6 @@ namespace KustoTerminal.Core.Models
         public string Database { get; set; } = string.Empty;
         public List<string> Databases { get; set; } = new List<string>();
         public AuthenticationType AuthType { get; set; } = AuthenticationType.AzureCli;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime LastUsed { get; set; } = DateTime.UtcNow;
         public bool IsDefault { get; set; } = false;
 
         public string DisplayName => !string.IsNullOrEmpty(Name) ? Name : ClusterUri;
@@ -42,8 +40,6 @@ namespace KustoTerminal.Core.Models
     public enum AuthenticationType
     {
         None,
-        AzureCli,
-        ServicePrincipal,
-        Interactive
+        AzureCli
     }
 }

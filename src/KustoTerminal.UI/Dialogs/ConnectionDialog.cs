@@ -184,8 +184,6 @@ namespace KustoTerminal.UI.Dialogs
                     ClusterUri = clusterUri,
                     Database = database,
                     AuthType = selectedAuthType,
-                    CreatedAt = _originalConnection.CreatedAt,
-                    LastUsed = _originalConnection.LastUsed
                 };
             }
             else
