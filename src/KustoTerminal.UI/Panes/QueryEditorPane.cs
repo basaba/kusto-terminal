@@ -142,7 +142,7 @@ namespace KustoTerminal.UI.Panes
             
             _queryTextView.DrawingText += (e, a) =>
             {
-                _syntaxHighlighter.Highlight(_queryTextView, _currentConnection?.Name ?? "", _currentConnection?.Database ?? "");
+                _syntaxHighlighter.Highlight(_queryTextView, _currentConnection);
             };
             
             _queryTextView.DrawingContent += (sender, args) =>
@@ -224,7 +224,7 @@ namespace KustoTerminal.UI.Panes
         {
             _connectionLabel.Text = $"Connected: {connection.DisplayName} | {connection.Database}";
             _currentConnection = connection;
-            _autocompleteSuggestionGenerator.SetClusterContext(connection.Name, connection.Database);
+            _autocompleteSuggestionGenerator.SetClusterContext(connection);
         }
 
         public void FocusEditor()

@@ -37,7 +37,7 @@ namespace KustoTerminal.Core.Services
                 if (clusterSchema != null)
                 {
                     // Extract cluster name from URI or use connection name
-                    var clusterName = GetClusterNameFromConnection(connection);
+                    var clusterName = connection.GetClusterNameFromUrl();
 
                     // Update language service with the schema
                     _languageService.AddOrUpdateCluster(clusterName, clusterSchema);
@@ -65,39 +65,6 @@ namespace KustoTerminal.Core.Services
             }
             
             await Task.WhenAll(tasks);
-        }
-
-        /// <summary>
-        /// Extracts a meaningful cluster name from the connection
-        /// </summary>
-        /// <param name="connection">The Kusto connection</param>
-        /// <returns>A cluster name for use in the language service</returns>
-        private string GetClusterNameFromConnection(KustoConnection connection)
-        {
-            // Use connection name if available
-            if (!string.IsNullOrWhiteSpace(connection.Name))
-            {
-                return connection.Name;
-            }
-
-            // Extract cluster name from URI
-            if (Uri.TryCreate(connection.ClusterUri, UriKind.Absolute, out var uri))
-            {
-                var host = uri.Host;
-                // Remove common prefixes like "https://" and suffixes like ".kusto.windows.net"
-                if (host.EndsWith(".kusto.windows.net"))
-                {
-                    return host.Substring(0, host.Length - ".kusto.windows.net".Length);
-                }
-                if (host.EndsWith(".kustomfa.windows.net"))
-                {
-                    return host.Substring(0, host.Length - ".kustomfa.windows.net".Length);
-                }
-                return host;
-            }
-
-            // Fallback to connection ID
-            return connection.Id;
         }
     }
 }

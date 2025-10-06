@@ -10,6 +10,7 @@ using Terminal.Gui.Drawing;
 using Attribute = Terminal.Gui.Drawing.Attribute;
 using Color = Terminal.Gui.Drawing.Color;
 using KustoTerminal.Core;
+using KustoTerminal.Core.Models;
 
 namespace KustoTerminal.UI.SyntaxHighlighting
 {
@@ -48,10 +49,11 @@ namespace KustoTerminal.UI.SyntaxHighlighting
             _languageService = languageService;
         }
 
-        public void Highlight(TextView textView, string clusterName, string databaseName)
+        public void Highlight(TextView textView, KustoConnection connection)
         {
             var textModel = new TextModel(textView);
-            var classificationResult = _languageService.GetClassifications(textModel, clusterName, databaseName);
+            var clusterName = connection?.GetClusterNameFromUrl() ?? "";
+            var classificationResult = _languageService.GetClassifications(textModel, clusterName, connection?.Database ?? "");
 
             ApplyClassifications(textView, classificationResult.Classifications);
         }

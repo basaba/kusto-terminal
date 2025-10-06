@@ -1,4 +1,5 @@
 using System.Text;
+using KustoTerminal.Core.Models;
 using KustoTerminal.Language.Services;
 using KustoTerminal.UI.SyntaxHighlighting;
 using Terminal.Gui.Views;
@@ -7,10 +8,10 @@ namespace KustoTerminal.UI.AutoCompletion;
 
 public class AutocompleteSuggestionGenerator : ISuggestionGenerator
 {
+    private static IEnumerable<Suggestion> s_emptyResult = new Suggestion[0];
     private LanguageService  _languageService;
     private TextView _queryTextView;
-    private string _clusterName;
-    private string _databaseName;
+    private KustoConnection _currentConnection;
     private int _allowedRow;
     private int _allowedColumn;
 
@@ -31,13 +32,20 @@ public class AutocompleteSuggestionGenerator : ISuggestionGenerator
     
     public IEnumerable<Suggestion> GenerateSuggestions(AutocompleteContext context)
     {
+        if (_currentConnection == null)
+        {
+            return s_emptyResult;
+        }
+        
+        var clusterName = _currentConnection.GetClusterNameFromUrl();
+        var databaseName = _currentConnection.Database;
+        
         var line = context.CurrentLine.Select (c => c.Rune).ToList ();
         var currentWord = IdxToWord (line, context.CursorPosition, out int startIdx);
-
         var position = GetPosition(_queryTextView);
         var textModel = new TextModel(_queryTextView);
         
-        var isEmptyBlock = _languageService.IsEmptyBlock(textModel, position, _clusterName, _databaseName);
+        var isEmptyBlock = _languageService.IsEmptyBlock(textModel, position, clusterName, databaseName);
         // To prevent intrusive autocomplete popup in case user is just changing the cursor position,
         // we allow displaying popup only when new character is typed, this is achieved by storing the last changed 
         // character position.
@@ -45,10 +53,10 @@ public class AutocompleteSuggestionGenerator : ISuggestionGenerator
             || _queryTextView.CurrentRow != _allowedRow
             || isEmptyBlock)
         {
-            return Enumerable.Empty<Suggestion>();
+            return s_emptyResult;
         }
 
-        var items = _languageService.GetCompletions(textModel, position, _clusterName, _databaseName);
+        var items = _languageService.GetCompletions(textModel, position, clusterName, databaseName);
         return items.Items
             .Where(item => 
                 item.DisplayText.StartsWith(currentWord, StringComparison.OrdinalIgnoreCase)
@@ -57,10 +65,9 @@ public class AutocompleteSuggestionGenerator : ISuggestionGenerator
             .Select(item => new Suggestion(currentWord.Length, item.ApplyText, item.DisplayText));
     }
 
-    public void SetClusterContext(string clusterName, string databaseName)
+    public void SetClusterContext(KustoConnection connection)
     {
-        _clusterName = clusterName;
-        _databaseName = databaseName;
+        _currentConnection = connection;
     }
     
     private int GetPosition(TextView textView)
