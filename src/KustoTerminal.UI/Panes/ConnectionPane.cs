@@ -226,7 +226,6 @@ namespace KustoTerminal.UI.Panes
                     Database = dbNode.DatabaseName,
                     Databases = dbNode.ParentConnection.Databases,
                     AuthType = dbNode.ParentConnection.AuthType,
-                    IsDefault = dbNode.ParentConnection.IsDefault
                 };
                 OnConnectClicked();
             }

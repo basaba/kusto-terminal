@@ -40,24 +40,9 @@ namespace KustoTerminal.Core.Services
             return _connections.FirstOrDefault(c => c.Id == id);
         }
 
-        public async Task<KustoConnection?> GetDefaultConnectionAsync()
-        {
-            await LoadConnectionsAsync();
-            return _connections.FirstOrDefault(c => c.IsDefault) ?? _connections.FirstOrDefault();
-        }
-
         public async Task AddConnectionAsync(KustoConnection connection)
         {
             await LoadConnectionsAsync();
-            
-            if (connection.IsDefault)
-            {
-                // Ensure only one default connection
-                foreach (var conn in _connections)
-                {
-                    conn.IsDefault = false;
-                }
-            }
             
             _connections.Add(connection);
             await SaveConnectionsAsync();
@@ -73,15 +58,6 @@ namespace KustoTerminal.Core.Services
             var existingIndex = _connections.FindIndex(c => c.Id == connection.Id);
             if (existingIndex >= 0)
             {
-                if (connection.IsDefault)
-                {
-                    // Ensure only one default connection
-                    foreach (var conn in _connections)
-                    {
-                        conn.IsDefault = false;
-                    }
-                }
-                
                 _connections[existingIndex] = connection;
                 await SaveConnectionsAsync();
                 
@@ -98,27 +74,8 @@ namespace KustoTerminal.Core.Services
             if (connectionToRemove != null)
             {
                 _connections.Remove(connectionToRemove);
-                
-                // If we removed the default connection, make the first one default
-                if (connectionToRemove.IsDefault && _connections.Any())
-                {
-                    _connections.First().IsDefault = true;
-                }
-                
                 await SaveConnectionsAsync();
             }
-        }
-
-        public async Task SetDefaultConnectionAsync(string id)
-        {
-            await LoadConnectionsAsync();
-            
-            foreach (var connection in _connections)
-            {
-                connection.IsDefault = connection.Id == id;
-            }
-            
-            await SaveConnectionsAsync();
         }
 
         public async Task RefreshDatabasesAsync(string connectionId, IKustoClient kustoClient)
