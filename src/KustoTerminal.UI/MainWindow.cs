@@ -203,7 +203,7 @@ namespace KustoTerminal.UI
                 }
                 else if (key == (KeyCode.AltMask | Key.CursorDown.KeyCode))
                 {
-                    if (_rightTopFrame.HasFocus)
+                    if (_rightTopFrame.HasFocus || _leftFrame.HasFocus)
                     {
                         _rightBottomFrame.SetFocus();
                         key.Handled = true;
