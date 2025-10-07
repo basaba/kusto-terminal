@@ -12,9 +12,12 @@ using KustoTerminal.UI.Panes;
 using KustoTerminal.UI.Dialogs;
 using KustoTerminal.Language.Services;
 using KustoTerminal.UI.AutoCompletion;
+using KustoTerminal.UI.Common;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 using KustoTerminal.UI.SyntaxHighlighting;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Terminal.Gui.Drawing;
 
 namespace KustoTerminal.UI
 {
@@ -33,6 +36,9 @@ namespace KustoTerminal.UI
         private FrameView _leftFrame;
         private FrameView _rightTopFrame;
         private FrameView _rightBottomFrame;
+        //private FrameView _shortcutsFrame;
+        private Label _kustoTerminalLabel;
+        private List<Label> _shortcutLabels;
 
         // Query cancellation
         private CancellationTokenSource? _queryCancellationTokenSource;
@@ -63,12 +69,13 @@ namespace KustoTerminal.UI
             _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig);
             _autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
 
-            Title = "Kusto Terminal - (Ctrl+Q to quit)";
+            // Title = "Kusto Terminal - (Ctrl+Q to quit)";
             X = 0;
             Y = 0; // Leave space for menu bar
             Width = Dim.Fill();
             Height = Dim.Fill() - 1; // Leave space for status bar
             SchemeName = "MainWindow";
+            BorderStyle = LineStyle.None;
 
             InitializeComponents();
             SetupLayout();
@@ -85,7 +92,7 @@ namespace KustoTerminal.UI
                 X = 0,
                 Y = 0,
                 Width = 30,
-                Height = Dim.Fill(),
+                Height = Dim.Fill() - 1,
                 TabStop = TabBehavior.TabStop,
                 SchemeName = "FrameView",
                 BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
@@ -109,12 +116,12 @@ namespace KustoTerminal.UI
                 X = 31,
                 Y = Pos.Bottom(_rightTopFrame),
                 Width = Dim.Fill(),
-                Height = Dim.Fill(),
+                Height = Dim.Fill() - 1,
                 TabStop = TabBehavior.TabStop,
                 SchemeName = "FrameView",
                 BorderStyle = Terminal.Gui.Drawing.LineStyle.Single
             };
-
+            
             // Create panes
             _connectionPane = new ConnectionPane(_connectionManager)
             {
@@ -142,12 +149,39 @@ namespace KustoTerminal.UI
                 Height = Dim.Fill(),
                 SchemeName = "Base"
             };
+            
+            _kustoTerminalLabel = new Label()
+            {
+                Title = "Kusto Terminal",
+                X = 0,
+                Y = Pos.Bottom(_leftFrame),
+                Width = Dim.Auto(DimAutoStyle.Text),
+                Height = 1,
+            };
+
+            _shortcutLabels = BuildShortcutsLabels(_kustoTerminalLabel);
+        }
+
+        private static List<Label> BuildShortcutsLabels(Label labelToAppendTo)
+        {
+            var labels = new List<Label>();
+            var last = labelToAppendTo;
+            var normalScheme = Constants.BaseSchemeName;
+            var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
+            last = last.AppendLabel(" | ", normalScheme, labels);
+            last = last.AppendLabel("Ctrl+Q: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Quit ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Alt+Cursor: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Switch between frames ", normalScheme, labels);
+            return labels;
         }
 
         private void SetupLayout()
         {
             // Add frames to window
-            Add(_leftFrame, _rightTopFrame, _rightBottomFrame);
+            Add(_leftFrame, _rightTopFrame, _rightBottomFrame, _kustoTerminalLabel);
+            Add(_shortcutLabels.ToArray());
 
             // Add panes to frames
             _leftFrame.Add(_connectionPane);

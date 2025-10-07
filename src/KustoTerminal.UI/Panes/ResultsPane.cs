@@ -8,6 +8,7 @@ using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Drawing;
 using KustoTerminal.Core.Models;
+using KustoTerminal.UI.Common;
 using KustoTerminal.UI.Dialogs;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
@@ -20,6 +21,7 @@ namespace KustoTerminal.UI.Panes
         private Label _statusLabel;
         private TextView _errorLabel;
         private Label _shortcutsLabel;
+        private Label[] _shortcutLabels;
         private TextField _searchField;
         private Label _searchLabel;
         
@@ -71,16 +73,6 @@ namespace KustoTerminal.UI.Panes
                 FullRowSelect = false,
                 MultiSelect = false,
             };
-
-            _shortcutsLabel = new Label()
-            {
-                Text = "/: Filter | Ctrl+L: Columns | Ctrl+R: Row Select | Ctrl+J: JSON Viewer | Ctrl+S: Export | F12: Maximize/Restore",
-                X = 0,
-                Y = Pos.Bottom(_tableView),
-                Width = Dim.Fill(),
-                Height = 1,
-                SchemeName = "TopLevel"
-            };
             
             _searchLabel = new Label()
             {
@@ -102,6 +94,43 @@ namespace KustoTerminal.UI.Panes
             };
 
             _searchField.TextChanged += OnSearchTextChanged;
+            
+            _shortcutsLabel = new Label()
+            {
+                X = 0,
+                Y = Pos.Bottom(_tableView),
+                Width = 0,
+                Height = 1,
+                SchemeName = "TopLevel"
+            };
+
+            _shortcutLabels = BuildShortcutsLabels(_shortcutsLabel).ToArray();
+        }
+        
+        private static List<Label> BuildShortcutsLabels(Label labelToAppendTo)
+        {
+            var labels = new List<Label>();
+            var last = labelToAppendTo;
+            var normalScheme = Constants.BaseSchemeName;
+            var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
+            last = last.AppendLabel("/: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Filter ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+L: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Select Columns ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+R: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Row Select ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+J: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("JSON Viewer ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+S: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Export ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "F12: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Maximize/Restore ", normalScheme, labels);
+            return labels;
         }
 
         private void SetKeyboard()
@@ -176,6 +205,7 @@ namespace KustoTerminal.UI.Panes
         private void SetupLayout()
         {
             Add(_statusLabel, _errorLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
+            Add(_shortcutLabels);
         }
 
         public void DisplayResult(QueryResult result)
@@ -493,7 +523,8 @@ namespace KustoTerminal.UI.Panes
                 Height = Dim.Fill(2),
                 Text = cellValue,
                 ReadOnly = true,
-                WordWrap = true
+                WordWrap = true,
+                SchemeName = "Base"
             };
 
             dialog.Add(textView);

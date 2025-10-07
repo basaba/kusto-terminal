@@ -15,6 +15,7 @@ using Terminal.Gui.Input;
 using System.Collections.ObjectModel;
 using Terminal.Gui.Drivers;
 using Kusto.Cloud.Platform.Utils;
+using KustoTerminal.UI.Common;
 using Terminal.Gui.Drawing;
 
 namespace KustoTerminal.UI.Panes
@@ -24,7 +25,6 @@ namespace KustoTerminal.UI.Panes
         private readonly IConnectionManager _connectionManager;
         private TreeView _connectionsTree;
         private Label[] _shortcutsLabels;
-
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
         private KustoConnection? _selectedConnection;
@@ -57,49 +57,33 @@ namespace KustoTerminal.UI.Panes
                     CollapseableSymbol = Glyphs.DownArrow,
                 }
             };
-
-            _shortcutsLabels = new[]{
-                new Label()
-                {
-                    Text = "Ctrl+N: New",
-                    X = 0,
-                    Y = Pos.Bottom(_connectionsTree) - 4,
-                    Width = Dim.Fill(),
-                    Height = 1,
-                    SchemeName = "TopLevel"
-                },
-                new Label()
-                {
-                    Text = "Ctrl+E: Edit",
-                    X = 0,
-                    Y = Pos.Bottom(_connectionsTree) - 3,
-                    Width = Dim.Fill(),
-                    Height = 1,
-                    SchemeName = "TopLevel"
-                },
-                new Label()
-                {
-                    Text = "Del: Delete",
-                    X = 0,
-                    Y = Pos.Bottom(_connectionsTree) - 2,
-                    Width = Dim.Fill(),
-                    Height = 1,
-                    SchemeName = "TopLevel"
-                },
-                new Label()
-                {
-                    Text = "Space: Expand DBs",
-                    X = 0,
-                    Y = Pos.Bottom(_connectionsTree) - 1,
-                    Width = Dim.Fill(),
-                    Height = 1,
-                    SchemeName = "TopLevel"
-                }
-            };
+            
+            var labels = new List<Label>();
+            labels.AddRange(BuildShortcutLabel("Ctrl+N", "New", Pos.Bottom(_connectionsTree) - 4));
+            labels.AddRange(BuildShortcutLabel("Ctrl+E", "Edit", Pos.Bottom(_connectionsTree) - 3));
+            labels.AddRange(BuildShortcutLabel("Del", "Delete", Pos.Bottom(_connectionsTree) - 2));
+            labels.AddRange(BuildShortcutLabel("Space", "Refresh", Pos.Bottom(_connectionsTree) - 1));
+            _shortcutsLabels = labels.ToArray();
 
             // Set up event handlers
             _connectionsTree.SelectionChanged += OnTreeSelectionChanged;
             _connectionsTree.ObjectActivated += OnTreeObjectActivated;
+        }
+
+        private static List<Label> BuildShortcutLabel(string shortcutKey, string description, Pos y)
+        {
+            var keyLabel = new Label()
+            {
+                Text = $"{shortcutKey}:",
+                X = 0,
+                Y = y,
+                Width = Dim.Auto(DimAutoStyle.Text),
+                Height = 1,
+                SchemeName = Constants.ShortcutKeySchemeName
+            };
+
+            var descriptionLabel = keyLabel.AppendLabel($" {description}", Constants.BaseSchemeName);
+            return new List<Label>() { keyLabel, descriptionLabel };
         }
 
         private void SetKeyboard()

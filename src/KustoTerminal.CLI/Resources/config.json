@@ -81,6 +81,20 @@
               "Style": "None"
             }
           }
+        },
+        {
+          "Shortcut": {
+            "Normal": {
+              "Foreground": "#1E90FF",
+              "Background": "RaisinBlack",
+              "Style": "Bold"
+            },
+            "Focus": {
+              "Foreground": "#1E90FF",
+              "Background": "RaisinBlack",
+              "Style": "Bold"
+            }
+          }
         }
       ]
      }

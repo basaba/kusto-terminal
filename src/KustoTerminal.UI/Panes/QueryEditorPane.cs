@@ -11,6 +11,7 @@ using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 using KustoTerminal.UI.SyntaxHighlighting;
 using KustoTerminal.UI.AutoCompletion;
+using KustoTerminal.UI.Common;
 
 namespace KustoTerminal.UI.Panes
 {
@@ -20,6 +21,7 @@ namespace KustoTerminal.UI.Panes
         private Label _connectionLabel;
         private Label _progressLabel;
         private Label _shortcutsLabel;
+        private Label[] _shortcutLabels;
         private Label _temporaryMessageLabel;
         
         private bool _isExecuting = false;
@@ -65,21 +67,11 @@ namespace KustoTerminal.UI.Panes
                 Height = Dim.Fill() - 1,
                 Text = "",
             };
-
-            _shortcutsLabel = new Label()
-            {
-                Text = "F5: Execute | F12: Maximize/Restore",
-                X = 0,
-                Y = Pos.Bottom(_queryTextView),
-                Width = Dim.Fill(),
-                Height = 1,
-                SchemeName = "TopLevel"
-            };
-
+            
             _progressLabel = new Label()
             {
                 X = 0,
-                Y = Pos.Bottom(_shortcutsLabel) - 1,
+                Y = Pos.Bottom(_queryTextView) - 1,
                 Width = Dim.Fill(),
                 Height = 1,
                 Visible = false
@@ -93,6 +85,30 @@ namespace KustoTerminal.UI.Panes
                 Height = 1,
                 Visible = false
             };
+            
+            _shortcutsLabel = new Label()
+            {
+                X = 0,
+                Y = Pos.Bottom(_queryTextView),
+                Width = 0,
+                Height = 1,
+            };
+
+            _shortcutLabels = BuildShortcutsLabels(_shortcutsLabel).ToArray();
+        }
+        
+        private static List<Label> BuildShortcutsLabels(Label labelToAppendTo)
+        {
+            var labels = new List<Label>();
+            var last = labelToAppendTo;
+            var normalScheme = Constants.BaseSchemeName;
+            var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
+            last = last.AppendLabel("F5: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Execute query ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "F12: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Maximize/Restore ", normalScheme, labels);
+            return labels;
         }
 
         private void SetKeyboard()
@@ -126,6 +142,7 @@ namespace KustoTerminal.UI.Panes
         private void SetupLayout()
         {
             Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel, _temporaryMessageLabel);
+            Add(_shortcutLabels);
         }
         
         private void SetupAutocomplete()
