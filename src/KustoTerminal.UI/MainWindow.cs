@@ -53,7 +53,14 @@ namespace KustoTerminal.UI
             // Initialize language service and cluster schema service
             var languageService = new LanguageService();
             _syntaxHighlighter = new SyntaxHighlighter(languageService);
-            _clusterSchemaService = new ClusterSchemaService(languageService);
+            
+            // Initialize cache configuration with default settings
+            var cacheConfig = new CacheConfiguration
+            {
+                EnableDiskCache = true,
+                CacheExpirationHours = 24
+            };
+            _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig);
             _autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
 
             Title = "Kusto Terminal - (Ctrl+Q to quit)";
@@ -535,7 +542,7 @@ namespace KustoTerminal.UI
             // Fetch cluster schema for the updated connection
             _ = Task.Run(async () =>
             {
-                await _clusterSchemaService.FetchAndUpdateClusterSchemaAsync(connection);
+                await _clusterSchemaService.FetchAndUpdateClusterSchemaAsync(connection, forceRefresh: true);
             });
         }
 

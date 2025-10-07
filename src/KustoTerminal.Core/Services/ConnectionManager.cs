@@ -90,6 +90,7 @@ namespace KustoTerminal.Core.Services
                     var databases = await kustoClient.GetDatabasesAsync();
                     connection.Databases = databases.ToList();
                     await SaveConnectionsAsync();
+                    ConnectionAddOrUpdated?.Invoke(this, connection);
                 }
                 catch
                 {
