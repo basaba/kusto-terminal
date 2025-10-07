@@ -166,7 +166,7 @@ namespace KustoTerminal.UI
         {
             var labels = new List<Label>();
             var last = labelToAppendTo;
-            var normalScheme = Constants.BaseSchemeName;
+            var normalScheme = Constants.ShortcutDescriptionSchemeName;
             var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
             last = last.AppendLabel(" | ", normalScheme, labels);
             last = last.AppendLabel("Ctrl+Q: ", shortcutKeyScheme, labels);

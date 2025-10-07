@@ -95,6 +95,20 @@
               "Style": "Bold"
             }
           }
+        },
+        {
+          "ShortcutDescription": {
+            "Normal": {
+              "Foreground": "Gray",
+              "Background": "RaisinBlack",
+              "Style": "Bold"
+            },
+            "Focus": {
+              "Foreground": "Gray",
+              "Background": "RaisinBlack",
+              "Style": "Bold"
+            }
+          }
         }
       ]
      }

@@ -82,7 +82,7 @@ namespace KustoTerminal.UI.Panes
                 SchemeName = Constants.ShortcutKeySchemeName
             };
 
-            var descriptionLabel = keyLabel.AppendLabel($" {description}", Constants.BaseSchemeName);
+            var descriptionLabel = keyLabel.AppendLabel($" {description}", Constants.ShortcutDescriptionSchemeName);
             return new List<Label>() { keyLabel, descriptionLabel };
         }
 

@@ -101,7 +101,7 @@ namespace KustoTerminal.UI.Panes
         {
             var labels = new List<Label>();
             var last = labelToAppendTo;
-            var normalScheme = Constants.BaseSchemeName;
+            var normalScheme = Constants.ShortcutDescriptionSchemeName;
             var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
             last = last.AppendLabel("F5: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Execute query ", normalScheme, labels);
