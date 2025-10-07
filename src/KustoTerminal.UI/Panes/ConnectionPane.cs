@@ -197,7 +197,7 @@ namespace KustoTerminal.UI.Panes
                     // Refresh immediately to show loading state
                     Application.Invoke(() => _connectionsTree.RefreshObject(clusterNode));
                     
-                    await clusterNode.LoadDatabasesAsync();
+                    await clusterNode.LoadDatabasesAsync(forceRefresh: true);
                     
                     // Refresh again after loading is complete
                     Application.Invoke(() =>
