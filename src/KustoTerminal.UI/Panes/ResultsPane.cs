@@ -514,6 +514,7 @@ namespace KustoTerminal.UI.Panes
                 Height = 20,
                 Width = Dim.Percent(80),
                 Modal = true,
+                Arrangement = ViewArrangement.Resizable
             };
             var textView = new TextView()
             {
