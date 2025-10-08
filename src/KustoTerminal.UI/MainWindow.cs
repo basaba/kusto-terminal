@@ -74,7 +74,6 @@ namespace KustoTerminal.UI
             Width = Dim.Fill();
             Height = Dim.Fill();
             SchemeName = "MainWindow";
-            BorderStyle = LineStyle.None;
 
             InitializeComponents();
             SetupLayout();
@@ -152,7 +151,7 @@ namespace KustoTerminal.UI
             
             _kustoTerminalLabel = new Label()
             {
-                Title = "Kusto Terminal",
+                Title = " Kusto Terminal",
                 X = 0,
                 Y = Pos.Bottom(_leftFrame),
                 Width = Dim.Auto(DimAutoStyle.Text),
