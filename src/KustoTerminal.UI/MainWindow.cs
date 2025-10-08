@@ -73,7 +73,7 @@ namespace KustoTerminal.UI
             X = 0;
             Y = 0; // Leave space for menu bar
             Width = Dim.Fill();
-            Height = Dim.Fill() - 1; // Leave space for status bar
+            Height = Dim.Fill(); // Leave space for status bar
             SchemeName = "MainWindow";
             BorderStyle = LineStyle.None;
 
