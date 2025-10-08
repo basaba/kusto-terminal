@@ -15,6 +15,11 @@
               "Foreground": "RaisinBlack",
               "Background": "LightBlue",
               "Style": "None"
+            },
+            "HotNormal": {
+              "Foreground": "RaisinBlack",
+              "Background": "DarkGray",
+              "Style": "None"
             }
           }
         },
