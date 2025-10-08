@@ -346,6 +346,7 @@ namespace KustoTerminal.UI.Dialogs
             Width = Dim.Percent(92);
             Height = 20;
             Modal = true;
+            Arrangement = ViewArrangement.Resizable;
 
             var nameLabel = new Label()
             {
@@ -400,8 +401,9 @@ namespace KustoTerminal.UI.Dialogs
                 X = 1,
                 Y = 5,
                 Width = Dim.Fill() - 2,
-                Height = 10,
+                Height = Dim.Fill(),
                 ReadOnly = true,
+                WordWrap = true
             };
 
             Add(nameLabel, nameText,pathLabel, pathText, valueLabel, valueText);
