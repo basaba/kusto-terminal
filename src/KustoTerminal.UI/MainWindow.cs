@@ -69,11 +69,10 @@ namespace KustoTerminal.UI
             _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig);
             _autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
 
-            // Title = "Kusto Terminal - (Ctrl+Q to quit)";
             X = 0;
-            Y = 0; // Leave space for menu bar
+            Y = 0;
             Width = Dim.Fill();
-            Height = Dim.Fill(); // Leave space for status bar
+            Height = Dim.Fill();
             SchemeName = "MainWindow";
             BorderStyle = LineStyle.None;
 
