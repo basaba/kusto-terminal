@@ -108,6 +108,7 @@ namespace KustoTerminal.UI
                 TabStop = TabBehavior.TabStop,
                 SchemeName = "FrameView",
                 BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
+                Arrangement = ViewArrangement.BottomResizable
             };
 
             _rightBottomFrame = new FrameView()
