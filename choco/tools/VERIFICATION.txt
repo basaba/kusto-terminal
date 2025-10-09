@@ -1,0 +1,22 @@
+VERIFICATION
+
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+
+Package can be verified like this:
+
+1. Download the release from GitHub:
+   https://github.com/basaba/kusto-terminal/releases/download/v0.1.0/KustoTerminal-win-x64.zip
+
+2. Calculate the checksum:
+   Get-FileHash -Path KustoTerminal-win-x64.zip -Algorithm SHA256
+
+3. Compare the checksum with the one in chocolateyinstall.ps1
+
+The checksum should match the value specified in the installation script.
+
+Source Code:
+https://github.com/basaba/kusto-terminal
+
+Binary is built from publicly available source code using:
+dotnet publish --configuration Release --runtime win-x64 --self-contained true

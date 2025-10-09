@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>kustoterminal</id>
+    <version>0.1.0</version>
+    <packageSourceUrl>https://github.com/basaba/kusto-terminal</packageSourceUrl>
+    <owners>basaba</owners>
+    <title>Kusto Terminal</title>
+    <authors>basaba</authors>
+    <projectUrl>https://github.com/basaba/kusto-terminal</projectUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/basaba/kusto-terminal@main/icon.png</iconUrl>
+    <licenseUrl>https://github.com/basaba/kusto-terminal/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/basaba/kusto-terminal</projectSourceUrl>
+    <docsUrl>https://github.com/basaba/kusto-terminal/blob/main/README.md</docsUrl>
+    <bugTrackerUrl>https://github.com/basaba/kusto-terminal/issues</bugTrackerUrl>
+    <tags>kusto azure-data-explorer adx terminal cli query database analytics</tags>
+    <summary>A modern terminal-based client for Azure Data Explorer (Kusto)</summary>
+    <description>
+KustoTerminal is a powerful terminal-based client for Azure Data Explorer (Kusto) that provides an intuitive interface for querying and managing your data.
+
+Features:
+- Terminal-based UI with modern interface
+- Syntax highlighting for KQL (Kusto Query Language)
+- Autocompletion support
+- Connection management
+- Query execution and results visualization
+- Azure authentication integration
+- Cross-platform support with .NET 8.0
+
+Perfect for developers and data analysts who prefer working in the terminal.
+    </description>
+    <releaseNotes>https://github.com/basaba/kusto-terminal/releases</releaseNotes>
+    <dependencies>
+      <dependency id="dotnet-8.0-runtime" version="8.0.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
+
