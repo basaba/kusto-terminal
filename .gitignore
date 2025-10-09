@@ -47,7 +47,10 @@ choco/*.nupkg
 
 # Release artifacts
 *.zip
+*.tar.gz
 KustoTerminal-win-x64.zip
+build/
+releases/
 
 # IDE
 .idea/
