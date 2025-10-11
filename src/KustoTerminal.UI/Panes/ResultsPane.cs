@@ -10,6 +10,7 @@ using Terminal.Gui.Drawing;
 using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Common;
 using KustoTerminal.UI.Dialogs;
+using KustoTerminal.UI.Services;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 
@@ -29,6 +30,7 @@ namespace KustoTerminal.UI.Panes
         private DataTable? _originalData;
         private HashSet<string> _selectedColumns = new HashSet<string>();
         private bool _searchVisible = false;
+        private string? _currentQueryText;
         public event EventHandler? MaximizeToggleRequested;
 
         public ResultsPane()
@@ -119,13 +121,16 @@ namespace KustoTerminal.UI.Panes
             last = last.AppendLabel( "Ctrl+L: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Select Columns ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+S: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Share ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
             last = last.AppendLabel( "Ctrl+R: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Row Select ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
             last = last.AppendLabel( "Ctrl+J: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("JSON Viewer ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel( "Ctrl+S: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel( "Ctrl+E: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Export ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
             last = last.AppendLabel( "F12: ", shortcutKeyScheme, labels);
@@ -142,7 +147,7 @@ namespace KustoTerminal.UI.Panes
                     ToggleSearch();
                     key.Handled = true;
                 }
-                else if (key.KeyCode == (KeyCode.CtrlMask | Key.S.KeyCode))
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.E.KeyCode))
                 {
                     OnExportClicked();
                     key.Handled = true;
@@ -155,6 +160,11 @@ namespace KustoTerminal.UI.Panes
                 else if (key.KeyCode == (KeyCode.CtrlMask | Key.L.KeyCode))
                 {
                     OnColumnSelectorClicked();
+                    key.Handled = true;
+                }
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.S.KeyCode))
+                {
+                    OnShareClicked();
                     key.Handled = true;
                 }
             };
@@ -174,7 +184,8 @@ namespace KustoTerminal.UI.Panes
                 {
                     OnCopyCellClicked();
                     key.Handled = true;
-                } else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
+                }
+                else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
                 {
                     SwitchToRowMode();
                     key.Handled = true;
@@ -206,6 +217,11 @@ namespace KustoTerminal.UI.Panes
         {
             Add(_statusLabel, _errorLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
             Add(_shortcutLabels);
+        }
+
+        public void SetQueryText(string? queryText)
+        {
+            _currentQueryText = queryText;
         }
 
         public void DisplayResult(QueryResult result)
@@ -448,6 +464,54 @@ namespace KustoTerminal.UI.Panes
             try
             {
                 Clipboard.Contents = cellValue;
+            }
+            catch { }
+        }
+
+        private void OnShareClicked()
+        {
+            // Check what's available to share
+            bool hasQuery = !string.IsNullOrWhiteSpace(_currentQueryText);
+            bool hasResult = _originalData != null && _originalData.Rows.Count > 0;
+
+            if (!hasQuery && !hasResult)
+            {
+                return;
+            }
+
+            // Show the share dialog
+            var dialog = new ShareDialog(hasQuery, hasResult);
+            Application.Run(dialog);
+
+            if (dialog.WasCanceled)
+            {
+                return;
+            }
+
+            try
+            {
+                if (!dialog.CopyQuery && !dialog.CopyResult)
+                {
+                    return;
+                }
+                
+                DataTable dataTable = null;
+                string queryToCopy = null;
+
+                // Handle the copy based on user selection
+                if (dialog.CopyResult)
+                {
+                    // Copy both query and results
+                    dataTable = ApplyColumnFilter(_originalData!);
+                }
+
+                if (dialog.CopyQuery)
+                {
+                    queryToCopy = _currentQueryText;
+                }
+
+                var htmlContent = ClipboardService.GenerateHtmlWithQuery(queryToCopy, dataTable);
+                ClipboardService.SetClipboardWithHtml(htmlContent);
             }
             catch { }
         }
