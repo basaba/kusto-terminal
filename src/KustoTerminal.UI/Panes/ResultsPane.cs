@@ -10,6 +10,7 @@ using Terminal.Gui.Drawing;
 using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Common;
 using KustoTerminal.UI.Dialogs;
+using KustoTerminal.UI.Services;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 
@@ -119,6 +120,9 @@ namespace KustoTerminal.UI.Panes
             last = last.AppendLabel( "Ctrl+L: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Select Columns ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+Shift+C: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Copy as HTML ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
             last = last.AppendLabel( "Ctrl+R: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Row Select ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
@@ -174,7 +178,13 @@ namespace KustoTerminal.UI.Panes
                 {
                     OnCopyCellClicked();
                     key.Handled = true;
-                } else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
+                } 
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.A.KeyCode))
+                {
+                    OnCopyTableAsRtfClicked();
+                    key.Handled = true;
+                }
+                else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
                 {
                     SwitchToRowMode();
                     key.Handled = true;
@@ -450,6 +460,38 @@ namespace KustoTerminal.UI.Panes
                 Clipboard.Contents = cellValue;
             }
             catch { }
+        }
+
+        private void OnCopyTableAsRtfClicked()
+        {
+            // Use the original data which we already have access to
+            if (_originalData == null || _originalData.Rows.Count == 0)
+            {
+                MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
+                return;
+            }
+
+            try
+            {
+                // Apply the same filtering as displayed (column selection)
+                var dataTable = ApplyColumnFilter(_originalData);
+                
+                // Copy table to clipboard in HTML format
+                bool success = HtmlClipboardService.CopyTableAsHtml(dataTable);
+                
+                if (success)
+                {
+                    MessageBox.Query("Copy Success", $"Table copied to clipboard in HTML format.\n{dataTable.Rows.Count} rows × {dataTable.Columns.Count} columns", "OK");
+                }
+                else
+                {
+                    MessageBox.ErrorQuery("Copy Error", "Failed to copy table to clipboard.", "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.ErrorQuery("Copy Error", $"Failed to copy table: {ex.Message}", "OK");
+            }
         }
 
         private void SwitchToRowMode()
