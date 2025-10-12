@@ -10,63 +10,29 @@ namespace KustoTerminal.UI.Services
 {
     public static class ClipboardService
     {
-        /// <summary>
-        /// Copies a DataTable to the clipboard in HTML format with platform-specific handling
-        /// </summary>
-        public static bool CopyTableAsHtml(DataTable dataTable)
+        public static void SetClipboardWithHtml(string htmlContent)
         {
-            if (dataTable == null || dataTable.Columns.Count == 0)
-            {
-                return false;
-            }
-
             try
             {
-                var htmlContent = GenerateHtml(dataTable);
-                var plainTextContent = GeneratePlainText(dataTable);
-
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    return SetClipboardWindows(htmlContent, plainTextContent);
+                    SetClipboardWithHtmlWindows(htmlContent);
                 }
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
-                    return SetClipboardMacOS(htmlContent, plainTextContent);
+                    SetClipboardWithHtmlMacOS(htmlContent);
                 }
                 else
                 {
                     // For Linux or other platforms, fall back to plain text only
-                    try
-                    {
-                        // Use TextCopy for cross-platform clipboard on Linux
-                        System.IO.File.WriteAllText("/tmp/clipboard.txt", plainTextContent);
-                        var processInfo = new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = "/bin/sh",
-                            Arguments = "-c \"cat /tmp/clipboard.txt | xclip -selection clipboard 2>/dev/null || cat /tmp/clipboard.txt | xsel --clipboard 2>/dev/null || cat /tmp/clipboard.txt\"",
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        };
-                        using var process = System.Diagnostics.Process.Start(processInfo);
-                        process?.WaitForExit();
-                    }
-                    catch
-                    {
-                        // Silently fail on Linux if clipboard tools not available
-                    }
-                    return true;
+                    //return CopyTextToClipboard(plainTextContent);
                 }
             }
             catch
-            {
-                return false;
-            }
+            { }
         }
-
-        /// <summary>
-        /// Generates HTML formatted table from DataTable
-        /// </summary>
-        private static string GenerateHtml(DataTable dataTable)
+        
+        public static string GenerateHtmlWithQuery(string queryText = null, DataTable dataTable = null)
         {
             var html = new StringBuilder();
 
@@ -76,6 +42,9 @@ namespace KustoTerminal.UI.Services
             html.AppendLine("<head>");
             html.AppendLine("<meta charset='UTF-8'>");
             html.AppendLine("<style>");
+            html.AppendLine("body { font-family: 'Segoe UI', Arial, sans-serif; }");
+            html.AppendLine(".query { background-color: #f5f5f5; padding: 12px; margin-bottom: 20px; border-left: 4px solid #0078d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; white-space: pre-wrap; }");
+            html.AppendLine(".query-label { font-weight: bold; margin-bottom: 8px; color: #0078d4; }");
             html.AppendLine("table { border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; }");
             html.AppendLine("th { background-color: #f0f0f0; font-weight: bold; text-align: left; padding: 8px; border: 1px solid #ddd; }");
             html.AppendLine("td { padding: 8px; border: 1px solid #ddd; }");
@@ -83,63 +52,56 @@ namespace KustoTerminal.UI.Services
             html.AppendLine("</style>");
             html.AppendLine("</head>");
             html.AppendLine("<body>");
-            html.AppendLine("<table>");
-
-            // Header row
-            html.AppendLine("<thead><tr>");
-            foreach (DataColumn column in dataTable.Columns)
+            
+            // Query section
+            if (!string.IsNullOrEmpty(queryText))
             {
-                html.Append("<th>");
-                html.Append(EscapeHtml(column.ColumnName));
-                html.AppendLine("</th>");
+                html.AppendLine("<div class='query-label'>Query:</div>");
+                html.AppendLine("<div class='query'>");
+                html.Append(EscapeHtml(queryText));
+                html.AppendLine("</div>"); 
             }
-            html.AppendLine("</tr></thead>");
-
-            // Data rows
-            html.AppendLine("<tbody>");
-            foreach (DataRow row in dataTable.Rows)
+            
+            if (dataTable != null)
             {
-                html.AppendLine("<tr>");
-                foreach (var item in row.ItemArray)
+                html.AppendLine("<table>");
+            
+                // Header row
+                html.AppendLine("<thead><tr>");
+                foreach (DataColumn column in dataTable.Columns)
                 {
-                    html.Append("<td>");
-                    var cellValue = item == null || item == DBNull.Value ? "" : item.ToString() ?? "";
-                    html.Append(EscapeHtml(cellValue));
-                    html.AppendLine("</td>");
+                    html.Append("<th>");
+                    html.Append(EscapeHtml(column.ColumnName));
+                    html.AppendLine("</th>");
                 }
-                html.AppendLine("</tr>");
-            }
-            html.AppendLine("</tbody>");
+                html.AppendLine("</tr></thead>");
 
-            html.AppendLine("</table>");
+                // Data rows
+                html.AppendLine("<tbody>");
+                foreach (DataRow row in dataTable.Rows)
+                {
+                    html.AppendLine("<tr>");
+                    foreach (var item in row.ItemArray)
+                    {
+                        html.Append("<td>");
+                        var cellValue = item == null || item == DBNull.Value ? "" : item.ToString() ?? "";
+                        html.Append(EscapeHtml(cellValue));
+                        html.AppendLine("</td>");
+                    }
+                    html.AppendLine("</tr>");
+                }
+                html.AppendLine("</tbody>");
+
+                html.AppendLine("</table>");
+            }
+            // Table section
+
             html.AppendLine("</body>");
             html.AppendLine("</html>");
 
             return html.ToString();
         }
-
-        /// <summary>
-        /// Generates plain text table from DataTable (tab-separated)
-        /// </summary>
-        private static string GeneratePlainText(DataTable dataTable)
-        {
-            var text = new StringBuilder();
-
-            // Headers
-            var headers = dataTable.Columns.Cast<DataColumn>().Select(c => c.ColumnName);
-            text.AppendLine(string.Join("\t", headers));
-
-            // Rows
-            foreach (DataRow row in dataTable.Rows)
-            {
-                var fields = row.ItemArray.Select(field => 
-                    field == null || field == DBNull.Value ? "" : field.ToString() ?? "");
-                text.AppendLine(string.Join("\t", fields));
-            }
-
-            return text.ToString();
-        }
-
+        
         /// <summary>
         /// Escapes special characters for HTML format
         /// </summary>
@@ -163,7 +125,7 @@ namespace KustoTerminal.UI.Services
         /// <summary>
         /// Sets clipboard on Windows with both HTML and plain text formats
         /// </summary>
-        private static bool SetClipboardWindows(string htmlContent, string plainTextContent)
+        private static bool SetClipboardWithHtmlWindows(string htmlContent)
         {
 #if WINDOWS
             try
@@ -174,8 +136,6 @@ namespace KustoTerminal.UI.Services
                 // Use System.Windows.Forms.Clipboard for Windows
                 var dataObject = new System.Windows.Forms.DataObject();
                 dataObject.SetData(System.Windows.Forms.DataFormats.Html, htmlClipboardFormat);
-                dataObject.SetData(System.Windows.Forms.DataFormats.Text, plainTextContent);
-                dataObject.SetData(System.Windows.Forms.DataFormats.UnicodeText, plainTextContent);
                 
                 var thread = new Thread(() =>
                 {
@@ -250,7 +210,7 @@ namespace KustoTerminal.UI.Services
         /// <summary>
         /// Sets clipboard on macOS with both HTML and plain text formats
         /// </summary>
-        private static bool SetClipboardMacOS(string htmlContent, string plainTextContent)
+        private static bool SetClipboardWithHtmlMacOS(string htmlContent)
         {
             try
             {
@@ -291,8 +251,7 @@ namespace KustoTerminal.UI.Services
                 // Ignore errors and try fallback
             }
 
-            // Fallback to plain text
-            return TryPbcopyPlainText(plainTextContent);
+            return false;
         }
 
         /// <summary>

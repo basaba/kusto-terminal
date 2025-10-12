@@ -30,6 +30,7 @@ namespace KustoTerminal.UI.Panes
         private DataTable? _originalData;
         private HashSet<string> _selectedColumns = new HashSet<string>();
         private bool _searchVisible = false;
+        private string? _currentQueryText;
         public event EventHandler? MaximizeToggleRequested;
 
         public ResultsPane()
@@ -120,8 +121,8 @@ namespace KustoTerminal.UI.Panes
             last = last.AppendLabel( "Ctrl+L: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Select Columns ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel( "Ctrl+Shift+C: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Copy as HTML ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+E: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Share ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
             last = last.AppendLabel( "Ctrl+R: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Row Select ", normalScheme, labels);
@@ -161,6 +162,11 @@ namespace KustoTerminal.UI.Panes
                     OnColumnSelectorClicked();
                     key.Handled = true;
                 }
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.E.KeyCode))
+                {
+                    OnShareClicked();
+                    key.Handled = true;
+                }
             };
 
             _searchField.KeyDown += (sender, key) =>
@@ -177,11 +183,6 @@ namespace KustoTerminal.UI.Panes
                 if (key == (KeyCode.CtrlMask | Key.C.KeyCode))
                 {
                     OnCopyCellClicked();
-                    key.Handled = true;
-                } 
-                else if (key.KeyCode == (KeyCode.CtrlMask | Key.A.KeyCode))
-                {
-                    OnCopyTableClicked();
                     key.Handled = true;
                 }
                 else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
@@ -216,6 +217,11 @@ namespace KustoTerminal.UI.Panes
         {
             Add(_statusLabel, _errorLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
             Add(_shortcutLabels);
+        }
+
+        public void SetQueryText(string? queryText)
+        {
+            _currentQueryText = queryText;
         }
 
         public void DisplayResult(QueryResult result)
@@ -462,21 +468,50 @@ namespace KustoTerminal.UI.Panes
             catch { }
         }
 
-        private void OnCopyTableClicked()
+        private void OnShareClicked()
         {
-            // Use the original data which we already have access to
-            if (_originalData == null || _originalData.Rows.Count == 0)
+            // Check what's available to share
+            bool hasQuery = !string.IsNullOrWhiteSpace(_currentQueryText);
+            bool hasResult = _originalData != null && _originalData.Rows.Count > 0;
+
+            if (!hasQuery && !hasResult)
+            {
+                return;
+            }
+
+            // Show the share dialog
+            var dialog = new ShareDialog(hasQuery, hasResult);
+            Application.Run(dialog);
+
+            if (dialog.WasCanceled)
             {
                 return;
             }
 
             try
             {
-                // Apply the same filtering as displayed (column selection)
-                var dataTable = ApplyColumnFilter(_originalData);
+                if (!dialog.CopyQuery && !dialog.CopyResult)
+                {
+                    return;
+                }
                 
-                // Copy table to clipboard in HTML format
-                ClipboardService.CopyTableAsHtml(dataTable);
+                DataTable dataTable = null;
+                string queryToCopy = null;
+
+                // Handle the copy based on user selection
+                if (dialog.CopyResult)
+                {
+                    // Copy both query and results
+                    dataTable = ApplyColumnFilter(_originalData!);
+                }
+
+                if (dialog.CopyQuery)
+                {
+                    queryToCopy = _currentQueryText;
+                }
+
+                var htmlContent = ClipboardService.GenerateHtmlWithQuery(queryToCopy, dataTable);
+                ClipboardService.SetClipboardWithHtml(htmlContent);
             }
             catch { }
         }

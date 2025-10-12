@@ -494,6 +494,7 @@ namespace KustoTerminal.UI
                 Application.Invoke(() =>
                 {
                     _queryEditorPane.SetExecuting(false);
+                    _resultsPane.SetQueryText(query);
                     _resultsPane.DisplayResult(result);
                 });
             }
