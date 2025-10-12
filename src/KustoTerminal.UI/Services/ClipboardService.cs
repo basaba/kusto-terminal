@@ -8,7 +8,7 @@ using Terminal.Gui.ViewBase;
 
 namespace KustoTerminal.UI.Services
 {
-    public static class HtmlClipboardService
+    public static class ClipboardService
     {
         /// <summary>
         /// Copies a DataTable to the clipboard in HTML format with platform-specific handling

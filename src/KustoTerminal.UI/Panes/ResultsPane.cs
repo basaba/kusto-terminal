@@ -181,7 +181,7 @@ namespace KustoTerminal.UI.Panes
                 } 
                 else if (key.KeyCode == (KeyCode.CtrlMask | Key.A.KeyCode))
                 {
-                    OnCopyTableAsRtfClicked();
+                    OnCopyTableClicked();
                     key.Handled = true;
                 }
                 else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
@@ -462,12 +462,11 @@ namespace KustoTerminal.UI.Panes
             catch { }
         }
 
-        private void OnCopyTableAsRtfClicked()
+        private void OnCopyTableClicked()
         {
             // Use the original data which we already have access to
             if (_originalData == null || _originalData.Rows.Count == 0)
             {
-                MessageBox.ErrorQuery("Copy Error", "No data available to copy.", "OK");
                 return;
             }
 
@@ -477,21 +476,9 @@ namespace KustoTerminal.UI.Panes
                 var dataTable = ApplyColumnFilter(_originalData);
                 
                 // Copy table to clipboard in HTML format
-                bool success = HtmlClipboardService.CopyTableAsHtml(dataTable);
-                
-                if (success)
-                {
-                    MessageBox.Query("Copy Success", $"Table copied to clipboard in HTML format.\n{dataTable.Rows.Count} rows × {dataTable.Columns.Count} columns", "OK");
-                }
-                else
-                {
-                    MessageBox.ErrorQuery("Copy Error", "Failed to copy table to clipboard.", "OK");
-                }
+                ClipboardService.CopyTableAsHtml(dataTable);
             }
-            catch (Exception ex)
-            {
-                MessageBox.ErrorQuery("Copy Error", $"Failed to copy table: {ex.Message}", "OK");
-            }
+            catch { }
         }
 
         private void SwitchToRowMode()
