@@ -168,16 +168,25 @@ namespace KustoTerminal.UI.Services
 #if WINDOWS
             try
             {
+                // Convert HTML to Windows Clipboard HTML Format (CF_HTML)
+                var htmlClipboardFormat = ConvertToClipboardHtmlFormat(htmlContent);
+                
                 // Use System.Windows.Forms.Clipboard for Windows
                 var dataObject = new System.Windows.Forms.DataObject();
-                dataObject.SetData(System.Windows.Forms.DataFormats.Html, htmlContent);
+                dataObject.SetData(System.Windows.Forms.DataFormats.Html, htmlClipboardFormat);
                 dataObject.SetData(System.Windows.Forms.DataFormats.Text, plainTextContent);
                 dataObject.SetData(System.Windows.Forms.DataFormats.UnicodeText, plainTextContent);
                 
-                System.Windows.Forms.Clipboard.SetDataObject(dataObject, true);
+                var thread = new Thread(() =>
+                {
+                    System.Windows.Forms.Clipboard.SetDataObject(dataObject, true);
+                });
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+                thread.Join();
                 return true;
             }
-            catch
+            catch (Exception e)
             {
                 // Fallback: just return false as Windows Forms clipboard failed
                 return false;
@@ -186,6 +195,56 @@ namespace KustoTerminal.UI.Services
             // System.Windows.Forms not available on this platform
             return false;
 #endif
+        }
+
+        /// <summary>
+        /// Converts HTML content to Windows Clipboard HTML Format (CF_HTML)
+        /// </summary>
+        private static string ConvertToClipboardHtmlFormat(string htmlContent)
+        {
+            // Windows clipboard HTML format requires specific headers with byte offsets
+            // Format: Version:0.9\r\nStartHTML:xxxxxxxxxx\r\nEndHTML:xxxxxxxxxx\r\nStartFragment:xxxxxxxxxx\r\nEndFragment:xxxxxxxxxx\r\n
+            
+            const string header = "Version:0.9\r\n";
+            const string startHtmlMarker = "StartHTML:";
+            const string endHtmlMarker = "EndHTML:";
+            const string startFragmentMarker = "StartFragment:";
+            const string endFragmentMarker = "EndFragment:";
+            
+            const string htmlPrefix = "<!DOCTYPE html>\r\n<html>\r\n<body>\r\n<!--StartFragment-->";
+            const string htmlSuffix = "<!--EndFragment-->\r\n</body>\r\n</html>";
+            
+            // Build the complete HTML with fragment markers
+            var sb = new StringBuilder();
+            
+            // Reserve space for headers (10 digits each for offsets)
+            var headerTemplate = header +
+                               startHtmlMarker + "0000000000\r\n" +
+                               endHtmlMarker + "0000000000\r\n" +
+                               startFragmentMarker + "0000000000\r\n" +
+                               endFragmentMarker + "0000000000\r\n";
+            
+            var headerLength = Encoding.UTF8.GetByteCount(headerTemplate);
+            var prefixLength = Encoding.UTF8.GetByteCount(htmlPrefix);
+            var contentLength = Encoding.UTF8.GetByteCount(htmlContent);
+            var suffixLength = Encoding.UTF8.GetByteCount(htmlSuffix);
+            
+            var startHtml = headerLength;
+            var endHtml = headerLength + prefixLength + contentLength + suffixLength;
+            var startFragment = headerLength + prefixLength;
+            var endFragment = startFragment + contentLength;
+            
+            // Build the final clipboard format
+            sb.Append(header);
+            sb.Append(startHtmlMarker).Append(startHtml.ToString("D10")).Append("\r\n");
+            sb.Append(endHtmlMarker).Append(endHtml.ToString("D10")).Append("\r\n");
+            sb.Append(startFragmentMarker).Append(startFragment.ToString("D10")).Append("\r\n");
+            sb.Append(endFragmentMarker).Append(endFragment.ToString("D10")).Append("\r\n");
+            sb.Append(htmlPrefix);
+            sb.Append(htmlContent);
+            sb.Append(htmlSuffix);
+            
+            return sb.ToString();
         }
 
         /// <summary>
