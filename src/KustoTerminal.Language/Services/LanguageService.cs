@@ -6,6 +6,7 @@ using Kusto.Data.Common;
 using Kusto.Language;
 using Kusto.Language.Editor;
 using Kusto.Language.Symbols;
+using Kusto.Language.Syntax;
 using Kusto.Language.Utils;
 using KustoTerminal.Language.Models;
 using CompletionItem = Kusto.Language.Editor.CompletionItem;
@@ -69,6 +70,31 @@ namespace KustoTerminal.Language.Services
         {
             var clusterSymbol = ConvertToClusterSymbol(schema, clusterName);
             _globalState = _globalState.WithCluster(clusterSymbol);
+        }
+
+        public RenderInfo GetRenderInfo(string queryText, string clusterName, string databaseName)
+        {
+            _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
+            var parsedAndAnalyzed = KustoCode.ParseAndAnalyze(queryText, _globalState);
+
+            var renderStatements = parsedAndAnalyzed.Syntax.GetDescendants<RenderOperator>();
+            if (renderStatements.SafeFastNone())
+            {
+                return default;
+            }
+            
+            var renderInfo = new RenderInfo();
+            
+            var renderStatement = renderStatements.First();
+            var visualizationKindStr = renderStatement.ChartType.ValueText;
+
+            if (!Enum.TryParse<VisualizationKind>(visualizationKindStr, out var visualizationKind))
+            {
+                return default;
+            }
+            
+            renderInfo.VisualizationKind = visualizationKind;
+            return renderInfo;
         }
 
         /// <summary>
