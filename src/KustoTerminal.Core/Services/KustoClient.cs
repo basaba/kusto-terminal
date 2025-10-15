@@ -10,6 +10,7 @@ using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
+using KustoTerminal.Language.Services;
 using Newtonsoft.Json;
 
 namespace KustoTerminal.Core.Services
@@ -18,6 +19,7 @@ namespace KustoTerminal.Core.Services
     {
         private readonly KustoConnection _connection;
         private readonly IAuthenticationProvider _authProvider;
+        private readonly LanguageService _languageService;
         private ICslQueryProvider? _queryProvider;
         private ICslAdminProvider? _adminProvider;
         private string? _currentRequestId;
@@ -27,6 +29,7 @@ namespace KustoTerminal.Core.Services
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _authProvider = authProvider ?? throw new ArgumentNullException(nameof(authProvider));
+            _languageService = new LanguageService();
         }
 
         public async Task<QueryResult> ExecuteQueryAsync(string query, CancellationToken cancellationToken = default, IProgress<string>? progress = null)
@@ -98,7 +101,11 @@ namespace KustoTerminal.Core.Services
                 
                 progress?.Report(isCommand ? "Command completed successfully" : "Query completed successfully");
                 stopwatch.Stop();
-                return QueryResult.Success(query, dataTable, stopwatch.Elapsed, _currentRequestId);
+                
+                // Get render info for queries (not commands)
+                var renderInfo = !isCommand ? GetRenderInfo(query) : null;
+                
+                return QueryResult.Success(query, dataTable, stopwatch.Elapsed, renderInfo, _currentRequestId);
             }
             catch (OperationCanceledException)
             {
@@ -121,6 +128,24 @@ namespace KustoTerminal.Core.Services
             {
                 combinedCancellationSource?.Dispose();
                 _currentRequestId = null;
+            }
+        }
+        
+        private KustoTerminal.Language.Models.RenderInfo? GetRenderInfo(string query)
+        {
+            try
+            {
+                // Extract cluster name from connection for language service
+                var clusterUri = new Uri(_connection.ClusterUri);
+                var clusterName = clusterUri.Host;
+                
+                return _languageService.GetRenderInfo(query, clusterName, _connection.Database);
+            }
+            catch
+            {
+                // If there's any error getting render info, just return null
+                // This shouldn't break the query execution
+                return null;
             }
         }
 

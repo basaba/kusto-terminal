@@ -11,6 +11,8 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Common;
 using KustoTerminal.UI.Dialogs;
 using KustoTerminal.UI.Services;
+using KustoTerminal.UI.Views;
+using KustoTerminal.Language.Models;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 
@@ -19,6 +21,7 @@ namespace KustoTerminal.UI.Panes
     public class ResultsPane : BasePane
     {
         private TableView _tableView;
+        private TimechartGraphView _graphView;
         private Label _statusLabel;
         private TextView _errorLabel;
         private Label _shortcutsLabel;
@@ -31,6 +34,7 @@ namespace KustoTerminal.UI.Panes
         private HashSet<string> _selectedColumns = new HashSet<string>();
         private bool _searchVisible = false;
         private string? _currentQueryText;
+        private bool _showingGraph = false;
         public event EventHandler? MaximizeToggleRequested;
 
         public ResultsPane()
@@ -75,6 +79,15 @@ namespace KustoTerminal.UI.Panes
                 Height = Dim.Fill() - 1,
                 FullRowSelect = false,
                 MultiSelect = false,
+            };
+            
+            _graphView = new TimechartGraphView()
+            {
+                X = 0,
+                Y = 1,
+                Width = Dim.Fill(),
+                Height = Dim.Fill() - 1,
+                Visible = false
             };
             
             _searchLabel = new Label()
@@ -136,6 +149,9 @@ namespace KustoTerminal.UI.Panes
             last = last.AppendLabel("| ", normalScheme, labels);
             last = last.AppendLabel( "F12: ", shortcutKeyScheme, labels);
             last = last.AppendLabel("Maximize/Restore ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel( "Ctrl+G: ", shortcutKeyScheme, labels);
+            last = last.AppendLabel("Toggle Graph/Table ", normalScheme, labels);
             return labels;
         }
 
@@ -166,6 +182,11 @@ namespace KustoTerminal.UI.Panes
                 else if (key.KeyCode == (KeyCode.CtrlMask | Key.S.KeyCode))
                 {
                     OnShareClicked();
+                    key.Handled = true;
+                }
+                else if (key.KeyCode == (KeyCode.CtrlMask | Key.G.KeyCode))
+                {
+                    ToggleGraphTableView();
                     key.Handled = true;
                 }
             };
@@ -216,7 +237,7 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_statusLabel, _errorLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
+            Add(_statusLabel, _errorLabel, _tableView, _graphView, _searchLabel, _searchField, _shortcutsLabel);
             Add(_shortcutLabels);
         }
 
@@ -249,9 +270,8 @@ namespace KustoTerminal.UI.Panes
         {
             try
             {
-                // Hide error label and show table view
+                // Hide error label and show appropriate view
                 _errorLabel.Visible = false;
-                _tableView.Visible = true;
                 _statusLabel.Visible = true;
                 
                 var dataTable = result.Data!;
@@ -266,11 +286,29 @@ namespace KustoTerminal.UI.Panes
                     }
                 }
                 
-                // Apply column filtering
-                var filteredTable = ApplyColumnFilter(dataTable);
-                _tableView.Table = new DataTableSource(filteredTable);
+                // Check if we should show a graph based on render info
+                bool canShowGraph = CanShowGraph(result);
+                
+                if (canShowGraph && !_showingGraph)
+                {
+                    // Auto-switch to graph view if render info indicates timechart
+                    _showingGraph = true;
+                }
+                
+                if (_showingGraph && canShowGraph)
+                {
+                    ShowGraphView(dataTable);
+                }
+                else
+                {
+                    ShowTableView(result, dataTable);
+                }
 
                 var statusText = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
+                if (canShowGraph)
+                {
+                    statusText += " | Graph Available";
+                }
                 if (!string.IsNullOrEmpty(result.ClientRequestId))
                 {
                     statusText += $" | ClientRequestId: {result.ClientRequestId}";
@@ -279,12 +317,103 @@ namespace KustoTerminal.UI.Panes
             }
             catch (Exception ex)
             {
-                // Hide table view and show error label for display errors
+                // Hide views and show error label for display errors
                 _tableView.Visible = false;
+                _graphView.Visible = false;
                 _errorLabel.Visible = true;
                 _errorLabel.Text = $"Error displaying results: {ex.Message}";
                 _statusLabel.Text = $"Error occurred while displaying results | Duration: {result.Duration.TotalMilliseconds:F0}ms";
             }
+        }
+        
+        private bool CanShowGraph(QueryResult result)
+        {
+            // Check if we have render info indicating a timechart
+            if (result.RenderInfo?.VisualizationKind == VisualizationKind.timechart)
+            {
+                return true;
+            }
+            
+            // Also check if the graph view can display the data
+            if (result.Data != null && _graphView.CanDisplayData(result.Data))
+            {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        private void ShowTableView(QueryResult result, DataTable dataTable)
+        {
+            _tableView.Visible = true;
+            _graphView.Visible = false;
+            _showingGraph = false;
+            
+            // Apply column filtering
+            var filteredTable = ApplyColumnFilter(dataTable);
+            _tableView.Table = new DataTableSource(filteredTable);
+        }
+        
+        private void ShowGraphView(DataTable dataTable)
+        {
+            _tableView.Visible = false;
+            _graphView.Visible = true;
+            _showingGraph = true;
+            
+            // Apply column filtering before sending to graph
+            var filteredTable = ApplyColumnFilter(dataTable);
+            _graphView.SetData(filteredTable);
+        }
+        
+        private void ToggleGraphTableView()
+        {
+            if (_currentResult?.Data == null)
+                return;
+                
+            // Check if graph view is possible
+            if (!CanShowGraph(_currentResult))
+            {
+                // Show message that graph is not available
+                MessageBox.Query("Graph Not Available", 
+                    "Graph visualization is not available for this query result. " +
+                    "Try using a query with 'render timechart' or ensure your data has time and numeric columns.", 
+                    "OK");
+                return;
+            }
+            
+            // Toggle between views
+            _showingGraph = !_showingGraph;
+            
+            if (_showingGraph)
+            {
+                ShowGraphView(_originalData!);
+            }
+            else
+            {
+                ShowTableView(_currentResult, _originalData!);
+            }
+            
+            // Update status to reflect current view
+            UpdateStatusDisplay();
+        }
+        
+        private void UpdateStatusDisplay()
+        {
+            if (_currentResult == null) return;
+            
+            var statusText = $"Rows: {_currentResult.RowCount:N0} | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
+            
+            if (CanShowGraph(_currentResult))
+            {
+                statusText += $" | View: {(_showingGraph ? "Graph" : "Table")}";
+            }
+            
+            if (!string.IsNullOrEmpty(_currentResult.ClientRequestId))
+            {
+                statusText += $" | ClientRequestId: {_currentResult.ClientRequestId}";
+            }
+            
+            _statusLabel.Text = statusText;
         }
 
         private void DisplayError(QueryResult result)
@@ -335,11 +464,13 @@ namespace KustoTerminal.UI.Panes
             _selectedColumns.Clear();
             _tableView.Table = new DataTableSource(new DataTable());
             
-            // Reset to showing table view and status label, hide error label
+            // Reset to showing table view and status label, hide other views
             _errorLabel.Visible = false;
+            _graphView.Visible = false;
             _tableView.Visible = true;
             _statusLabel.Visible = true;
             _statusLabel.Text = "No results";
+            _showingGraph = false;
             
             HideSearch();
         }
