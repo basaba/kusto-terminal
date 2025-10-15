@@ -257,6 +257,23 @@ namespace KustoTerminal.UI
                     }
                 }
             };
+            
+            // We want to prevent the user navigating inside each frame from mistakenly change the focus unintentionally
+            // to different frame.
+            _rightBottomFrame.KeyDown += HandleCursors;
+            _rightTopFrame.KeyDown += HandleCursors;
+            _leftFrame.KeyDown += HandleCursors;
+        }
+        
+        private void HandleCursors(object? sender, Key key)
+        {
+            if (key == Key.CursorRight
+                || key == Key.CursorLeft
+                || key == Key.CursorUp
+                || key == Key.CursorDown)
+            {
+                key.Handled = true;
+            }
         }
 
         private void OnConnectionSelected(object? sender, KustoConnection connection)
