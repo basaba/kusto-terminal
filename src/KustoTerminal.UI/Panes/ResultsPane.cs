@@ -64,6 +64,7 @@ namespace KustoTerminal.UI.Panes
                 Visible = false,
                 SchemeName = "Error",
                 ReadOnly = true,
+                WordWrap = true
             };
 
             _tableView = new TableView()
