@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Kusto.Data;
+using KustoTerminal.UI.Charts;
 using Terminal.Gui;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Views;
@@ -176,16 +178,30 @@ namespace KustoTerminal.UI.Views
 
             foreach (var valueColumn in _valueColumns.Take(5)) // Limit to 5 series for readability
             {
-                var series = CreateScatterSeries(dataPoints, valueColumn, colors[colorIndex % colors.Length]);
-                var lineAnnotation = CreateLineAnnotation(dataPoints, valueColumn, colors[colorIndex % colors.Length]);
+                var series = CreateBrailleSeries(dataPoints, valueColumn, colors[colorIndex % colors.Length]);
+                //var lineAnnotation = CreateLineAnnotation(dataPoints, valueColumn, colors[colorIndex % colors.Length]);
                 
                 _graphView.Series.Add(series);
-                _graphView.Annotations.Add(lineAnnotation);
+                //_graphView.Annotations.Add(lineAnnotation);
                 
                 colorIndex++;
             }
 
             ConfigureAxisAndScale(dataPoints);
+        }
+
+        private BrailleSeries CreateBrailleSeries(List<TimeSeriesPoint> dataPoints, string valueColumn, AttributeTerminalGui color)
+        {
+            var points = dataPoints
+                .Where(p => p.Values.ContainsKey(valueColumn))
+                .Select(p => new PointF(
+                    (float)(p.Time - dataPoints.First().Time).TotalHours, 
+                    p.Values[valueColumn]))
+                .ToList();
+
+            var brailleSeries = new BrailleSeries();
+            brailleSeries.AddPoints(points);
+            return brailleSeries;
         }
 
         private List<TimeSeriesPoint> ExtractTimeSeriesData()
@@ -250,22 +266,6 @@ namespace KustoTerminal.UI.Views
             return null;
         }
 
-        private ScatterSeries CreateScatterSeries(List<TimeSeriesPoint> dataPoints, string valueColumn, AttributeTerminalGui color)
-        {
-            var points = dataPoints
-                .Where(p => p.Values.ContainsKey(valueColumn))
-                .Select(p => new PointF(
-                    (float)(p.Time - dataPoints.First().Time).TotalHours, 
-                    p.Values[valueColumn]))
-                .ToList();
-
-            return new ScatterSeries
-            {
-                Points = points,
-                Fill = new GraphCellToRender(new Rune('●'), color)
-            };
-        }
-
         private PathAnnotation CreateLineAnnotation(List<TimeSeriesPoint> dataPoints, string valueColumn, AttributeTerminalGui color)
         {
             var points = dataPoints
@@ -285,69 +285,10 @@ namespace KustoTerminal.UI.Views
 
         private void ConfigureAxisAndScale(List<TimeSeriesPoint> dataPoints)
         {
-            if (!dataPoints.Any())
-                return;
-
-            var minTime = dataPoints.First().Time;
-            var maxTime = dataPoints.Last().Time;
-            var timeSpan = maxTime - minTime;
-
-            // Configure time axis using viewport dimensions for better scaling
-            var totalHours = (float)timeSpan.TotalHours;
-            if (totalHours > 0)
-            {
-                // Use viewport width to determine appropriate cell size for time axis
-                // This ensures the graph fits properly in the available screen space
-                var viewportWidth = Math.Max(1, _graphView.Viewport.Width - _graphView.MarginLeft - 1);
-                var cellSizeX = Math.Max(0.01f, totalHours / viewportWidth);
-                
-                // Calculate increment based on viewport width to show reasonable number of labels
-                var desiredLabels = Math.Max(5, viewportWidth / 10); // Aim for labels every 10 characters or so
-                _graphView.AxisX.Increment = Math.Max(1, totalHours / desiredLabels);
-                _graphView.AxisX.ShowLabelsEvery = 1;
-                
-                // Configure value axis using viewport height
-                var allValues = dataPoints.SelectMany(p => p.Values.Values).ToList();
-                if (allValues.Any())
-                {
-                    var minValue = allValues.Min();
-                    var maxValue = allValues.Max();
-                    var valueRange = maxValue - minValue;
-
-                    if (valueRange > 0)
-                    {
-                        // Use viewport height to determine appropriate cell size for value axis
-                        var viewportHeight = Math.Max(1, _graphView.Viewport.Height - _graphView.MarginBottom - 1);
-                        var cellSizeY = Math.Max(0.1f, valueRange / viewportHeight);
-                        
-                        // Set the cell size using both calculated dimensions
-                        _graphView.CellSize = new PointF(cellSizeX, cellSizeY);
-                        
-                        // Calculate increment for Y axis based on viewport height
-                        var desiredYLabels = Math.Max(5, viewportHeight / 3); // Aim for labels every 3 rows
-                        _graphView.AxisY.Increment = Math.Max(0.1f, valueRange / desiredYLabels);
-                        _graphView.AxisY.ShowLabelsEvery = 1;
-                        _graphView.AxisY.Minimum = minValue - valueRange * 0.1f;
-                    }
-                    else
-                    {
-                        // Fallback for when there's no value range
-                        _graphView.CellSize = new PointF(cellSizeX, 1);
-                        _graphView.AxisY.Increment = 1;
-                        _graphView.AxisY.ShowLabelsEvery = 1;
-                        _graphView.AxisY.Minimum = minValue - 1;
-                    }
-                }
-                else
-                {
-                    // Fallback when no values available
-                    _graphView.CellSize = new PointF(cellSizeX, 1);
-                }
-            }
-
-            // Store the base time for label formatting
-            _baseTime = minTime;
-            
+            _graphView.AxisX.Increment = 10;
+            _graphView.AxisX.Minimum = 0;
+            _graphView.AxisY.Increment = 1;
+            _graphView.AxisY.Minimum = 0;
             // Set up axis formatting now that we have the base time
             SetupAxisFormatting();
         }
