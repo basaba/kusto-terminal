@@ -94,12 +94,13 @@ namespace KustoTerminal.UI
                 TabStop = TabBehavior.TabStop,
                 SchemeName = "FrameView",
                 BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
+                Arrangement = ViewArrangement.RightResizable
             };
 
             _rightTopFrame = new FrameView()
             {
                 Title = "Query Editor",
-                X = 31,
+                X = Pos.Right(_leftFrame),
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Percent(60),
@@ -112,13 +113,13 @@ namespace KustoTerminal.UI
             _rightBottomFrame = new FrameView()
             {
                 Title = "Results",
-                X = 31,
+                X = Pos.Right(_leftFrame),
                 Y = Pos.Bottom(_rightTopFrame),
                 Width = Dim.Fill(),
                 Height = Dim.Fill() - 1,
                 TabStop = TabBehavior.TabStop,
                 SchemeName = "FrameView",
-                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single
+                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
             };
             
             // Create panes
@@ -128,7 +129,7 @@ namespace KustoTerminal.UI
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Fill(),
-                SchemeName = "Base"
+                SchemeName = "Base",
             };
 
             _queryEditorPane = new QueryEditorPane(_userSettingsManager, _syntaxHighlighter, _autocompleteSuggestionGenerator)
