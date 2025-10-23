@@ -666,7 +666,9 @@ namespace KustoTerminal.UI.Panes
             _searchField.Text = "";
             if (_originalData != null)
             {
-                _tableView.Table = new DataTableSource(_originalData);
+                // Apply column filtering when hiding search to maintain column selection
+                var filteredByColumns = ApplyColumnFilter(_originalData);
+                _tableView.Table = new DataTableSource(filteredByColumns);
                 UpdateStatusForOriginalData();
             }
             
@@ -687,8 +689,9 @@ namespace KustoTerminal.UI.Panes
             
             if (string.IsNullOrWhiteSpace(searchText))
             {
-                // Show all data when search is empty
-                _tableView.Table = new DataTableSource(_originalData);
+                // Show all data when search is empty, but apply column filtering
+                var filteredByColumns = ApplyColumnFilter(_originalData);
+                _tableView.Table = new DataTableSource(filteredByColumns);
                 UpdateStatusForOriginalData();
                 return;
             }
@@ -702,10 +705,14 @@ namespace KustoTerminal.UI.Panes
                 {
                     bool rowMatches = false;
                     
-                    // Check each column for the search text (case-insensitive)
-                    foreach (var item in row.ItemArray)
+                    // Only check selected columns for the search text (case-insensitive)
+                    foreach (DataColumn column in _originalData.Columns)
                     {
-                        var cellValue = item?.ToString() ?? "";
+                        // Skip columns that are not selected
+                        if (!_selectedColumns.Contains(column.ColumnName))
+                            continue;
+                            
+                        var cellValue = row[column]?.ToString() ?? "";
                         if (cellValue.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             rowMatches = true;
@@ -719,8 +726,10 @@ namespace KustoTerminal.UI.Panes
                     }
                 }
                 
-                _tableView.Table = new DataTableSource(filteredTable);
-                UpdateStatusForFilteredData(filteredTable.Rows.Count, searchText);
+                // Apply column filtering to the search results
+                var finalTable = ApplyColumnFilter(filteredTable);
+                _tableView.Table = new DataTableSource(finalTable);
+                UpdateStatusForFilteredData(finalTable.Rows.Count, searchText);
             }
             catch (Exception ex)
             {
