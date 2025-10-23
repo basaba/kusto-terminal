@@ -232,6 +232,8 @@ namespace KustoTerminal.UI.Panes
         {
             Clear();
             _currentResult = result;
+            _tableView.SelectedColumn = 0;
+            _tableView.SelectedRow = 0;
 
             if (!result.IsSuccess)
             {
