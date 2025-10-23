@@ -176,6 +176,9 @@ namespace KustoTerminal.UI.Panes
                 {
                     HideSearch();
                     key.Handled = true;
+                } else if (key == Key.Enter)
+                {
+                    _tableView.SetFocus();
                 }
             };
 
