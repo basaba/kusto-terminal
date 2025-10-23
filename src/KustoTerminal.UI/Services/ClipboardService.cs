@@ -32,7 +32,7 @@ namespace KustoTerminal.UI.Services
             { }
         }
         
-        public static string GenerateHtmlWithQuery(string queryText = null, DataTable dataTable = null)
+        public static string GenerateHtmlWithQuery(string queryText = null, DataTable dataTable = null, string clusterUrl = null)
         {
             var html = new StringBuilder();
 
@@ -45,6 +45,8 @@ namespace KustoTerminal.UI.Services
             html.AppendLine("body { font-family: 'Segoe UI', Arial, sans-serif; }");
             html.AppendLine(".query { background-color: #f5f5f5; padding: 12px; margin-bottom: 20px; border-left: 4px solid #0078d4; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; white-space: pre-wrap; }");
             html.AppendLine(".query-label { font-weight: bold; margin-bottom: 8px; color: #0078d4; }");
+            html.AppendLine(".cluster-info { padding: 8px; margin-bottom: 15px; border-left: 3px solid #0078d4; font-size: 10px; }");
+            html.AppendLine(".cluster-label { font-weight: bold; color: #0078d4; }");
             html.AppendLine("table { border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; }");
             html.AppendLine("th { background-color: #f0f0f0; font-weight: bold; text-align: left; padding: 8px; border: 1px solid #ddd; }");
             html.AppendLine("td { padding: 8px; border: 1px solid #ddd; }");
@@ -53,10 +55,17 @@ namespace KustoTerminal.UI.Services
             html.AppendLine("</head>");
             html.AppendLine("<body>");
             
+            // Cluster information section
+            if (!string.IsNullOrEmpty(clusterUrl))
+            {
+                html.AppendLine("<div class='cluster-info'>");
+                html.Append(EscapeHtml(clusterUrl));
+                html.AppendLine("</div>");
+            }
+            
             // Query section
             if (!string.IsNullOrEmpty(queryText))
             {
-                html.AppendLine("<div class='query-label'>Query:</div>");
                 html.AppendLine("<div class='query'>");
                 html.Append(EscapeHtml(queryText));
                 html.AppendLine("</div>"); 

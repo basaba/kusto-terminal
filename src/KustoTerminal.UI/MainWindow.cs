@@ -513,6 +513,7 @@ namespace KustoTerminal.UI
                 {
                     _queryEditorPane.SetExecuting(false);
                     _resultsPane.SetQueryText(query);
+                    _resultsPane.SetConnection(connection);
                     _resultsPane.DisplayResult(result);
                 });
             }

@@ -31,6 +31,7 @@ namespace KustoTerminal.UI.Panes
         private HashSet<string> _selectedColumns = new HashSet<string>();
         private bool _searchVisible = false;
         private string? _currentQueryText;
+        private KustoConnection? _currentConnection;
         public event EventHandler? MaximizeToggleRequested;
 
         public ResultsPane()
@@ -226,6 +227,11 @@ namespace KustoTerminal.UI.Panes
         public void SetQueryText(string? queryText)
         {
             _currentQueryText = queryText;
+        }
+
+        public void SetConnection(KustoConnection? connection)
+        {
+            _currentConnection = connection;
         }
 
         public void DisplayResult(QueryResult result)
@@ -516,7 +522,8 @@ namespace KustoTerminal.UI.Panes
                     queryToCopy = _currentQueryText;
                 }
 
-                var htmlContent = ClipboardService.GenerateHtmlWithQuery(queryToCopy, dataTable);
+                var clusterUrl = _currentConnection?.ClusterUri;
+                var htmlContent = ClipboardService.GenerateHtmlWithQuery(queryToCopy, dataTable, clusterUrl);
                 ClipboardService.SetClipboardWithHtml(htmlContent);
             }
             catch { }
