@@ -28,6 +28,7 @@ namespace KustoTerminal.UI
         private readonly IUserSettingsManager _userSettingsManager;
         private readonly ClusterSchemaService _clusterSchemaService;
         private readonly SyntaxHighlighter _syntaxHighlighter;
+        private readonly HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
         private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
         
         private ConnectionPane _connectionPane;
@@ -59,6 +60,7 @@ namespace KustoTerminal.UI
             // Initialize language service and cluster schema service
             var languageService = new LanguageService();
             _syntaxHighlighter = new SyntaxHighlighter(languageService);
+            _htmlSyntaxHighlighter = new HtmlSyntaxHighlighter(languageService);
             
             // Initialize cache configuration with default settings
             var cacheConfig = new CacheConfiguration
@@ -141,7 +143,7 @@ namespace KustoTerminal.UI
                 SchemeName = "Base"
             };
 
-            _resultsPane = new ResultsPane()
+            _resultsPane = new ResultsPane(_htmlSyntaxHighlighter)
             {
                 X = 0,
                 Y = 0,

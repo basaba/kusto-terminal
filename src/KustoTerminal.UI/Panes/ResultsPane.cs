@@ -11,6 +11,7 @@ using KustoTerminal.Core.Models;
 using KustoTerminal.UI.Common;
 using KustoTerminal.UI.Dialogs;
 using KustoTerminal.UI.Services;
+using KustoTerminal.UI.SyntaxHighlighting;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 
@@ -32,10 +33,13 @@ namespace KustoTerminal.UI.Panes
         private bool _searchVisible = false;
         private string? _currentQueryText;
         private KustoConnection? _currentConnection;
+        private HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
         public event EventHandler? MaximizeToggleRequested;
 
-        public ResultsPane()
+        public ResultsPane(HtmlSyntaxHighlighter htmlSyntaxHtmlSyntaxHighlighter)
         {
+            _htmlSyntaxHighlighter = htmlSyntaxHtmlSyntaxHighlighter;
+            
             InitializeComponents();
             SetupLayout();
             SetKeyboard();
@@ -522,8 +526,7 @@ namespace KustoTerminal.UI.Panes
                     queryToCopy = _currentQueryText;
                 }
 
-                var clusterUrl = _currentConnection?.ClusterUri;
-                var htmlContent = ClipboardService.GenerateHtmlWithQuery(queryToCopy, dataTable, clusterUrl);
+                var htmlContent = _htmlSyntaxHighlighter.GenerateHtmlWithQuery(queryToCopy, dataTable, _currentConnection);
                 ClipboardService.SetClipboardWithHtml(htmlContent);
             }
             catch { }
