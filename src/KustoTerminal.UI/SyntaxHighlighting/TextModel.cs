@@ -6,16 +6,21 @@ namespace KustoTerminal.UI.SyntaxHighlighting
 {
     public class TextModel : ITextModel
     {
-        private readonly TextView _textView;
+        private readonly string _text;
 
         public TextModel(TextView textView)
         {
-            _textView = textView;
+            _text = textView.Text;
+        }
+
+        public TextModel(string text)
+        {
+            _text = text;
         }
 
         public string GetText(bool normalize = false)
         {
-            var text = _textView.Text;
+            var text = _text;
             if (normalize)
             {
                 text = text.Replace("\r\n", "\n");

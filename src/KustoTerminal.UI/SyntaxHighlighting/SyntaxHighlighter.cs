@@ -16,33 +16,7 @@ namespace KustoTerminal.UI.SyntaxHighlighting
 {
     public class SyntaxHighlighter
     {
-        private static Dictionary<ClassificationKind, Attribute> _colorMap;
         private readonly LanguageService _languageService;
-        
-        static SyntaxHighlighter()
-        {
-            // Initialize color mappings for different classification types
-            _colorMap = new Dictionary<ClassificationKind, Attribute>
-            {
-                { ClassificationKind.Keyword, new Attribute(ColorsCollection.SkyBlue, Color.Black) },
-                { ClassificationKind.Identifier, new Attribute(ColorsCollection.White, Color.Black) },
-                { ClassificationKind.Literal, new Attribute(ColorsCollection.White, Color.Black) },
-                { ClassificationKind.StringLiteral, new Attribute(ColorsCollection.PaleChestnut, Color.Black) },
-                { ClassificationKind.Comment, new Attribute(ColorsCollection.OliveDrab, Color.Black) },
-                { ClassificationKind.Punctuation, new Attribute(ColorsCollection.White, Color.Black) },
-                { ClassificationKind.QueryOperator, new Attribute(ColorsCollection.MediumTurquoise, Color.Black) },
-                { ClassificationKind.ScalarOperator, new Attribute(ColorsCollection.SkyBlue, Color.Black) },
-                { ClassificationKind.MathOperator, new Attribute(Color.White, Color.Black) },
-                { ClassificationKind.Function, new Attribute(ColorsCollection.SkyBlue, Color.Black) },
-                { ClassificationKind.Type, new Attribute(ColorsCollection.SkyBlue, Color.Black) },
-                { ClassificationKind.Column, new Attribute(ColorsCollection.PaleVioletRed, Color.Black) },
-                { ClassificationKind.Table, new Attribute(ColorsCollection.SoftGold, Color.Black) },
-                { ClassificationKind.Database, new Attribute(ColorsCollection.SoftGold, Color.Black) },
-                { ClassificationKind.Parameter, new Attribute(ColorsCollection.LightSkyBlue, Color.Black) },
-                { ClassificationKind.Variable, new Attribute(ColorsCollection.LightSkyBlue, Color.Black) },
-                { ClassificationKind.MaterializedView, new Attribute(ColorsCollection.SoftGold, Color.Black) },
-            };
-        }
 
         public SyntaxHighlighter(LanguageService languageService)
         {
@@ -77,9 +51,10 @@ namespace KustoTerminal.UI.SyntaxHighlighting
                     var classification = classifications.FirstOrDefault(c => 
                         pos >= c.Start && pos < c.Start + c.Length);
                     
-                    if (classification != null && _colorMap.TryGetValue(classification.Kind, out var attribute))
+                    if (classification != null)
                     {
-                        cell.Attribute = attribute;
+                        var attribute = ClassificationColorMapper.GetAttributeForClassification(classification.Kind);
+                        cell.Attribute = attribute ?? defaultAttribute;
                     }
                     else
                     {
