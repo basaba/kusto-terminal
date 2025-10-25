@@ -29,13 +29,12 @@ namespace KustoTerminal.UI.Services
         /// <summary>
         /// Sets clipboard on Windows with both HTML and plain text formats
         /// </summary>
-        private static bool SetClipboardWithHtmlWindows(string htmlContent)
+        private static bool SetClipboardWithHtmlWindows(string htmlClipboardFormat)
         {
 #if WINDOWS
             try
             {
                 // Convert HTML to Windows Clipboard HTML Format (CF_HTML)
-                var htmlClipboardFormat = ConvertToClipboardHtmlFormat(htmlContent);
                 
                 // Use System.Windows.Forms.Clipboard for Windows
                 var dataObject = new System.Windows.Forms.DataObject();
