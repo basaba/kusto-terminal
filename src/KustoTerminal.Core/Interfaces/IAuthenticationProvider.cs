@@ -1,13 +1,12 @@
 using System.Threading.Tasks;
 using KustoTerminal.Core.Models;
 
-namespace KustoTerminal.Core.Interfaces
+namespace KustoTerminal.Core.Interfaces;
+
+public interface IAuthenticationProvider
 {
-    public interface IAuthenticationProvider
-    {
-        Task<string> GetAccessTokenAsync(string clusterUri);
-        bool IsAuthenticated();
-        Task<bool> ValidateAuthenticationAsync();
-        AuthenticationType AuthType { get; }
-    }
+    Task<string> GetAccessTokenAsync(string clusterUri);
+    bool IsAuthenticated();
+    Task<bool> ValidateAuthenticationAsync();
+    AuthenticationType AuthType { get; }
 }

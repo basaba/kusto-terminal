@@ -1,9 +1,8 @@
 using System;
 
-namespace KustoTerminal.Language.Models
+namespace KustoTerminal.Language.Models;
+
+public interface ITextModel
 {
-    public interface ITextModel
-    {
-        string GetText(bool normalize = false);
-    }
+    string GetText(bool normalize = false);
 }

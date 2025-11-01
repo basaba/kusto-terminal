@@ -19,11 +19,11 @@ using KustoTerminal.UI.SyntaxHighlighting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminal.Gui.Drawing;
 
-namespace KustoTerminal.UI
+namespace KustoTerminal.UI;
+
+public class MainWindow : Window
 {
-    public class MainWindow : Window
-    {
-        private readonly IConnectionManager _connectionManager;
+    private readonly IConnectionManager _connectionManager;
         private readonly IUserSettingsManager _userSettingsManager;
         private readonly ClusterSchemaService _clusterSchemaService;
         private readonly SyntaxHighlighter _syntaxHighlighter;
@@ -621,4 +621,3 @@ namespace KustoTerminal.UI
             base.Dispose(disposing);
         }
     }
-}

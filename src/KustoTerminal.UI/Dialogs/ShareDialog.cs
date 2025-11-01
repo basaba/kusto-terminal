@@ -7,9 +7,9 @@ using Terminal.Gui.ViewBase;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 
-namespace KustoTerminal.UI.Dialogs
-{
-    public class ShareDialog : Dialog
+namespace KustoTerminal.UI.Dialogs;
+
+public class ShareDialog : Dialog
     {
         private CheckBox _queryCheckBox = null!;
         private CheckBox _resultCheckBox = null!;
@@ -140,5 +140,4 @@ namespace KustoTerminal.UI.Dialogs
             WasCanceled = true;
             Application.RequestStop();
         }
-    }
 }

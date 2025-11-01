@@ -18,9 +18,9 @@ using Kusto.Cloud.Platform.Utils;
 using KustoTerminal.UI.Common;
 using Terminal.Gui.Drawing;
 
-namespace KustoTerminal.UI.Panes
-{
-    public class ConnectionPane : View
+namespace KustoTerminal.UI.Panes;
+
+public class ConnectionPane : View
     {
         private readonly IConnectionManager _connectionManager;
         private TreeView _connectionsTree = null!;
@@ -289,5 +289,4 @@ namespace KustoTerminal.UI.Panes
 
             return client;
         }
-    }
 }

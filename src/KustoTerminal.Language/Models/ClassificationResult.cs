@@ -1,9 +1,8 @@
 using System;
 
-namespace KustoTerminal.Language.Models
+namespace KustoTerminal.Language.Models;
+
+public class ClassificationResult
 {
-    public class ClassificationResult
-    {
-        public Classification[] Classifications { get; set; } = null!;
-    }
+    public Classification[] Classifications { get; set; } = null!;
 }
