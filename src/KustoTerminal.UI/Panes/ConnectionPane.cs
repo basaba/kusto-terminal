@@ -23,8 +23,8 @@ namespace KustoTerminal.UI.Panes
     public class ConnectionPane : View
     {
         private readonly IConnectionManager _connectionManager;
-        private TreeView _connectionsTree;
-        private Label[] _shortcutsLabels;
+        private TreeView _connectionsTree = null!;
+        private Label[] _shortcutsLabels = null!;
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
         private KustoConnection? _selectedConnection;
@@ -147,7 +147,7 @@ namespace KustoTerminal.UI.Panes
             }
         }
 
-        public async void RefreshConnections()
+        public void RefreshConnections()
         {
             LoadConnections();
         }
@@ -283,7 +283,7 @@ namespace KustoTerminal.UI.Panes
             if (!_kustoClients.TryGetValue(connection.Id, out var client))
             {
                 var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType);
-                client = new KustoClient(connection, authProvider);
+                client = new KustoClient(connection, authProvider!);
                 _kustoClients[connection.Id] = client;
             }
 

@@ -6,7 +6,7 @@ using Terminal.Gui;
 
 public static class ExtendedLabel
 {
-    public static Label AppendLabel(this Label labelToAppendTo, string text, string schemeName, List<Label> labels = null)
+    public static Label AppendLabel(this Label labelToAppendTo, string text, string schemeName, List<Label>? labels = null)
     {
         var label = new Label
         {

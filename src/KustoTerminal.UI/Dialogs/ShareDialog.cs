@@ -11,10 +11,10 @@ namespace KustoTerminal.UI.Dialogs
 {
     public class ShareDialog : Dialog
     {
-        private CheckBox _queryCheckBox;
-        private CheckBox _resultCheckBox;
-        private Label _instructionLabel;
-        private Label _shortcutsLabel;
+        private CheckBox _queryCheckBox = null!;
+        private CheckBox _resultCheckBox = null!;
+        private Label _instructionLabel = null!;
+        private Label _shortcutsLabel = null!;
 
         public bool CopyQuery { get; private set; }
         public bool CopyResult { get; private set; }
@@ -44,7 +44,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Select what to copy to clipboard:",
                 X = 1,
                 Y = 1,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 
@@ -53,7 +53,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Query",
                 X = 3,
                 Y = 3,
-                Width = Dim.Fill() - 4,
+                Width = Dim.Fill()! - 4,
                 Height = 1
             };
 
@@ -62,7 +62,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Result",
                 X = 3,
                 Y = 4,
-                Width = Dim.Fill() - 4,
+                Width = Dim.Fill()! - 4,
                 Height = 1
             };
 
@@ -90,7 +90,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Space: Toggle | Enter: OK | Esc: Cancel",
                 X = 1,
                 Y = Pos.Bottom(_resultCheckBox) + 1,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 

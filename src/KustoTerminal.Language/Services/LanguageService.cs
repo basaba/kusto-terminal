@@ -80,7 +80,7 @@ namespace KustoTerminal.Language.Services
             var renderStatements = parsedAndAnalyzed.Syntax.GetDescendants<RenderOperator>();
             if (renderStatements.SafeFastNone())
             {
-                return default;
+                return default!;
             }
             
             var renderInfo = new RenderInfo();
@@ -90,7 +90,7 @@ namespace KustoTerminal.Language.Services
 
             if (!Enum.TryParse<VisualizationKind>(visualizationKindStr, out var visualizationKind))
             {
-                return default;
+                return default!;
             }
             
             renderInfo.VisualizationKind = visualizationKind;

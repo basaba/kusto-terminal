@@ -19,13 +19,13 @@ namespace KustoTerminal.UI.Panes
 {
     public class ResultsPane : BasePane
     {
-        private TableView _tableView;
-        private Label _statusLabel;
-        private TextView _errorLabel;
-        private Label _shortcutsLabel;
-        private Label[] _shortcutLabels;
-        private TextField _searchField;
-        private Label _searchLabel;
+        private TableView _tableView = null!;
+        private Label _statusLabel = null!;
+        private TextView _errorLabel = null!;
+        private Label _shortcutsLabel = null!;
+        private Label[] _shortcutLabels = null!;
+        private TextField _searchField = null!;
+        private Label _searchLabel = null!;
         
         private QueryResult? _currentResult;
         private DataTable? _originalData;
@@ -65,7 +65,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,  // Position where table view is
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 1,  // Take up the space normally used by table view
+                Height = Dim.Fill()! - 1,  // Take up the space normally used by table view
                 Visible = false,
                 SchemeName = "Error",
                 ReadOnly = true,
@@ -77,7 +77,7 @@ namespace KustoTerminal.UI.Panes
                 X = 0,
                 Y = 1,
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 1,
+                Height = Dim.Fill()! - 1,
                 FullRowSelect = false,
                 MultiSelect = false,
             };
@@ -343,7 +343,7 @@ namespace KustoTerminal.UI.Panes
             }
         }
 
-        public new void Clear()
+        public void Clear()
         {
             _currentResult = null;
             _originalData = null;
@@ -511,8 +511,8 @@ namespace KustoTerminal.UI.Panes
                     return;
                 }
                 
-                DataTable dataTable = null;
-                string queryToCopy = null;
+                DataTable? dataTable = null;
+                string? queryToCopy = null;
 
                 // Handle the copy based on user selection
                 if (dialog.CopyResult)
@@ -526,7 +526,7 @@ namespace KustoTerminal.UI.Panes
                     queryToCopy = _currentQueryText;
                 }
 
-                var htmlContent = _htmlSyntaxHighlighter.GenerateHtmlWithQuery(queryToCopy, dataTable, _currentConnection);
+                var htmlContent = _htmlSyntaxHighlighter.GenerateHtmlWithQuery(queryToCopy!, dataTable!, _currentConnection!);
                 ClipboardService.SetClipboardWithHtml(htmlContent);
             }
             catch { }

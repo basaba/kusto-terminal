@@ -10,8 +10,8 @@ public class AutocompleteSuggestionGenerator : ISuggestionGenerator
 {
     private static IEnumerable<Suggestion> s_emptyResult = new Suggestion[0];
     private LanguageService  _languageService;
-    private TextView _queryTextView;
-    private KustoConnection _currentConnection;
+    private TextView _queryTextView = null!;
+    private KustoConnection _currentConnection = null!;
     private int _allowedRow;
     private int _allowedColumn;
 
@@ -113,7 +113,7 @@ public class AutocompleteSuggestionGenerator : ISuggestionGenerator
         // It isn't a word char then there is no way to autocomplete that word
         if (startIdx == idx && columnOffset != 0)
         {
-            return null;
+            return null!;
         }
 
         // we are at the end of a word. Work out what has been typed so far

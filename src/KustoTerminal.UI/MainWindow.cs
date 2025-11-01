@@ -24,22 +24,21 @@ namespace KustoTerminal.UI
     public class MainWindow : Window
     {
         private readonly IConnectionManager _connectionManager;
-        private readonly IAuthenticationProvider _authProvider;
         private readonly IUserSettingsManager _userSettingsManager;
         private readonly ClusterSchemaService _clusterSchemaService;
         private readonly SyntaxHighlighter _syntaxHighlighter;
         private readonly HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
         private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
         
-        private ConnectionPane _connectionPane;
-        private QueryEditorPane _queryEditorPane;
-        private ResultsPane _resultsPane;        
-        private FrameView _leftFrame;
-        private FrameView _rightTopFrame;
-        private FrameView _rightBottomFrame;
+        private ConnectionPane _connectionPane = null!;
+        private QueryEditorPane _queryEditorPane = null!;
+        private ResultsPane _resultsPane = null!;        
+        private FrameView _leftFrame = null!;
+        private FrameView _rightTopFrame = null!;
+        private FrameView _rightBottomFrame = null!;
         //private FrameView _shortcutsFrame;
-        private Label _kustoTerminalLabel;
-        private List<Label> _shortcutLabels;
+        private Label _kustoTerminalLabel = null!;
+        private List<Label> _shortcutLabels = null!;
 
         // Query cancellation
         private CancellationTokenSource? _queryCancellationTokenSource;
@@ -48,9 +47,9 @@ namespace KustoTerminal.UI
         // Maximize state
         private bool _isQueryEditorMaximized = false;
         private bool _isResultsPaneMaximized = false;
-        private Dim _originalRightFrameHeight;
-        private Pos _originalBottomFrameY;
-        private Dim _originalBottomFrameHeight;
+        private Dim _originalRightFrameHeight = null!;
+        private Pos _originalBottomFrameY = null!;
+        private Dim _originalBottomFrameHeight = null!;
 
         public MainWindow(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
         {
@@ -92,7 +91,7 @@ namespace KustoTerminal.UI
                 X = 0,
                 Y = 0,
                 Width = 30,
-                Height = Dim.Fill() - 1,
+                Height = Dim.Fill()! - 1,
                 TabStop = TabBehavior.TabStop,
                 SchemeName = "FrameView",
                 BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
@@ -118,7 +117,7 @@ namespace KustoTerminal.UI
                 X = Pos.Right(_leftFrame),
                 Y = Pos.Bottom(_rightTopFrame),
                 Width = Dim.Fill(),
-                Height = Dim.Fill() - 1,
+                Height = Dim.Fill()! - 1,
                 TabStop = TabBehavior.TabStop,
                 SchemeName = "FrameView",
                 BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
@@ -201,9 +200,9 @@ namespace KustoTerminal.UI
             _resultsPane.MaximizeToggleRequested += OnResultsPaneMaximizeToggleRequested;
             
             // Store original dimensions for restore
-            _originalRightFrameHeight = _rightTopFrame.Height;
-            _originalBottomFrameY = _rightBottomFrame.Y;
-            _originalBottomFrameHeight = _rightBottomFrame.Height;
+            _originalRightFrameHeight = _rightTopFrame.Height!;
+            _originalBottomFrameY = _rightBottomFrame.Y!;
+            _originalBottomFrameHeight = _rightBottomFrame.Height!;
             
             // Load last query asynchronously
             LoadLastQueryAsync();
@@ -505,7 +504,7 @@ namespace KustoTerminal.UI
                         _queryEditorPane.UpdateProgressMessage(message);
                     });
                 });
-                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType);
+                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
                 _currentKustoClient = new Core.Services.KustoClient(connection, authProvider);
                 var result = await _currentKustoClient.ExecuteQueryAsync(query, cancellationToken, progress);
                 _currentKustoClient.Dispose();
@@ -528,6 +527,7 @@ namespace KustoTerminal.UI
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error: Query execution failed: {ex.Message}");
                 Application.Invoke(() =>
                 {
                     _queryEditorPane.SetExecuting(false);
@@ -558,7 +558,7 @@ namespace KustoTerminal.UI
             return mainWindow;
         }
         
-        private async void LoadLastQueryAsync()
+        private void LoadLastQueryAsync()
         {
             try
             {
@@ -615,6 +615,7 @@ namespace KustoTerminal.UI
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"Warning: Failed to save query before exit: {ex.Message}");
                 }
             }
             base.Dispose(disposing);

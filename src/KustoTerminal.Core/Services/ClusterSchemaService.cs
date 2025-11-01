@@ -57,9 +57,9 @@ namespace KustoTerminal.Core.Services
                 {
                     clusterSchema = await _cacheManager.GetCachedSchemaAsync(clusterName);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    
+                    // Cache retrieval failed, continue to fetch from server
                 }
                 if (clusterSchema != null)
                 {
@@ -70,7 +70,7 @@ namespace KustoTerminal.Core.Services
             }
 
             // Fetch from server if no cache or force refresh
-            var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType);
+            var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
             var kustoClient = new KustoClient(connection, authProvider);
 
             try

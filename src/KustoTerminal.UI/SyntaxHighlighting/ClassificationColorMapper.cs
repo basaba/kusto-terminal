@@ -63,7 +63,7 @@ namespace KustoTerminal.UI.SyntaxHighlighting
         public static string GetHtmlColorForClassification(ClassificationKind kind)
         {
             var color = GetColorForClassification(kind);
-            return color.HasValue ? ColorToHex(color.Value) : null;
+            return color.HasValue ? ColorToHex(color.Value) : null!;
         }
 
         /// <summary>

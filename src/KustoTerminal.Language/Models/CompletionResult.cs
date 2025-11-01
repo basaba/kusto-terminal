@@ -10,8 +10,8 @@ namespace KustoTerminal.Language.Models
 
     public class CompletionItem
     {
-        public string DisplayText { get; set; }
-        public string ApplyText { get; set; }
-        public string OrderText { get; set; }
+        public string DisplayText { get; set; } = null!;
+        public string ApplyText { get; set; } = null!;
+        public string OrderText { get; set; } = null!;
     }
 }

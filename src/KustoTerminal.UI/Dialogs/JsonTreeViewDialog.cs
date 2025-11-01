@@ -13,9 +13,9 @@ namespace KustoTerminal.UI.Dialogs
 {
     public class JsonTreeViewDialog : Dialog
     {
-        private TreeView _treeView;
-        private Label _statusLabel;
-        private Label _shortcutsLabel;
+        private TreeView _treeView = null!;
+        private Label _statusLabel = null!;
+        private Label _shortcutsLabel = null!;
         private readonly string _jsonContent;
         private readonly string _columnName;
 
@@ -42,7 +42,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Loading JSON...",
                 X = 1,
                 Y = 1,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 
@@ -50,8 +50,8 @@ namespace KustoTerminal.UI.Dialogs
             {
                 X = 1,
                 Y = 2,
-                Width = Dim.Fill() - 2,
-                Height = Dim.Fill() - 1,
+                Width = Dim.Fill()! - 2,
+                Height = Dim.Fill()! - 1,
                 CanFocus = true
             };
 
@@ -60,7 +60,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Ctrl+E: Expand All | Ctrl+R: Collapse All",
                 X = 1,
                 Y = Pos.Bottom(_treeView),
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 
@@ -353,7 +353,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Property Name:",
                 X = 1,
                 Y = 0,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 
@@ -362,7 +362,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = propertyName,
                 X = 1,
                 Y = 1,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1,
                 ReadOnly = true
             };
@@ -372,7 +372,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "JSON Path:",
                 X = 1,
                 Y = 2,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 
@@ -381,7 +381,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = jsonPath,
                 X = 1,
                 Y = 3,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1,
                 ReadOnly = true
             };
@@ -391,7 +391,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = "Value:",
                 X = 1,
                 Y = 4,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = 1
             };
 
@@ -400,7 +400,7 @@ namespace KustoTerminal.UI.Dialogs
                 Text = value,
                 X = 1,
                 Y = 5,
-                Width = Dim.Fill() - 2,
+                Width = Dim.Fill()! - 2,
                 Height = Dim.Fill(),
                 ReadOnly = true,
                 WordWrap = true
