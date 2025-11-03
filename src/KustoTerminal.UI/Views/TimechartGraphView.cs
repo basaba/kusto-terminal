@@ -171,14 +171,15 @@ namespace KustoTerminal.UI.Views
             var dataPoints = ExtractTimeSeriesData();
             if (!dataPoints.Any())
                 return;
-
+            var dataPointsCollection = new DataPointsCollection(dataPoints, dataPoints.First());
+            
             // Create series for each value column
             var colors = GetSeriesColors();
             var colorIndex = 0;
 
             foreach (var valueColumn in _valueColumns.Take(5)) // Limit to 5 series for readability
             {
-                var series = CreateBrailleSeries(dataPoints, valueColumn, colors[colorIndex % colors.Length]);
+                var series = CreateBrailleSeries(dataPointsCollection, valueColumn, colors[colorIndex % colors.Length]);
                 //var lineAnnotation = CreateLineAnnotation(dataPoints, valueColumn, colors[colorIndex % colors.Length]);
                 
                 _graphView.Series.Add(series);
@@ -187,23 +188,24 @@ namespace KustoTerminal.UI.Views
                 colorIndex++;
             }
 
-            ConfigureAxisAndScale(dataPoints);
+            ConfigureAxisAndScale(dataPointsCollection);
         }
 
-        private BrailleSeries CreateBrailleSeries(List<TimeSeriesPoint> dataPoints, string valueColumn, AttributeTerminalGui color)
+        private BrailleSeries CreateBrailleSeries(DataPointsCollection dataPointsCollection, string valueColumn, AttributeTerminalGui color)
         {
+            var dataPoints = dataPointsCollection.Points;
             var points = dataPoints
                 .Where(p => p.Values.ContainsKey(valueColumn))
                 .Select(p => new PointF(
-                    (float)(p.Time - dataPoints.First().Time).TotalHours, 
-                    p.Values[valueColumn]))
+                    (float) dataPointsCollection.GetXCoordinate(p), 
+                    (float) dataPointsCollection.GetYCoordinate(p, valueColumn)))
                 .ToList();
 
             var brailleSeries = new BrailleSeries();
             brailleSeries.AddPoints(points);
             return brailleSeries;
         }
-
+        
         private List<TimeSeriesPoint> ExtractTimeSeriesData()
         {
             var points = new List<TimeSeriesPoint>();
@@ -266,43 +268,52 @@ namespace KustoTerminal.UI.Views
             return null;
         }
 
-        private PathAnnotation CreateLineAnnotation(List<TimeSeriesPoint> dataPoints, string valueColumn, AttributeTerminalGui color)
-        {
-            var points = dataPoints
-                .Where(p => p.Values.ContainsKey(valueColumn))
-                .Select(p => new PointF(
-                    (float)(p.Time - dataPoints.First().Time).TotalHours,
-                    p.Values[valueColumn]))
-                .ToList();
+        // private PathAnnotation CreateLineAnnotation(List<TimeSeriesPoint> dataPoints, string valueColumn, AttributeTerminalGui color)
+        // {
+        //     var points = dataPoints
+        //         .Where(p => p.Values.ContainsKey(valueColumn))
+        //         .Select(p => new PointF(
+        //             (float)(p.Time - dataPoints.First().Time).TotalHours,
+        //             p.Values[valueColumn]))
+        //         .ToList();
+        //
+        //     return new PathAnnotation
+        //     {
+        //         Points = points,
+        //         LineColor = color,
+        //         BeforeSeries = false
+        //     };
+        // }
 
-            return new PathAnnotation
-            {
-                Points = points,
-                LineColor = color,
-                BeforeSeries = false
-            };
+        private void ConfigureAxisAndScale(DataPointsCollection dataPointsCollection)
+        {
+            ConfigureAxisX(dataPointsCollection);
+            ConfigureAxisY(dataPointsCollection);
         }
 
-        private void ConfigureAxisAndScale(List<TimeSeriesPoint> dataPoints)
+        private void ConfigureAxisX(DataPointsCollection dataPointsCollection)
         {
-            _graphView.AxisX.Increment = 10;
+            _graphView.AxisX.Increment = 1;
             _graphView.AxisX.Minimum = 0;
-            _graphView.AxisY.Increment = 1;
-            _graphView.AxisY.Minimum = 0;
-            // Set up axis formatting now that we have the base time
-            SetupAxisFormatting();
-        }
+            _graphView.AxisX.ShowLabelsEvery = 1;
 
-        private DateTime _baseTime;
+            var dataRangeX = dataPointsCollection.GetXRange();
+            var totalPixels = _graphView.Viewport.Width - _graphView.MarginLeft;
+            _graphView.CellSize = new PointF((float)dataRangeX/totalPixels, 1f);
 
-        private void SetupAxisFormatting()
-        {
+            var startTime = dataPointsCollection.PivotPoint.Time;
+            
             _graphView.AxisX.LabelGetter = v => 
             {
-                var time = _baseTime.AddHours(v.Value);
-                return time.ToString("HH:mm");
+                var time = startTime.AddHours(v.Value);
+                return time.ToString();
             };
-            
+        }
+
+        private void ConfigureAxisY(DataPointsCollection dataPointsCollection)
+        {
+            _graphView.AxisY.Increment = 1;
+            _graphView.AxisY.Minimum = 0;
             _graphView.AxisY.LabelGetter = v => v.Value.ToString("F1");
         }
 
@@ -324,6 +335,42 @@ namespace KustoTerminal.UI.Views
         {
             public DateTime Time { get; set; }
             public Dictionary<string, float> Values { get; set; } = new();
+        }
+        
+        private class DataPointsCollection
+        {
+            public DataPointsCollection(List<TimeSeriesPoint> points, TimeSeriesPoint pivotPoint)
+            {
+                Points = points;
+                PivotPoint = new TimeSeriesPoint
+                {
+                    Time = pivotPoint.Time,
+                    Values = pivotPoint.Values
+                };
+            }
+            
+            public List<TimeSeriesPoint> Points { get;  private set; } = null;
+            public TimeSeriesPoint PivotPoint { get; private set; } = null;
+
+            public double GetXCoordinate(TimeSeriesPoint timeSeriesPoint)
+            {
+                return TimespanToDouble(timeSeriesPoint.Time -  PivotPoint.Time);
+            }
+
+            public double GetYCoordinate(TimeSeriesPoint timeSeriesPoint, string valueColumn)
+            {
+                return timeSeriesPoint.Values[valueColumn];
+            }
+
+            public double GetXRange()
+            {
+                return TimespanToDouble(Points.Last().Time - Points.First().Time);
+            }
+
+            private static double TimespanToDouble(TimeSpan span)
+            {
+                return span.TotalHours;
+            }
         }
     }
 }
