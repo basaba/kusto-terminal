@@ -46,7 +46,8 @@ class Program
             try
             {
                 // Start the main window
-                using var window = MainWindow.Run(connectionManager, userSettingsManager);
+                using var window = MainWindow.Create(connectionManager, userSettingsManager);
+                Application.Run(window);
             }
             finally
             {

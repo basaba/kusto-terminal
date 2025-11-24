@@ -551,11 +551,9 @@ public class MainWindow : Window
         }
 
 
-        public static IDisposable Run(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
+        public static MainWindow Create(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
         {
-            var mainWindow = new MainWindow(connectionManager, userSettingsManager);
-            Application.Run(mainWindow);
-            return mainWindow;
+            return new MainWindow(connectionManager, userSettingsManager);
         }
         
         private void LoadLastQueryAsync()
