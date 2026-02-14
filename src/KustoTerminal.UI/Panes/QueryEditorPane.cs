@@ -244,6 +244,19 @@ namespace KustoTerminal.UI.Panes
             _queryTextView.SetFocus();
         }
 
+        public (string text, System.Drawing.Point cursor) GetEditorState()
+        {
+            var text = _queryTextView.Text?.ToString() ?? string.Empty;
+            var cursor = _queryTextView.CursorPosition;
+            return (text, cursor);
+        }
+
+        public void SetEditorState(string text, System.Drawing.Point cursor)
+        {
+            _queryTextView.Text = text;
+            _queryTextView.CursorPosition = cursor;
+        }
+
         public void SetExecuting(bool isExecuting)
         {
             _isExecuting = isExecuting;

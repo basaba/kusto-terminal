@@ -266,6 +266,26 @@ public class ResultsPane : BasePane
         _currentConnection = connection;
     }
 
+    public (QueryResult? result, string? queryText, KustoConnection? connection) GetResultState()
+    {
+        return (_currentResult, _currentQueryText, _currentConnection);
+    }
+
+    public void RestoreResultState(QueryResult? result, string? queryText, KustoConnection? connection)
+    {
+        _currentQueryText = queryText;
+        _currentConnection = connection;
+
+        if (result != null)
+        {
+            DisplayResult(result);
+        }
+        else
+        {
+            Clear();
+        }
+    }
+
     public void DisplayResult(QueryResult result)
     {
         Clear();

@@ -13,10 +13,10 @@ using KustoTerminal.UI.Dialogs;
 using KustoTerminal.Language.Services;
 using KustoTerminal.UI.AutoCompletion;
 using KustoTerminal.UI.Common;
+using KustoTerminal.UI.Models;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 using KustoTerminal.UI.SyntaxHighlighting;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminal.Gui.Drawing;
 
 namespace KustoTerminal.UI;
@@ -24,598 +24,875 @@ namespace KustoTerminal.UI;
 public class MainWindow : Window
 {
     private readonly IConnectionManager _connectionManager;
-        private readonly IUserSettingsManager _userSettingsManager;
-        private readonly ClusterSchemaService _clusterSchemaService;
-        private readonly SyntaxHighlighter _syntaxHighlighter;
-        private readonly HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
-        private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
-        
-        private ConnectionPane _connectionPane = null!;
-        private QueryEditorPane _queryEditorPane = null!;
-        private ResultsPane _resultsPane = null!;        
-        private FrameView _leftFrame = null!;
-        private FrameView _rightTopFrame = null!;
-        private FrameView _rightBottomFrame = null!;
-        //private FrameView _shortcutsFrame;
-        private Label _kustoTerminalLabel = null!;
-        private List<Label> _shortcutLabels = null!;
+    private readonly IUserSettingsManager _userSettingsManager;
+    private readonly ClusterSchemaService _clusterSchemaService;
+    private readonly SyntaxHighlighter _syntaxHighlighter;
+    private readonly HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
+    private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
 
-        // Query cancellation
-        private CancellationTokenSource? _queryCancellationTokenSource;
-        private Core.Services.KustoClient? _currentKustoClient;
-        
-        // Maximize state
-        private bool _isQueryEditorMaximized = false;
-        private bool _isResultsPaneMaximized = false;
-        private Dim _originalRightFrameHeight = null!;
-        private Pos _originalBottomFrameY = null!;
-        private Dim _originalBottomFrameHeight = null!;
+    private ConnectionPane _connectionPane = null!;
+    private QueryEditorPane _queryEditorPane = null!;
+    private ResultsPane _resultsPane = null!;
+    private FrameView _leftFrame = null!;
+    private FrameView _rightTopFrame = null!;
+    private FrameView _rightBottomFrame = null!;
+    private Label _kustoTerminalLabel = null!;
+    private List<Label> _shortcutLabels = null!;
 
-        public MainWindow(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
+    // Tab management
+    private List<QueryTab> _tabs = new();
+    private int _activeTabIndex = 0;
+    private View _tabBar = null!;
+    private List<View> _tabButtons = new();
+    private int _tabCounter = 0;
+
+    // Query cancellation
+    private CancellationTokenSource? _queryCancellationTokenSource;
+    private Core.Services.KustoClient? _currentKustoClient;
+
+    // Maximize state
+    private bool _isQueryEditorMaximized = false;
+    private bool _isResultsPaneMaximized = false;
+    private Dim _originalRightFrameHeight = null!;
+    private Pos _originalBottomFrameY = null!;
+    private Dim _originalBottomFrameHeight = null!;
+
+    public MainWindow(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
+    {
+        _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+        _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
+
+        // Initialize language service and cluster schema service
+        var languageService = new LanguageService();
+        _syntaxHighlighter = new SyntaxHighlighter(languageService);
+        _htmlSyntaxHighlighter = new HtmlSyntaxHighlighter(languageService);
+
+        // Initialize cache configuration with default settings
+        var cacheConfig = new CacheConfiguration
         {
-            _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-            _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
+            EnableDiskCache = true,
+            CacheExpirationHours = 24
+        };
+        _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig);
+        _autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
 
-            // Initialize language service and cluster schema service
-            var languageService = new LanguageService();
-            _syntaxHighlighter = new SyntaxHighlighter(languageService);
-            _htmlSyntaxHighlighter = new HtmlSyntaxHighlighter(languageService);
-            
-            // Initialize cache configuration with default settings
-            var cacheConfig = new CacheConfiguration
-            {
-                EnableDiskCache = true,
-                CacheExpirationHours = 24
-            };
-            _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig);
-            _autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
+        X = 0;
+        Y = 0;
+        Width = Dim.Fill();
+        Height = Dim.Fill();
+        SchemeName = "MainWindow";
 
-            X = 0;
-            Y = 0;
-            Width = Dim.Fill();
-            Height = Dim.Fill();
-            SchemeName = "MainWindow";
+        InitializeComponents();
+        SetupLayout();
+        SetKeyboard();
+        SetupClusterSchemaEvents();
+    }
 
-            InitializeComponents();
-            SetupLayout();
-            SetKeyboard();
-            SetupClusterSchemaEvents();
-        }
-
-        private void InitializeComponents()
+    private void InitializeComponents()
+    {
+        // Create frames for layout
+        _leftFrame = new FrameView()
         {
-            // Create frames for layout
-            _leftFrame = new FrameView()
-            {
-                Title = "Connections",
-                X = 0,
-                Y = 0,
-                Width = 30,
-                Height = Dim.Fill()! - 1,
-                TabStop = TabBehavior.TabStop,
-                SchemeName = "FrameView",
-                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
-                Arrangement = ViewArrangement.RightResizable
-            };
+            Title = "Connections",
+            X = 0,
+            Y = 0,
+            Width = 30,
+            Height = Dim.Fill()! - 1,
+            TabStop = TabBehavior.TabStop,
+            SchemeName = "FrameView",
+            BorderStyle = LineStyle.Single,
+            Arrangement = ViewArrangement.RightResizable
+        };
 
-            _rightTopFrame = new FrameView()
-            {
-                Title = "Query Editor",
-                X = Pos.Right(_leftFrame),
-                Y = 0,
-                Width = Dim.Fill(),
-                Height = Dim.Percent(60),
-                TabStop = TabBehavior.TabStop,
-                SchemeName = "FrameView",
-                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
-                Arrangement = ViewArrangement.BottomResizable
-            };
-
-            _rightBottomFrame = new FrameView()
-            {
-                Title = "Results",
-                X = Pos.Right(_leftFrame),
-                Y = Pos.Bottom(_rightTopFrame),
-                Width = Dim.Fill(),
-                Height = Dim.Fill()! - 1,
-                TabStop = TabBehavior.TabStop,
-                SchemeName = "FrameView",
-                BorderStyle = Terminal.Gui.Drawing.LineStyle.Single,
-            };
-            
-            // Create panes
-            _connectionPane = new ConnectionPane(_connectionManager)
-            {
-                X = 0,
-                Y = 0,
-                Width = Dim.Fill(),
-                Height = Dim.Fill(),
-                SchemeName = "Base",
-            };
-
-            _queryEditorPane = new QueryEditorPane(_userSettingsManager, _syntaxHighlighter, _autocompleteSuggestionGenerator)
-            {
-                X = 0,
-                Y = 0,
-                Width = Dim.Fill(),
-                Height = Dim.Fill(),
-                SchemeName = "Base"
-            };
-
-            _resultsPane = new ResultsPane(_htmlSyntaxHighlighter)
-            {
-                X = 0,
-                Y = 0,
-                Width = Dim.Fill(),
-                Height = Dim.Fill(),
-                SchemeName = "Base"
-            };
-            
-            _kustoTerminalLabel = new Label()
-            {
-                Title = " Kusto Terminal",
-                X = 0,
-                Y = Pos.Bottom(_leftFrame),
-                Width = Dim.Auto(DimAutoStyle.Text),
-                Height = 1,
-            };
-
-            _shortcutLabels = BuildShortcutsLabels(_kustoTerminalLabel);
-        }
-
-        private static List<Label> BuildShortcutsLabels(Label labelToAppendTo)
+        _rightTopFrame = new FrameView()
         {
-            var labels = new List<Label>();
-            var last = labelToAppendTo;
-            var normalScheme = Constants.ShortcutDescriptionSchemeName;
-            var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
-            last = last.AppendLabel(" | ", normalScheme, labels);
-            last = last.AppendLabel("Ctrl+Q: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Quit ", normalScheme, labels);
-            last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel( "Alt+Cursor: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Switch between frames ", normalScheme, labels);
-            return labels;
-        }
+            Title = "Query Editor",
+            X = Pos.Right(_leftFrame),
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Percent(60),
+            TabStop = TabBehavior.TabStop,
+            SchemeName = "FrameView",
+            BorderStyle = LineStyle.Single,
+            Arrangement = ViewArrangement.BottomResizable
+        };
 
-        private void SetupLayout()
+        _rightBottomFrame = new FrameView()
         {
-            // Add frames to window
-            Add(_leftFrame, _rightTopFrame, _rightBottomFrame, _kustoTerminalLabel);
-            Add(_shortcutLabels.ToArray());
+            Title = "Results",
+            X = Pos.Right(_leftFrame),
+            Y = Pos.Bottom(_rightTopFrame),
+            Width = Dim.Fill(),
+            Height = Dim.Fill()! - 1,
+            TabStop = TabBehavior.TabStop,
+            SchemeName = "FrameView",
+            BorderStyle = LineStyle.Single,
+        };
 
-            // Add panes to frames
-            _leftFrame.Add(_connectionPane);
-            _rightTopFrame.Add(_queryEditorPane);
-            _rightBottomFrame.Add(_resultsPane);
-            
-            // Set initial focus to connection pane
-            _connectionPane.SetFocus();
-
-            // Set up events
-            _connectionPane.ConnectionSelected += OnConnectionSelected;
-            _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
-            _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
-            _queryEditorPane.MaximizeToggleRequested += OnQueryEditorMaximizeToggleRequested;
-            _resultsPane.MaximizeToggleRequested += OnResultsPaneMaximizeToggleRequested;
-            
-            // Store original dimensions for restore
-            _originalRightFrameHeight = _rightTopFrame.Height!;
-            _originalBottomFrameY = _rightBottomFrame.Y!;
-            _originalBottomFrameHeight = _rightBottomFrame.Height!;
-            
-            // Load last query asynchronously
-            LoadLastQueryAsync();
-        }
-
-        private void SetKeyboard()
+        // Create tab bar
+        _tabBar = new View()
         {
-            KeyDown += (o, key) =>
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = 1,
+            CanFocus = false,
+        };
+
+        // Create panes
+        _connectionPane = new ConnectionPane(_connectionManager)
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            SchemeName = "Base",
+        };
+
+        _queryEditorPane = new QueryEditorPane(_userSettingsManager, _syntaxHighlighter, _autocompleteSuggestionGenerator)
+        {
+            X = 0,
+            Y = 1, // Below tab bar
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            SchemeName = "Base"
+        };
+
+        _resultsPane = new ResultsPane(_htmlSyntaxHighlighter)
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            SchemeName = "Base"
+        };
+
+        _kustoTerminalLabel = new Label()
+        {
+            Title = " Kusto Terminal",
+            X = 0,
+            Y = Pos.Bottom(_leftFrame),
+            Width = Dim.Auto(DimAutoStyle.Text),
+            Height = 1,
+        };
+
+        _shortcutLabels = BuildShortcutsLabels(_kustoTerminalLabel);
+
+        // Create initial tab
+        AddNewTab();
+    }
+
+    private static List<Label> BuildShortcutsLabels(Label labelToAppendTo)
+    {
+        var labels = new List<Label>();
+        var last = labelToAppendTo;
+        var normalScheme = Constants.ShortcutDescriptionSchemeName;
+        var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
+        last = last.AppendLabel(" | ", normalScheme, labels);
+        last = last.AppendLabel("Ctrl+Q: ", shortcutKeyScheme, labels);
+        last = last.AppendLabel("Quit ", normalScheme, labels);
+        last = last.AppendLabel("| ", normalScheme, labels);
+        last = last.AppendLabel("Alt+Cursor: ", shortcutKeyScheme, labels);
+        last = last.AppendLabel("Switch frames ", normalScheme, labels);
+        last = last.AppendLabel("| ", normalScheme, labels);
+        last = last.AppendLabel("Ctrl+T: ", shortcutKeyScheme, labels);
+        last = last.AppendLabel("New Tab ", normalScheme, labels);
+        last = last.AppendLabel("| ", normalScheme, labels);
+        last = last.AppendLabel("Ctrl+W: ", shortcutKeyScheme, labels);
+        last = last.AppendLabel("Close Tab ", normalScheme, labels);
+        last = last.AppendLabel("| ", normalScheme, labels);
+        last = last.AppendLabel("Ctrl+Tab: ", shortcutKeyScheme, labels);
+        last = last.AppendLabel("Next Tab ", normalScheme, labels);
+        return labels;
+    }
+
+    private void SetupLayout()
+    {
+        // Add frames to window
+        Add(_leftFrame, _rightTopFrame, _rightBottomFrame, _kustoTerminalLabel);
+        Add(_shortcutLabels.ToArray());
+
+        // Add panes to frames
+        _leftFrame.Add(_connectionPane);
+        _rightTopFrame.Add(_tabBar);
+        _rightTopFrame.Add(_queryEditorPane);
+        _rightBottomFrame.Add(_resultsPane);
+
+        // Set initial focus to connection pane
+        _connectionPane.SetFocus();
+
+        // Set up events
+        _connectionPane.ConnectionSelected += OnConnectionSelected;
+        _queryEditorPane.QueryExecuteRequested += OnQueryExecuteRequested;
+        _queryEditorPane.QueryCancelRequested += OnQueryCancelRequested;
+        _queryEditorPane.MaximizeToggleRequested += OnQueryEditorMaximizeToggleRequested;
+        _resultsPane.MaximizeToggleRequested += OnResultsPaneMaximizeToggleRequested;
+
+        // Store original dimensions for restore
+        _originalRightFrameHeight = _rightTopFrame.Height!;
+        _originalBottomFrameY = _rightBottomFrame.Y!;
+        _originalBottomFrameHeight = _rightBottomFrame.Height!;
+
+        // Load last query asynchronously
+        LoadLastQueryAsync();
+
+        // Render initial tab bar
+        RenderTabBar();
+    }
+
+    private void SetKeyboard()
+    {
+        KeyDown += (o, key) =>
+        {
+            if (key.KeyCode == (KeyCode.CtrlMask | Key.Q.KeyCode)
+            || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
             {
-                if (key.KeyCode == (KeyCode.CtrlMask | Key.Q.KeyCode)
-                || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
-                {
-                    Application.Shutdown();
-                    key.Handled = true;
-                }
-                else if (key == Key.F12)
-                {
-                    ToggleMaximizeBasedOnFocus();
-                    key.Handled = true;
-                }
-                else if (key == Key.Esc)
-                {
-                    key.Handled = true;
-                }
-                else if (key == (KeyCode.AltMask | Key.CursorRight.KeyCode))
-                {
-                    if (_leftFrame.HasFocus)
-                    {
-                        _rightTopFrame.SetFocus();
-                        key.Handled = true;
-                    }
-                }
-                else if (key == (KeyCode.AltMask | Key.CursorLeft.KeyCode))
-                {
-                    if (_rightBottomFrame.HasFocus || _rightTopFrame.HasFocus)
-                    {
-                        _leftFrame.SetFocus();
-                    }
-                }
-                else if (key == (KeyCode.AltMask | Key.CursorDown.KeyCode))
-                {
-                    if (_rightTopFrame.HasFocus || _leftFrame.HasFocus)
-                    {
-                        _rightBottomFrame.SetFocus();
-                        key.Handled = true;
-                    }
-                }
-                else if (key == (KeyCode.AltMask | Key.CursorUp.KeyCode))
-                {
-                    if (_rightBottomFrame.HasFocus)
-                    {
-                        _rightTopFrame.SetFocus();
-                        key.Handled = true;
-                    }
-                }
-            };
-            
-            // We want to prevent the user navigating inside each frame from mistakenly change the focus unintentionally
-            // to different frame.
-            _rightBottomFrame.KeyDown += HandleCursors;
-            _rightTopFrame.KeyDown += HandleCursors;
-            _leftFrame.KeyDown += HandleCursors;
-        }
-        
-        private void HandleCursors(object? sender, Key key)
-        {
-            if (key == Key.CursorRight
-                || key == Key.CursorLeft
-                || key == Key.CursorUp
-                || key == Key.CursorDown)
+                Application.Shutdown();
+                key.Handled = true;
+            }
+            else if (key == Key.F12)
+            {
+                ToggleMaximizeBasedOnFocus();
+                key.Handled = true;
+            }
+            else if (key == Key.Esc)
             {
                 key.Handled = true;
             }
-        }
-
-        private void OnConnectionSelected(object? sender, KustoConnection connection)
-        {
-            _queryEditorPane.SetConnection(connection);
-            _queryEditorPane.FocusEditor();
-        }
-
-        private async void OnQueryExecuteRequested(object? sender, string query)
-        {
-            await ExecuteQueryAsync(query);
-        }
-
-        private void OnQueryCancelRequested(object? sender, EventArgs e)
-        {
-            // Cancel the current query if one is running
-            if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
+            else if (key == (KeyCode.AltMask | Key.CursorRight.KeyCode))
             {
-                // First cancel the token to stop any local processing
-                _queryCancellationTokenSource.Cancel();
-                
-                // Immediately set executing to false to allow new queries
-                Application.Invoke(() => _queryEditorPane.SetExecuting(false));
-                
-                // Then try to cancel on the server side using the Kusto client (fire-and-forget)
-                if (_currentKustoClient != null)
+                if (_leftFrame.HasFocus)
                 {
-                    var clientToCancel = _currentKustoClient;
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await clientToCancel.CancelCurrentQueryAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            // Log but don't throw - cancellation errors shouldn't crash the UI
-                            Console.WriteLine($"Warning: Server-side cancellation failed: {ex.Message}");
-                        }
-                    });
+                    _rightTopFrame.SetFocus();
+                    key.Handled = true;
                 }
             }
+            else if (key == (KeyCode.AltMask | Key.CursorLeft.KeyCode))
+            {
+                if (_rightBottomFrame.HasFocus || _rightTopFrame.HasFocus)
+                {
+                    _leftFrame.SetFocus();
+                }
+            }
+            else if (key == (KeyCode.AltMask | Key.CursorDown.KeyCode))
+            {
+                if (_rightTopFrame.HasFocus || _leftFrame.HasFocus)
+                {
+                    _rightBottomFrame.SetFocus();
+                    key.Handled = true;
+                }
+            }
+            else if (key == (KeyCode.AltMask | Key.CursorUp.KeyCode))
+            {
+                if (_rightBottomFrame.HasFocus)
+                {
+                    _rightTopFrame.SetFocus();
+                    key.Handled = true;
+                }
+            }
+            // Tab management shortcuts
+            else if (key.KeyCode == (KeyCode.CtrlMask | Key.T.KeyCode))
+            {
+                AddNewTab();
+                SwitchToTab(_tabs.Count - 1);
+                _queryEditorPane.FocusEditor();
+                key.Handled = true;
+            }
+            else if (key.KeyCode == (KeyCode.CtrlMask | Key.W.KeyCode))
+            {
+                CloseCurrentTab();
+                key.Handled = true;
+            }
+            else if (key == Key.Tab.WithCtrl)
+            {
+                SwitchToNextTab();
+                key.Handled = true;
+            }
+            else if (key == Key.Tab.WithCtrl.WithShift)
+            {
+                SwitchToPreviousTab();
+                key.Handled = true;
+            }
+            // Alt+1..9 for direct tab switching
+            else if (key == (KeyCode.AltMask | Key.D1.KeyCode) && _tabs.Count >= 1)
+            {
+                SwitchToTab(0);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D2.KeyCode) && _tabs.Count >= 2)
+            {
+                SwitchToTab(1);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D3.KeyCode) && _tabs.Count >= 3)
+            {
+                SwitchToTab(2);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D4.KeyCode) && _tabs.Count >= 4)
+            {
+                SwitchToTab(3);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D5.KeyCode) && _tabs.Count >= 5)
+            {
+                SwitchToTab(4);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D6.KeyCode) && _tabs.Count >= 6)
+            {
+                SwitchToTab(5);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D7.KeyCode) && _tabs.Count >= 7)
+            {
+                SwitchToTab(6);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D8.KeyCode) && _tabs.Count >= 8)
+            {
+                SwitchToTab(7);
+                key.Handled = true;
+            }
+            else if (key == (KeyCode.AltMask | Key.D9.KeyCode) && _tabs.Count >= 9)
+            {
+                SwitchToTab(8);
+                key.Handled = true;
+            }
+        };
+
+        // We want to prevent the user navigating inside each frame from mistakenly change the focus unintentionally
+        // to different frame.
+        _rightBottomFrame.KeyDown += HandleCursors;
+        _rightTopFrame.KeyDown += HandleCursors;
+        _leftFrame.KeyDown += HandleCursors;
+    }
+
+    private void HandleCursors(object? sender, Key key)
+    {
+        if (key == Key.CursorRight
+            || key == Key.CursorLeft
+            || key == Key.CursorUp
+            || key == Key.CursorDown)
+        {
+            key.Handled = true;
+        }
+    }
+
+    // ==================== Tab Management ====================
+
+    private void AddNewTab()
+    {
+        _tabCounter++;
+        var tab = new QueryTab
+        {
+            Title = $"Query {_tabCounter}",
+            QueryText = string.Empty
+        };
+        _tabs.Add(tab);
+    }
+
+    private void SaveCurrentTabState()
+    {
+        if (_tabs.Count == 0 || _activeTabIndex < 0 || _activeTabIndex >= _tabs.Count)
+            return;
+
+        var currentTab = _tabs[_activeTabIndex];
+        var (text, cursor) = _queryEditorPane.GetEditorState();
+        currentTab.QueryText = text;
+        currentTab.CursorPosition = cursor;
+
+        var (result, queryText, connection) = _resultsPane.GetResultState();
+        currentTab.LastResult = result;
+        currentTab.QueryTextForResult = queryText;
+        currentTab.ConnectionForResult = connection;
+    }
+
+    private void LoadTabState(int tabIndex)
+    {
+        if (tabIndex < 0 || tabIndex >= _tabs.Count)
+            return;
+
+        var tab = _tabs[tabIndex];
+        _queryEditorPane.SetEditorState(tab.QueryText, tab.CursorPosition);
+        _resultsPane.RestoreResultState(tab.LastResult, tab.QueryTextForResult, tab.ConnectionForResult);
+    }
+
+    private void SwitchToTab(int tabIndex)
+    {
+        if (tabIndex < 0 || tabIndex >= _tabs.Count || tabIndex == _activeTabIndex)
+            return;
+
+        SaveCurrentTabState();
+        _activeTabIndex = tabIndex;
+        LoadTabState(tabIndex);
+        RenderTabBar();
+        UpdateQueryEditorTitle();
+    }
+
+    private void SwitchToNextTab()
+    {
+        if (_tabs.Count <= 1) return;
+        var nextIndex = (_activeTabIndex + 1) % _tabs.Count;
+        SwitchToTab(nextIndex);
+    }
+
+    private void SwitchToPreviousTab()
+    {
+        if (_tabs.Count <= 1) return;
+        var prevIndex = (_activeTabIndex - 1 + _tabs.Count) % _tabs.Count;
+        SwitchToTab(prevIndex);
+    }
+
+    private void CloseCurrentTab()
+    {
+        if (_tabs.Count <= 1)
+        {
+            // Don't close the last tab — just clear it
+            _tabs[0].QueryText = string.Empty;
+            _tabs[0].CursorPosition = System.Drawing.Point.Empty;
+            _tabs[0].LastResult = null;
+            _tabs[0].QueryTextForResult = null;
+            _tabs[0].ConnectionForResult = null;
+            _queryEditorPane.SetEditorState(string.Empty, System.Drawing.Point.Empty);
+            _resultsPane.Clear();
+            RenderTabBar();
+            return;
         }
 
-        private void OnQueryEditorMaximizeToggleRequested(object? sender, EventArgs e)
+        SaveCurrentTabState();
+        _tabs.RemoveAt(_activeTabIndex);
+
+        // Adjust active index
+        if (_activeTabIndex >= _tabs.Count)
+            _activeTabIndex = _tabs.Count - 1;
+
+        LoadTabState(_activeTabIndex);
+        RenderTabBar();
+        UpdateQueryEditorTitle();
+    }
+
+    private void RenderTabBar()
+    {
+        // Remove old tab buttons
+        foreach (var btn in _tabButtons)
         {
-            ToggleQueryEditorMaximize();
+            _tabBar.Remove(btn);
+        }
+        _tabButtons.Clear();
+
+        int xPos = 0;
+        for (int i = 0; i < _tabs.Count; i++)
+        {
+            var tab = _tabs[i];
+            var isActive = (i == _activeTabIndex);
+            var tabIndex = i; // capture for closure
+
+            var displayText = isActive ? $" ● {tab.Title} " : $"   {tab.Title} ";
+
+            var tabLabel = new Label()
+            {
+                Text = displayText,
+                X = xPos,
+                Y = 0,
+                Width = Dim.Auto(DimAutoStyle.Text),
+                Height = 1,
+                SchemeName = isActive ? Constants.ShortcutKeySchemeName : Constants.ShortcutDescriptionSchemeName,
+                CanFocus = false,
+            };
+
+            _tabButtons.Add(tabLabel);
+            _tabBar.Add(tabLabel);
+            xPos += displayText.Length;
         }
 
-        private void OnResultsPaneMaximizeToggleRequested(object? sender, EventArgs e)
+        // Add the [+] button
+        var addButton = new Label()
         {
-            ToggleResultsPaneMaximize();
-        }
+            Text = " [+] ",
+            X = xPos,
+            Y = 0,
+            Width = Dim.Auto(DimAutoStyle.Text),
+            Height = 1,
+            SchemeName = Constants.ShortcutKeySchemeName,
+            CanFocus = false,
+        };
 
-        private void ToggleMaximizeBasedOnFocus()
-        {
-            // Determine which pane has focus and toggle accordingly
-            if (_resultsPane.HasFocus)
-            {
-                ToggleResultsPaneMaximize();
-            }
-            else
-            {
-                // Default to query editor if focus is unclear
-                ToggleQueryEditorMaximize();
-            }
-        }
+        _tabButtons.Add(addButton);
+        _tabBar.Add(addButton);
 
-        private void ToggleQueryEditorMaximize()
-        {
-            if (_isQueryEditorMaximized)
-            {
-                RestoreNormalLayout();
-            }
-            else
-            {
-                MaximizeQueryEditor();
-            }
-        }
+        _tabBar.SetNeedsLayout();
+    }
 
-        private void ToggleResultsPaneMaximize()
+    private void UpdateQueryEditorTitle()
+    {
+        if (_activeTabIndex >= 0 && _activeTabIndex < _tabs.Count)
         {
-            if (_isResultsPaneMaximized)
-            {
-                RestoreNormalLayout();
-            }
-            else
-            {
-                MaximizeResultsPane();
-            }
+            var tab = _tabs[_activeTabIndex];
+            _rightTopFrame.Title = $"Query Editor - {tab.Title}";
         }
-
-        private void MaximizeQueryEditor()
+        else
         {
-            // First restore any existing maximized state
-            if (_isResultsPaneMaximized)
-            {
-                _isResultsPaneMaximized = false;
-            }
-            
-            _isQueryEditorMaximized = true;
-            
-            // Hide connection and results frames
-            _leftFrame.Visible = false;
-            _rightBottomFrame.Visible = false;
-            
-            // Expand query editor frame to fill entire window
-            _rightTopFrame.X = 0;
-            _rightTopFrame.Width = Dim.Fill();
-            _rightTopFrame.Height = Dim.Fill();
-            _rightTopFrame.Title = "Query Editor (Maximized - F12 to restore)";
-            
-            // Ensure query editor gets focus
-            _queryEditorPane.FocusEditor();
-            
-            // Trigger layout refresh
-            SetNeedsLayout();
-        }
-
-        private void MaximizeResultsPane()
-        {
-            // First restore any existing maximized state
-            if (_isQueryEditorMaximized)
-            {
-                _isQueryEditorMaximized = false;
-            }
-            
-            _isResultsPaneMaximized = true;
-            
-            // Hide connection and query editor frames
-            _leftFrame.Visible = false;
-            _rightTopFrame.Visible = false;
-            
-            // Expand results frame to fill entire window
-            _rightBottomFrame.X = 0;
-            _rightBottomFrame.Y = 0;
-            _rightBottomFrame.Width = Dim.Fill();
-            _rightBottomFrame.Height = Dim.Fill();
-            _rightBottomFrame.Title = "Results (Maximized - F12 to restore)";
-            
-            // Ensure results pane gets focus
-            _resultsPane.SetFocus();
-            
-            // Trigger layout refresh
-            SetNeedsLayout();
-        }
-
-        private void RestoreNormalLayout()
-        {
-            _isQueryEditorMaximized = false;
-            _isResultsPaneMaximized = false;
-            
-            // Show all frames
-            _leftFrame.Visible = true;
-            _rightTopFrame.Visible = true;
-            _rightBottomFrame.Visible = true;
-            
-            // Restore original dimensions for query editor frame
-            _rightTopFrame.X = 31;
-            _rightTopFrame.Width = Dim.Fill();
-            _rightTopFrame.Height = _originalRightFrameHeight;
             _rightTopFrame.Title = "Query Editor";
-            
-            // Restore original dimensions for results frame
-            _rightBottomFrame.X = 31;
-            _rightBottomFrame.Y = _originalBottomFrameY;
-            _rightBottomFrame.Width = Dim.Fill();
-            _rightBottomFrame.Height = _originalBottomFrameHeight;
-            _rightBottomFrame.Title = "Results";
-            
-            // Trigger layout refresh
-            SetNeedsLayout();
         }
+    }
 
-        private async Task ExecuteQueryAsync(string query)
+    // ==================== Connection & Query Events ====================
+
+    private void OnConnectionSelected(object? sender, KustoConnection connection)
+    {
+        _queryEditorPane.SetConnection(connection);
+        _queryEditorPane.FocusEditor();
+    }
+
+    private async void OnQueryExecuteRequested(object? sender, string query)
+    {
+        await ExecuteQueryAsync(query);
+    }
+
+    private void OnQueryCancelRequested(object? sender, EventArgs e)
+    {
+        // Cancel the current query if one is running
+        if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
         {
-            // If there's an existing query, cancel it but don't wait
-            if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
+            // First cancel the token to stop any local processing
+            _queryCancellationTokenSource.Cancel();
+
+            // Immediately set executing to false to allow new queries
+            Application.Invoke(() => _queryEditorPane.SetExecuting(false));
+
+            // Then try to cancel on the server side using the Kusto client (fire-and-forget)
+            if (_currentKustoClient != null)
             {
-                var oldCancellationSource = _queryCancellationTokenSource;
-                var oldClient = _currentKustoClient;
-                
-                // Cancel the old query
-                oldCancellationSource.Cancel();
-                
-                // Clean up the old resources in the background
+                var clientToCancel = _currentKustoClient;
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        if (oldClient != null)
-                        {
-                            await oldClient.CancelCurrentQueryAsync();
-                            oldClient.Dispose();
-                        }
+                        await clientToCancel.CancelCurrentQueryAsync();
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Warning: Failed to clean up old query: {ex.Message}");
-                    }
-                    finally
-                    {
-                        oldCancellationSource?.Dispose();
+                        // Log but don't throw - cancellation errors shouldn't crash the UI
+                        Console.WriteLine($"Warning: Server-side cancellation failed: {ex.Message}");
                     }
                 });
             }
-            
-            // Create new cancellation token source for this query
-            _queryCancellationTokenSource = new CancellationTokenSource();
-            var cancellationToken = _queryCancellationTokenSource.Token;
-            
-            try
-            {
-                var connection = _connectionPane.GetSelectedConnection();
-                if (connection == null)
-                {
-                    Application.Invoke(() => _queryEditorPane.SetExecuting(false));
-                    return;
-                }
+        }
+    }
 
-                // Create progress handler
-                var progress = new Progress<string>(message =>
+    private void OnQueryEditorMaximizeToggleRequested(object? sender, EventArgs e)
+    {
+        ToggleQueryEditorMaximize();
+    }
+
+    private void OnResultsPaneMaximizeToggleRequested(object? sender, EventArgs e)
+    {
+        ToggleResultsPaneMaximize();
+    }
+
+    private void ToggleMaximizeBasedOnFocus()
+    {
+        // Determine which pane has focus and toggle accordingly
+        if (_resultsPane.HasFocus)
+        {
+            ToggleResultsPaneMaximize();
+        }
+        else
+        {
+            // Default to query editor if focus is unclear
+            ToggleQueryEditorMaximize();
+        }
+    }
+
+    private void ToggleQueryEditorMaximize()
+    {
+        if (_isQueryEditorMaximized)
+        {
+            RestoreNormalLayout();
+        }
+        else
+        {
+            MaximizeQueryEditor();
+        }
+    }
+
+    private void ToggleResultsPaneMaximize()
+    {
+        if (_isResultsPaneMaximized)
+        {
+            RestoreNormalLayout();
+        }
+        else
+        {
+            MaximizeResultsPane();
+        }
+    }
+
+    private void MaximizeQueryEditor()
+    {
+        // First restore any existing maximized state
+        if (_isResultsPaneMaximized)
+        {
+            _isResultsPaneMaximized = false;
+        }
+
+        _isQueryEditorMaximized = true;
+
+        // Hide connection and results frames
+        _leftFrame.Visible = false;
+        _rightBottomFrame.Visible = false;
+
+        // Expand query editor frame to fill entire window
+        _rightTopFrame.X = 0;
+        _rightTopFrame.Width = Dim.Fill();
+        _rightTopFrame.Height = Dim.Fill();
+        _rightTopFrame.Title = "Query Editor (Maximized - F12 to restore)";
+
+        // Ensure query editor gets focus
+        _queryEditorPane.FocusEditor();
+
+        // Trigger layout refresh
+        SetNeedsLayout();
+    }
+
+    private void MaximizeResultsPane()
+    {
+        // First restore any existing maximized state
+        if (_isQueryEditorMaximized)
+        {
+            _isQueryEditorMaximized = false;
+        }
+
+        _isResultsPaneMaximized = true;
+
+        // Hide connection and query editor frames
+        _leftFrame.Visible = false;
+        _rightTopFrame.Visible = false;
+
+        // Expand results frame to fill entire window
+        _rightBottomFrame.X = 0;
+        _rightBottomFrame.Y = 0;
+        _rightBottomFrame.Width = Dim.Fill();
+        _rightBottomFrame.Height = Dim.Fill();
+        _rightBottomFrame.Title = "Results (Maximized - F12 to restore)";
+
+        // Ensure results pane gets focus
+        _resultsPane.SetFocus();
+
+        // Trigger layout refresh
+        SetNeedsLayout();
+    }
+
+    private void RestoreNormalLayout()
+    {
+        _isQueryEditorMaximized = false;
+        _isResultsPaneMaximized = false;
+
+        // Show all frames
+        _leftFrame.Visible = true;
+        _rightTopFrame.Visible = true;
+        _rightBottomFrame.Visible = true;
+
+        // Restore original dimensions for query editor frame
+        _rightTopFrame.X = 31;
+        _rightTopFrame.Width = Dim.Fill();
+        _rightTopFrame.Height = _originalRightFrameHeight;
+        UpdateQueryEditorTitle();
+
+        // Restore original dimensions for results frame
+        _rightBottomFrame.X = 31;
+        _rightBottomFrame.Y = _originalBottomFrameY;
+        _rightBottomFrame.Width = Dim.Fill();
+        _rightBottomFrame.Height = _originalBottomFrameHeight;
+        _rightBottomFrame.Title = "Results";
+
+        // Trigger layout refresh
+        SetNeedsLayout();
+    }
+
+    private async Task ExecuteQueryAsync(string query)
+    {
+        // If there's an existing query, cancel it but don't wait
+        if (_queryCancellationTokenSource != null && !_queryCancellationTokenSource.Token.IsCancellationRequested)
+        {
+            var oldCancellationSource = _queryCancellationTokenSource;
+            var oldClient = _currentKustoClient;
+
+            // Cancel the old query
+            oldCancellationSource.Cancel();
+
+            // Clean up the old resources in the background
+            _ = Task.Run(async () =>
+            {
+                try
                 {
-                    Application.Invoke(() =>
+                    if (oldClient != null)
                     {
-                        _queryEditorPane.UpdateProgressMessage(message);
-                    });
-                });
-                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
-                _currentKustoClient = new Core.Services.KustoClient(connection, authProvider);
-                var result = await _currentKustoClient.ExecuteQueryAsync(query, cancellationToken, progress);
-                _currentKustoClient.Dispose();
-                _currentKustoClient = null;
-                
+                        await oldClient.CancelCurrentQueryAsync();
+                        oldClient.Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Warning: Failed to clean up old query: {ex.Message}");
+                }
+                finally
+                {
+                    oldCancellationSource?.Dispose();
+                }
+            });
+        }
+
+        // Create new cancellation token source for this query
+        _queryCancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _queryCancellationTokenSource.Token;
+
+        // Remember which tab initiated the query
+        var executingTabIndex = _activeTabIndex;
+
+        try
+        {
+            var connection = _connectionPane.GetSelectedConnection();
+            if (connection == null)
+            {
+                Application.Invoke(() => _queryEditorPane.SetExecuting(false));
+                return;
+            }
+
+            // Create progress handler
+            var progress = new Progress<string>(message =>
+            {
                 Application.Invoke(() =>
                 {
-                    _queryEditorPane.SetExecuting(false);
+                    _queryEditorPane.UpdateProgressMessage(message);
+                });
+            });
+            var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
+            _currentKustoClient = new Core.Services.KustoClient(connection, authProvider);
+            var result = await _currentKustoClient.ExecuteQueryAsync(query, cancellationToken, progress);
+            _currentKustoClient.Dispose();
+            _currentKustoClient = null;
+
+            Application.Invoke(() =>
+            {
+                _queryEditorPane.SetExecuting(false);
+
+                // Store result in the tab that initiated the query
+                if (executingTabIndex >= 0 && executingTabIndex < _tabs.Count)
+                {
+                    var tab = _tabs[executingTabIndex];
+                    tab.LastResult = result;
+                    tab.QueryTextForResult = query;
+                    tab.ConnectionForResult = connection;
+                }
+
+                // Only update the results pane if still on the same tab
+                if (executingTabIndex == _activeTabIndex)
+                {
                     _resultsPane.SetQueryText(query);
                     _resultsPane.SetConnection(connection);
                     _resultsPane.DisplayResult(result);
-                });
-            }
-            catch (OperationCanceledException)
-            {
-                Application.Invoke(() =>
-                {
-                    _queryEditorPane.SetExecuting(false);
-                });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: Query execution failed: {ex.Message}");
-                Application.Invoke(() =>
-                {
-                    _queryEditorPane.SetExecuting(false);
-                });
-            }
-            finally
-            {
-                // Clean up the cancellation token source and client
-                if (_queryCancellationTokenSource != null)
-                {
-                    _queryCancellationTokenSource.Dispose();
-                    _queryCancellationTokenSource = null;
                 }
-                
-                if (_currentKustoClient != null)
-                {
-                    _currentKustoClient.Dispose();
-                    _currentKustoClient = null;
-                }
-            }
+            });
         }
-
-
-        public static MainWindow Create(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
+        catch (OperationCanceledException)
         {
-            return new MainWindow(connectionManager, userSettingsManager);
+            Application.Invoke(() =>
+            {
+                _queryEditorPane.SetExecuting(false);
+            });
         }
-        
-        private void LoadLastQueryAsync()
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: Query execution failed: {ex.Message}");
+            Application.Invoke(() =>
+            {
+                _queryEditorPane.SetExecuting(false);
+            });
+        }
+        finally
+        {
+            // Clean up the cancellation token source and client
+            if (_queryCancellationTokenSource != null)
+            {
+                _queryCancellationTokenSource.Dispose();
+                _queryCancellationTokenSource = null;
+            }
+
+            if (_currentKustoClient != null)
+            {
+                _currentKustoClient.Dispose();
+                _currentKustoClient = null;
+            }
+        }
+    }
+
+    public static MainWindow Create(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
+    {
+        return new MainWindow(connectionManager, userSettingsManager);
+    }
+
+    private void LoadLastQueryAsync()
+    {
+        try
+        {
+            // Load the last query when the window is set up
+            _queryEditorPane.LoadLastQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            // Silently fail - don't crash the app if we can't load the last query
+            Console.WriteLine($"Warning: Failed to load last query: {ex.Message}");
+        }
+    }
+
+    private void SetupClusterSchemaEvents()
+    {
+        // Subscribe to connection events to automatically fetch cluster schemas
+        _connectionManager.ConnectionAddOrUpdated += OnConnectionAddedOrUpdated;
+
+        // Load cluster schemas for existing connections on startup
+        _ = Task.Run(async () =>
         {
             try
             {
-                // Load the last query when the window is set up
-                _queryEditorPane.LoadLastQueryAsync();
+                var connections = await _connectionManager.GetConnectionsAsync();
+                await _clusterSchemaService.FetchAndUpdateMultipleClusterSchemasAsync(connections);
             }
             catch (Exception ex)
             {
-                // Silently fail - don't crash the app if we can't load the last query
-                Console.WriteLine($"Warning: Failed to load last query: {ex.Message}");
+                Console.WriteLine($"Warning: Failed to load cluster schemas on startup: {ex.Message}");
             }
-        }
-        
-        private void SetupClusterSchemaEvents()
-        {
-            // Subscribe to connection events to automatically fetch cluster schemas
-            _connectionManager.ConnectionAddOrUpdated += OnConnectionAddedOrUpdated;
-            
-            // Load cluster schemas for existing connections on startup
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var connections = await _connectionManager.GetConnectionsAsync();
-                    await _clusterSchemaService.FetchAndUpdateMultipleClusterSchemasAsync(connections);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Warning: Failed to load cluster schemas on startup: {ex.Message}");
-                }
-            });
-        }
-
-        private void OnConnectionAddedOrUpdated(object? sender, KustoConnection connection)
-        {
-            // Fetch cluster schema for the updated connection
-            _ = Task.Run(async () =>
-            {
-                await _clusterSchemaService.FetchAndUpdateClusterSchemaAsync(connection, forceRefresh: true);
-            });
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Unsubscribe from events
-                _connectionManager.ConnectionAddOrUpdated -= OnConnectionAddedOrUpdated;
-                
-                // Save current query before disposing
-                try
-                {
-                    _queryEditorPane?.SaveCurrentQueryAsync();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Warning: Failed to save query before exit: {ex.Message}");
-                }
-            }
-            base.Dispose(disposing);
-        }
+        });
     }
+
+    private void OnConnectionAddedOrUpdated(object? sender, KustoConnection connection)
+    {
+        // Fetch cluster schema for the updated connection
+        _ = Task.Run(async () =>
+        {
+            await _clusterSchemaService.FetchAndUpdateClusterSchemaAsync(connection, forceRefresh: true);
+        });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // Unsubscribe from events
+            _connectionManager.ConnectionAddOrUpdated -= OnConnectionAddedOrUpdated;
+
+            // Save current query before disposing
+            try
+            {
+                _queryEditorPane?.SaveCurrentQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Failed to save query before exit: {ex.Message}");
+            }
+        }
+        base.Dispose(disposing);
+    }
+}
