@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using KustoTerminal.Core.Models;
+using KustoTerminal.Core.Services;
+using KustoTerminal.UI.Charts;
 using KustoTerminal.UI.Common;
 using KustoTerminal.UI.Dialogs;
 using KustoTerminal.UI.Services;
@@ -20,6 +22,7 @@ namespace KustoTerminal.UI.Panes;
 public class ResultsPane : BasePane
 {
     private TableView _tableView = null!;
+    private TimeChartView _chartView = null!;
     private Label _statusLabel = null!;
     private TextView _errorLabel = null!;
     private Label _shortcutsLabel = null!;
@@ -30,6 +33,8 @@ public class ResultsPane : BasePane
     private DataTable? _originalData;
     private HashSet<string> _selectedColumns = new();
     private bool _searchVisible = false;
+    private bool _chartVisible = false;
+    private TimeChartData? _currentChartData;
     private string? _currentQueryText;
     private KustoConnection? _currentConnection;
     private HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
@@ -101,6 +106,15 @@ public class ResultsPane : BasePane
             Visible = false
         };
 
+        _chartView = new TimeChartView
+        {
+            X = 0,
+            Y = 1,
+            Width = Dim.Fill(),
+            Height = Dim.Fill()! - 1,
+            Visible = false
+        };
+
         _searchField.TextChanged += OnSearchTextChanged;
 
         _shortcutsLabel = new Label
@@ -139,6 +153,9 @@ public class ResultsPane : BasePane
         last = last.AppendLabel("Ctrl+E: ", shortcutKeyScheme, labels);
         last = last.AppendLabel("Export ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
+        last = last.AppendLabel("Ctrl+G: ", shortcutKeyScheme, labels);
+        last = last.AppendLabel("Chart ", normalScheme, labels);
+        last = last.AppendLabel("| ", normalScheme, labels);
         last = last.AppendLabel("F12: ", shortcutKeyScheme, labels);
         last = last.AppendLabel("Maximize/Restore ", normalScheme, labels);
         return labels;
@@ -171,6 +188,11 @@ public class ResultsPane : BasePane
             else if (key.KeyCode == (KeyCode.CtrlMask | Key.S.KeyCode))
             {
                 OnShareClicked();
+                key.Handled = true;
+            }
+            else if (key.KeyCode == (KeyCode.CtrlMask | Key.G.KeyCode))
+            {
+                ToggleChartView();
                 key.Handled = true;
             }
         };
@@ -230,7 +252,7 @@ public class ResultsPane : BasePane
 
     private void SetupLayout()
     {
-        Add(_statusLabel, _errorLabel, _tableView, _searchLabel, _searchField, _shortcutsLabel);
+        Add(_statusLabel, _errorLabel, _tableView, _chartView, _searchLabel, _searchField, _shortcutsLabel);
         Add(_shortcutLabels);
     }
 
@@ -264,6 +286,16 @@ public class ResultsPane : BasePane
         }
 
         DisplayData(result);
+
+        // Auto-detect timechart queries and show chart view
+        if (TimeChartDetector.IsTimechartQuery(_currentQueryText))
+        {
+            _currentChartData = TimeChartDetector.ExtractChartData(result.Data);
+            if (_currentChartData != null && _currentChartData.IsValid)
+            {
+                ShowChartView();
+            }
+        }
     }
 
     private void DisplayData(QueryResult result)
@@ -348,15 +380,80 @@ public class ResultsPane : BasePane
     {
         _currentResult = null;
         _originalData = null;
+        _currentChartData = null;
+        _chartVisible = false;
         _selectedColumns.Clear();
         _tableView.Table = new DataTableSource(new DataTable());
 
         _errorLabel.Visible = false;
         _tableView.Visible = true;
+        _chartView.Visible = false;
         _statusLabel.Visible = true;
         _statusLabel.Text = "No results";
 
         HideSearch();
+    }
+
+    private void ToggleChartView()
+    {
+        if (_currentResult?.Data == null || _originalData == null)
+            return;
+
+        if (_chartVisible)
+        {
+            // Switch back to table view
+            HideChartView();
+        }
+        else
+        {
+            // Try to extract chart data if not already done
+            if (_currentChartData == null)
+            {
+                _currentChartData = TimeChartDetector.ExtractChartData(_originalData);
+            }
+
+            if (_currentChartData != null && _currentChartData.IsValid)
+            {
+                ShowChartView();
+            }
+            else
+            {
+                // Data is not suitable for charting - show a message
+                MessageBox.Query("Chart", "The current result data is not suitable for timechart rendering.\nExpected: a datetime column and at least one numeric column.", "OK");
+            }
+        }
+    }
+
+    private void ShowChartView()
+    {
+        _chartVisible = true;
+        _tableView.Visible = false;
+        _chartView.Visible = true;
+        _chartView.SetData(_currentChartData);
+
+        // Update status to show chart mode
+        if (_currentResult != null)
+        {
+            var seriesCount = _currentChartData?.Series.Count ?? 0;
+            var pointCount = _currentChartData?.TimePoints.Count ?? 0;
+            var statusText = $"📊 Chart View | Series: {seriesCount} | Points: {pointCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms | Ctrl+G: Switch to Table";
+            if (!string.IsNullOrEmpty(_currentResult.ClientRequestId))
+            {
+                statusText += $" | ClientRequestId: {_currentResult.ClientRequestId}";
+            }
+            _statusLabel.Text = statusText;
+        }
+
+        _chartView.SetFocus();
+    }
+
+    private void HideChartView()
+    {
+        _chartVisible = false;
+        _chartView.Visible = false;
+        _tableView.Visible = true;
+        UpdateStatusForOriginalData();
+        _tableView.SetFocus();
     }
 
     private void OnExportClicked()
