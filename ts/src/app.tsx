@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from "react";
-import { Box, useInput, useApp } from "ink";
+import React, { useState, useCallback, useEffect } from "react";
+import { Box, useInput, useApp, useStdout } from "ink";
 import { ConnectionPane } from "./components/connection-pane.js";
 import { QueryEditor } from "./components/query-editor.js";
 import { ResultsPane } from "./components/results-pane.js";
@@ -11,6 +11,21 @@ import type { KustoConnection } from "./core/models.js";
 
 export function App() {
   const { exit } = useApp();
+  const { stdout } = useStdout();
+  const [termSize, setTermSize] = useState({
+    columns: stdout?.columns ?? 80,
+    rows: stdout?.rows ?? 24,
+  });
+
+  useEffect(() => {
+    if (!stdout) return;
+    const onResize = () => {
+      setTermSize({ columns: stdout.columns, rows: stdout.rows });
+    };
+    stdout.on("resize", onResize);
+    return () => { stdout.off("resize", onResize); };
+  }, [stdout]);
+
   const { activePane, setActivePane, moveLeft, moveRight, moveUp, moveDown } =
     useFocusManager("connections");
   const {
@@ -105,7 +120,7 @@ export function App() {
   }, []);
 
   return (
-    <Box flexDirection="column" width="100%" height="100%">
+    <Box flexDirection="column" width={termSize.columns} height={termSize.rows}>
       <Box flexGrow={1} width="100%">
         {/* Left pane: Connections (30%) */}
         <Box width="30%" height="100%">
