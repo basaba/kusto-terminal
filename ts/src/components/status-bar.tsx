@@ -42,7 +42,7 @@ export function StatusBar({
       </Box>
 
       <Text dimColor>
-        Alt+←→↑↓:navigate Shift+↵:run Ctrl+Q:quit
+        Alt+←→↑↓:navigate F5:run Ctrl+Q:quit
       </Text>
     </Box>
   );

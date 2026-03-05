@@ -1,5 +1,8 @@
-import React, { useState, useCallback } from "react";
-import { Box, Text, useInput } from "ink";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { Box, Text, useInput, useStdin } from "ink";
+
+// F5 escape sequences: \x1b[15~ (standard) or \x1b[[E (linux console)
+const F5_SEQUENCES = ["\x1b[15~", "\x1b[[E"];
 
 interface QueryEditorProps {
   isActive: boolean;
@@ -18,20 +21,31 @@ export function QueryEditor({
   const [cursorRow, setCursorRow] = useState(0);
   const [cursorCol, setCursorCol] = useState(0);
 
-  const getFullText = useCallback(() => lines.join("\n"), [lines]);
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+
+  const getFullText = useCallback(() => linesRef.current.join("\n"), []);
+
+  // F5: execute query (raw stdin listener since Ink doesn't expose F-keys)
+  const { stdin } = useStdin();
+  useEffect(() => {
+    if (!stdin) return;
+    const handleData = (data: Buffer) => {
+      const seq = data.toString();
+      if (F5_SEQUENCES.includes(seq) && isActive) {
+        const text = linesRef.current.join("\n").trim();
+        if (text && !isQueryRunning) {
+          onExecute(text);
+        }
+      }
+    };
+    stdin.on("data", handleData);
+    return () => { stdin.off("data", handleData); };
+  }, [stdin, isActive, isQueryRunning, onExecute]);
 
   useInput(
     (input, key) => {
       if (!isActive) return;
-
-      // Shift+Enter: execute query
-      if (key.return && key.shift) {
-        const text = getFullText().trim();
-        if (text && !isQueryRunning) {
-          onExecute(text);
-        }
-        return;
-      }
 
       // Ctrl+X: cancel query
       if (input === "x" && key.ctrl) {
@@ -167,7 +181,7 @@ export function QueryEditor({
 
       <Box marginTop={1}>
         <Text dimColor>
-          Shift+↵:execute Ctrl+X:cancel
+          F5:execute Ctrl+X:cancel
         </Text>
       </Box>
     </Box>
