@@ -59,7 +59,7 @@ function getVisibleColumns(
   const start = colScrollOffset;
   let end = start;
   for (let i = start; i < widths.length; i++) {
-    const colWidth = widths[i]! + (i > start ? 3 : 0); // 3 for " │ " separator
+    const colWidth = widths[i]! + (i > start ? 3 : 0);
     if (usedWidth + colWidth > maxWidth && i > start) break;
     usedWidth += colWidth;
     end = i + 1;
@@ -94,65 +94,66 @@ export function TableView({
   const visibleWidths = widths.slice(visColStart, visColEnd);
   const visibleRows = rows.slice(scrollOffset, scrollOffset + maxVisibleRows);
 
+  // Render each row as a single <Text> with nested <Text> children for styling.
+  // This avoids flexbox layout issues that cause column misalignment when
+  // cells are separate <Text> elements inside a <Box>.
+  const renderHeader = () => {
+    const segments: React.ReactNode[] = [];
+    visibleCols.forEach((col, i) => {
+      if (i > 0) segments.push(" │ ");
+      const absColIdx = visColStart + i;
+      const isSelectedCol = isActive && absColIdx === selectedCol;
+      const cellText = truncate(col.name, visibleWidths[i]!).padEnd(visibleWidths[i]!);
+      segments.push(
+        <Text key={col.name} bold color={isSelectedCol ? "yellow" : "cyan"}>
+          {cellText}
+        </Text>,
+      );
+    });
+    return <Text>{segments}</Text>;
+  };
+
+  const renderSeparator = () => {
+    const line = visibleWidths.map((w) => "─".repeat(w)).join("─┼─");
+    return <Text dimColor>{line}</Text>;
+  };
+
+  const renderRow = (row: Record<string, unknown>, absRowIdx: number) => {
+    const isSelectedRow = isActive && absRowIdx === selectedRow;
+    const segments: React.ReactNode[] = [];
+
+    visibleCols.forEach((col, i) => {
+      if (i > 0) {
+        segments.push(
+          <Text key={`sep-${i}`} dimColor={!isSelectedRow}> │ </Text>,
+        );
+      }
+      const absColIdx = visColStart + i;
+      const isSelectedCell = isSelectedRow && absColIdx === selectedCol;
+      const val = formatCellValue(row[col.name]);
+      const cellText = truncate(val, visibleWidths[i]!).padEnd(visibleWidths[i]!);
+
+      if (isSelectedCell) {
+        segments.push(
+          <Text key={col.name} inverse bold>{cellText}</Text>,
+        );
+      } else {
+        segments.push(
+          <Text key={col.name} color={isSelectedRow ? "white" : undefined} dimColor={!isSelectedRow}>
+            {cellText}
+          </Text>,
+        );
+      }
+    });
+
+    return <Text key={absRowIdx}>{segments}</Text>;
+  };
+
   return (
     <Box flexDirection="column">
-      {/* Column headers */}
-      <Box>
-        {visibleCols.map((col, i) => {
-          const absColIdx = visColStart + i;
-          const isSelectedCol = isActive && absColIdx === selectedCol;
-          const cellText = truncate(col.name, visibleWidths[i]!).padEnd(visibleWidths[i]!);
-          const sep = i < visibleCols.length - 1 ? " │ " : "";
-          return (
-            <Text key={col.name} bold color={isSelectedCol ? "yellow" : "cyan"}>
-              {cellText}{sep}
-            </Text>
-          );
-        })}
-      </Box>
-
-      {/* Separator */}
-      <Text dimColor>
-        {visibleWidths.map((w) => "─".repeat(w)).join("─┼─")}
-      </Text>
-
-      {/* Data rows */}
-      {visibleRows.map((row, rowIdx) => {
-        const absRowIdx = scrollOffset + rowIdx;
-        const isSelectedRow = isActive && absRowIdx === selectedRow;
-
-        return (
-          <Box key={absRowIdx}>
-            {visibleCols.map((col, i) => {
-              const absColIdx = visColStart + i;
-              const isSelectedCell =
-                isSelectedRow && absColIdx === selectedCol;
-              const val = formatCellValue(row[col.name]);
-              const cellText = truncate(val, visibleWidths[i]!).padEnd(visibleWidths[i]!);
-              const sep = i < visibleCols.length - 1 ? " │ " : "";
-
-              if (isSelectedCell) {
-                return (
-                  <React.Fragment key={col.name}>
-                    <Text inverse bold>{cellText}</Text>
-                    <Text>{sep}</Text>
-                  </React.Fragment>
-                );
-              }
-
-              return (
-                <Text
-                  key={col.name}
-                  color={isSelectedRow ? "white" : undefined}
-                  dimColor={!isSelectedRow}
-                >
-                  {cellText}{sep}
-                </Text>
-              );
-            })}
-          </Box>
-        );
-      })}
+      {renderHeader()}
+      {renderSeparator()}
+      {visibleRows.map((row, rowIdx) => renderRow(row, scrollOffset + rowIdx))}
     </Box>
   );
 }
