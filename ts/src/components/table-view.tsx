@@ -6,6 +6,10 @@ interface TableViewProps {
   result: QueryResult;
   scrollOffset: number;
   maxVisibleRows: number;
+  selectedRow: number;
+  selectedCol: number;
+  colScrollOffset: number;
+  isActive: boolean;
 }
 
 function truncate(str: string, maxLen: number): string {
@@ -13,7 +17,7 @@ function truncate(str: string, maxLen: number): string {
   return str.slice(0, maxLen - 1) + "…";
 }
 
-function formatCellValue(value: unknown): string {
+export function formatCellValue(value: unknown): string {
   if (value === null || value === undefined) return "null";
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "object") return JSON.stringify(value);
@@ -46,7 +50,32 @@ function computeColumnWidths(
   return widths;
 }
 
-export function TableView({ result, scrollOffset, maxVisibleRows }: TableViewProps) {
+function getVisibleColumns(
+  widths: number[],
+  colScrollOffset: number,
+  maxWidth: number,
+): { start: number; end: number } {
+  let usedWidth = 0;
+  const start = colScrollOffset;
+  let end = start;
+  for (let i = start; i < widths.length; i++) {
+    const colWidth = widths[i]! + (i > start ? 3 : 0); // 3 for " │ " separator
+    if (usedWidth + colWidth > maxWidth && i > start) break;
+    usedWidth += colWidth;
+    end = i + 1;
+  }
+  return { start, end };
+}
+
+export function TableView({
+  result,
+  scrollOffset,
+  maxVisibleRows,
+  selectedRow,
+  selectedCol,
+  colScrollOffset,
+  isActive,
+}: TableViewProps) {
   const { columns, rows } = result;
 
   if (columns.length === 0) {
@@ -55,27 +84,73 @@ export function TableView({ result, scrollOffset, maxVisibleRows }: TableViewPro
 
   const maxWidth = process.stdout.columns ? process.stdout.columns - 10 : 120;
   const widths = computeColumnWidths(columns, rows, maxWidth);
-
-  const headerCells = columns.map((col, i) =>
-    truncate(col.name, widths[i]!).padEnd(widths[i]!),
+  const { start: visColStart, end: visColEnd } = getVisibleColumns(
+    widths,
+    colScrollOffset,
+    maxWidth,
   );
-  const separator = widths.map((w) => "─".repeat(w));
 
+  const visibleCols = columns.slice(visColStart, visColEnd);
+  const visibleWidths = widths.slice(visColStart, visColEnd);
   const visibleRows = rows.slice(scrollOffset, scrollOffset + maxVisibleRows);
 
   return (
     <Box flexDirection="column">
-      <Text bold color="cyan">
-        {headerCells.join(" │ ")}
+      {/* Column headers */}
+      <Box>
+        {visibleCols.map((col, i) => {
+          const absColIdx = visColStart + i;
+          const isSelectedCol = isActive && absColIdx === selectedCol;
+          const cellText = truncate(col.name, visibleWidths[i]!).padEnd(visibleWidths[i]!);
+          const sep = i < visibleCols.length - 1 ? " │ " : "";
+          return (
+            <Text key={col.name} bold color={isSelectedCol ? "yellow" : "cyan"}>
+              {cellText}{sep}
+            </Text>
+          );
+        })}
+      </Box>
+
+      {/* Separator */}
+      <Text dimColor>
+        {visibleWidths.map((w) => "─".repeat(w)).join("─┼─")}
       </Text>
-      <Text dimColor>{separator.join("─┼─")}</Text>
+
+      {/* Data rows */}
       {visibleRows.map((row, rowIdx) => {
-        const cells = columns.map((col, i) => {
-          const val = formatCellValue(row[col.name]);
-          return truncate(val, widths[i]!).padEnd(widths[i]!);
-        });
+        const absRowIdx = scrollOffset + rowIdx;
+        const isSelectedRow = isActive && absRowIdx === selectedRow;
+
         return (
-          <Text key={scrollOffset + rowIdx}>{cells.join(" │ ")}</Text>
+          <Box key={absRowIdx}>
+            {visibleCols.map((col, i) => {
+              const absColIdx = visColStart + i;
+              const isSelectedCell =
+                isSelectedRow && absColIdx === selectedCol;
+              const val = formatCellValue(row[col.name]);
+              const cellText = truncate(val, visibleWidths[i]!).padEnd(visibleWidths[i]!);
+              const sep = i < visibleCols.length - 1 ? " │ " : "";
+
+              if (isSelectedCell) {
+                return (
+                  <React.Fragment key={col.name}>
+                    <Text inverse bold>{cellText}</Text>
+                    <Text>{sep}</Text>
+                  </React.Fragment>
+                );
+              }
+
+              return (
+                <Text
+                  key={col.name}
+                  color={isSelectedRow ? "white" : undefined}
+                  dimColor={!isSelectedRow}
+                >
+                  {cellText}{sep}
+                </Text>
+              );
+            })}
+          </Box>
         );
       })}
     </Box>
