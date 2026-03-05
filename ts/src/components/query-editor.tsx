@@ -24,8 +24,8 @@ export function QueryEditor({
     (input, key) => {
       if (!isActive) return;
 
-      // Ctrl+Enter: execute query
-      if (key.return && key.ctrl) {
+      // Shift+Enter: execute query
+      if (key.return && key.shift) {
         const text = getFullText().trim();
         if (text && !isQueryRunning) {
           onExecute(text);
@@ -167,7 +167,7 @@ export function QueryEditor({
 
       <Box marginTop={1}>
         <Text dimColor>
-          Ctrl+↵:execute Ctrl+X:cancel
+          Shift+↵:execute Ctrl+X:cancel
         </Text>
       </Box>
     </Box>
