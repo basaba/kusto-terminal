@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\KustoTerminal.UI\KustoTerminal.UI.csproj" />
     <ProjectReference Include="..\KustoTerminal.Core\KustoTerminal.Core.csproj" />
+    <ProjectReference Include="..\KustoTerminal.Driver\KustoTerminal.Driver.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

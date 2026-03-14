@@ -1,0 +1,391 @@
+╔══════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                                  ║
+║        TERMINAL.GUI ICONSOLEDRIVER INTERFACE - COMPLETE CONTRACT ANALYSIS                       ║
+║                                                                                                  ║
+║                     For: kusto-terminal/kusto-terminal                                          ║
+║                   Version: Terminal.Gui 2.0.0-alpha.3721                                        ║
+║                                                                                                  ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+1. NUGET PACKAGE LOCATION
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+Primary:
+  ~/.nuget/packages/terminal.gui/2.0.0-alpha.3721/lib/net8.0/Terminal.Gui.dll
+  ~/.nuget/packages/terminal.gui/2.0.0-alpha.3721/lib/net8.0/Terminal.Gui.xml (documentation)
+
+Alternative versions in cache:
+  ~/.nuget/packages/terminal.gui/1.19.0/       (older, stable)
+  ~/.nuget/packages/terminal.gui/2.0.0-develop.4559/  (newer, develop branch)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+2. CURRENT DRIVER USAGE IN APPLICATION
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+File: src/KustoTerminal.CLI/Program.cs
+Line: 44
+
+Code:
+  Application.Init(driverName: "NetDriver");
+
+Explanation:
+  - Initializes the Terminal.Gui application
+  - Uses Terminal.Gui's built-in NetDriver (uses .NET Console API)
+  - No custom driver implementation currently
+  - Can be modified to use a custom IConsoleDriver instance
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+3. INTERFACE CONTRACT SUMMARY
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+NAMESPACE: Terminal.Gui.Drivers
+INTERFACE: IConsoleDriver
+TYPE: C# Interface (NOT abstract class)
+
+TOTAL MEMBERS: 45
+  ├─ Properties: 13 (ALL required)
+  ├─ Methods: 25 (ALL required)
+  ├─ Events: 5 (ALL required)
+  └─ Type Members: 2 (Type definitions)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+4. COMPLETE INTERFACE DEFINITION
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+PROPERTIES (13) - All must have public getters/setters as needed
+──────────────────────────────────────────────────────────────────────────
+
+  ✓ Clipboard : IClipboard                    [get]         Operating system clipboard
+  ✓ Screen : Rectangle                        [get]         Terminal screen location & size
+  ✓ Clip : Rectangle                          [get, set]    Rendering clip region
+  ✓ Col : int                                 [get]         Current cursor column
+  ✓ Cols : int                                [get]         Terminal width (columns)
+  ✓ Contents : Cell[,]                        [get, set]    Display buffer (rows × cols)
+  ✓ Left : int                                [get]         Leftmost column
+  ✓ Row : int                                 [get]         Current cursor row
+  ✓ Rows : int                                [get]         Terminal height (rows)
+  ✓ Top : int                                 [get]         Topmost row
+  ✓ SupportsTrueColor : bool                  [get]         Can display 24-bit colors
+  ✓ Force16Colors : bool                      [get, set]    Force 16-color mode
+  ✓ CurrentAttribute : Attribute              [get, set]    Text color/style for next output
+
+
+METHODS (25) - Grouped by functionality
+──────────────────────────────────────────────────────────────────────────
+
+LIFECYCLE (3):
+  ✓ void Init()                               Initialize driver
+  ✓ void End()                                Shutdown driver
+  ✓ void Suspend()                            Suspend/pause driver
+
+CURSOR MANAGEMENT (2):
+  ✓ void Move(int col, int row)               Set internal cursor position (no physical move)
+  ✓ void UpdateCursor()                       Move physical terminal cursor
+
+RENDERING (9):
+  ✓ void AddRune(Rune rune)                   Add rune at cursor, advance cursor
+  ✓ void AddRune(char c)                      Add char at cursor, advance cursor (overload)
+  ✓ void AddStr(string str)                   Add string at cursor, advance cursor
+  ✓ void FillRect(Rectangle, Rune)            Fill rectangle with rune
+  ✓ void FillRect(Rectangle, char)            Fill rectangle with char (overload)
+  ✓ void ClearContents()                      Clear display buffer
+  ✓ void Refresh()                            Write buffer to terminal, fire events
+  ✓ void UpdateScreen()                       Update screen (calls Refresh)
+
+COLOR MANAGEMENT (3):
+  ✓ void SetAttribute(Attribute attr)         Set current text attribute
+  ✓ Attribute GetAttribute()                  Get current text attribute
+  ✓ Attribute MakeColor(ref Color, ref Color) Convert colors to attribute
+
+CURSOR VISIBILITY (2):
+  ✓ bool GetCursorVisibility(out CursorVisibility)  Get cursor visibility state
+  ✓ bool SetCursorVisibility(CursorVisibility)      Set cursor visibility state
+
+VALIDATION & INFO (3):
+  ✓ bool IsRuneSupported(Rune rune)           Check if rune can be displayed
+  ✓ bool IsValidLocation(Rune, int, int)      Check if position is valid for rune
+  ✓ string GetVersionInfo()                   Get driver name & version
+
+LOW-LEVEL (2):
+  ✓ void WriteRaw(string ansi)                Write raw ANSI escape sequences
+  ✓ void SendKeys(char, ConsoleKey, bool, bool, bool)  Inject keyboard input
+
+ANSI ESCAPE SEQUENCES (2):
+  ✓ void QueueAnsiRequest(AnsiEscapeSequenceRequest)  Queue ANSI request
+  ✓ AnsiRequestScheduler GetRequestScheduler()       Get request scheduler
+
+
+EVENTS (5) - Fired at specific times
+──────────────────────────────────────────────────────────────────────────
+
+  ✓ event EventHandler<SizeChangedEventArgs> SizeChanged
+    └─ Fired when: Terminal window is resized
+    └─ Provides: New terminal dimensions
+
+  ✓ event EventHandler Refreshed
+    └─ Fired when: After Refresh() completes
+    └─ Purpose: Notify that screen has been updated
+
+  ✓ event EventHandler ClearedContents
+    └─ Fired when: ClearContents() is called
+    └─ Purpose: Notify that buffer has been cleared
+
+  ✓ event EventHandler<MouseEventArgs> MouseEvent
+    └─ Fired when: Mouse input is received
+    └─ Provides: Mouse position, button, action
+
+  ✓ event EventHandler<KeyEventArgs> KeyDown
+    └─ Fired when: Key is pressed down
+    └─ Provides: Key code, modifiers
+
+  ✓ event EventHandler<KeyEventArgs> KeyUp
+    └─ Fired when: Key is released
+    └─ Provides: Key code, modifiers
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+5. CRITICAL IMPLEMENTATION NOTES
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+A. CURSOR POSITIONING IS SPLIT
+────────────────────────────────────────────────────────────────────────────
+   Move(col, row)          → Updates INTERNAL Col/Row properties
+                             Does NOT move actual terminal cursor
+                             Can be called with negative/out-of-bounds values
+                             
+   UpdateCursor()          → Moves the ACTUAL terminal cursor
+                             Called separately, likely in Refresh()
+
+B. RENDERING IS BUFFER-BASED
+────────────────────────────────────────────────────────────────────────────
+   Contents[row, col]      → Application writes here (2D Cell array)
+                             Organized as [rows, columns]
+                             
+   Refresh()               → You read from Contents, write to terminal
+                             Must update physical display
+                             Fire Refreshed event when done
+                             
+   Clip Rectangle          → You MUST respect this
+                             Only render cells within Clip bounds
+                             AddRune(), AddStr() honor this
+
+C. COLOR HANDLING
+────────────────────────────────────────────────────────────────────────────
+   SupportsTrueColor       → Read-only capability flag
+                             true = can display 24-bit colors
+                             false = limited to 16 colors
+                             
+   Force16Colors           → User preference (you must check)
+                             true = use 16-color palette even if TrueColor supported
+                             false = use full color palette if supported
+                             
+   MakeColor()             → YOU convert Color → Attribute
+                             YOU handle color quantization
+                             YOU apply Force16Colors logic
+
+D. EVENTS MUST FIRE AT CORRECT TIMES
+────────────────────────────────────────────────────────────────────────────
+   SizeChanged             → Fire when terminal resized (you must detect this)
+   Refreshed               → Fire after Refresh() completes
+   KeyDown/KeyUp           → Fire when you receive keyboard input
+   MouseEvent              → Fire when you receive mouse input
+   ClearedContents         → Fire when ClearContents() is called
+
+E. CELL FORMAT
+────────────────────────────────────────────────────────────────────────────
+   Contents is Cell[,]     → Cell = struct with:
+                             - Rune character
+                             - Attribute (color + style)
+                             - Width information (for wide characters)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+6. TYPE DEPENDENCIES
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+You must understand/use these Terminal.Gui types:
+
+  • Terminal.Gui.Drivers.IConsoleDriver          (the interface you implement)
+  • Terminal.Gui.Drawing.Attribute              (color + style for text)
+  • Terminal.Gui.Drawing.Color                  (RGB color value)
+  • Terminal.Gui.Drivers.CursorVisibility       (enum: Invisible, Default, Underline, Block)
+  • Terminal.Gui.Input.MouseEventArgs           (mouse event data)
+  • Terminal.Gui.Input.KeyEventArgs             (keyboard event data)
+  • Terminal.Gui.Drivers.Cell                   (buffer element: rune + attribute)
+  • Terminal.Gui.Drivers.AnsiEscapeSequenceRequest
+  • Terminal.Gui.Drivers.AnsiRequestScheduler   (manages ANSI requests)
+  • System.Drawing.Rectangle                    (used for screen/clip region)
+  • System.Text.Rune                            (Unicode character)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+7. HOW TO REGISTER CUSTOM DRIVER
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+OPTION A: Register with instance (RECOMMENDED)
+────────────────────────────────────────────────
+
+   var driver = new CustomConsoleDriver();
+   Application.Init(driver: driver, driverName: "CustomDriver");
+   
+   try
+   {
+       using var window = MainWindow.Create(connectionManager, userSettingsManager);
+       Application.Run(window);
+   }
+   finally
+   {
+       Application.Shutdown();
+   }
+
+Method Signature:
+   public static void Init(IConsoleDriver driver, string driverName)
+
+OPTION B: Use built-in by name (CURRENT)
+────────────────────────────────────────
+
+   Application.Init(driverName: "NetDriver");
+
+Method Signature:
+   public static void Init(string driverName)
+
+Available built-in drivers:
+   • "NetDriver"      (uses .NET Console API) ← Currently used
+   • "WindowsDriver"  (Windows-specific)
+   • "CursesDriver"   (Unix/Mac with ncurses)
+   • "FakeDriver"     (unit testing)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+8. FILES CREATED FOR REFERENCE
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+In /Users/basselsaba/kusto-terminal/kusto-terminal/:
+
+  ✓ IConsoleDriver_Interface_Specification.txt   [14 KB]
+    └─ Full interface contract from XML docs
+    └─ All properties, methods, events with descriptions
+    └─ Key implementation notes
+    └─ Type dependencies and reference implementations
+    
+  ✓ CustomConsoleDriver_Template.cs              [17 KB]
+    └─ Ready-to-use C# template
+    └─ All 13 properties with types
+    └─ All 25 methods with TODO comments
+    └─ All 5 events with declarations
+    └─ Helper methods for event firing
+    
+  ✓ CUSTOM_DRIVER_INTEGRATION_GUIDE.md           [10 KB]
+    └─ Step-by-step implementation guide
+    └─ Registration instructions
+    └─ Testing examples (NUnit)
+    └─ Common implementation patterns
+    └─ Troubleshooting guide
+    └─ Minimal reference implementation
+    
+  ✓ README_DRIVER_DEVELOPMENT.md                 [Summary]
+    └─ Overview of all documentation
+    └─ Quick start guide
+    └─ Key insights
+    └─ File locations and next steps
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+9. QUICK CHECKLIST FOR IMPLEMENTATION
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+MUST IMPLEMENT:
+
+  [ ] All 13 Properties
+      [ ] Make sure properties return correct types
+      [ ] Properties like Col/Row/Cols/Rows must be updated appropriately
+      [ ] Contents must be a 2D Cell[rows, cols] array
+
+  [ ] All 25 Methods
+      [ ] Init() - sets up terminal
+      [ ] End() - cleanup and restoration
+      [ ] Move(col, row) - internal cursor only
+      [ ] UpdateCursor() - physical cursor movement
+      [ ] AddRune/AddStr - write to buffer
+      [ ] FillRect - fill rectangular areas
+      [ ] ClearContents - clear buffer
+      [ ] Refresh - write to terminal
+      [ ] GetAttribute/SetAttribute - color management
+      [ ] MakeColor - color conversion with quantization
+      [ ] GetCursorVisibility/SetCursorVisibility
+      [ ] IsRuneSupported - character support check
+      [ ] IsValidLocation - bounds checking
+      [ ] GetVersionInfo - version string
+
+  [ ] All 5 Events
+      [ ] Declare all events
+      [ ] Fire SizeChanged when terminal resized
+      [ ] Fire Refreshed after Refresh()
+      [ ] Fire ClearedContents after clearing
+      [ ] Fire KeyDown/KeyUp for keyboard input
+      [ ] Fire MouseEvent for mouse input
+
+CRITICAL BEHAVIORS:
+
+  [ ] Respect Clip rectangle in rendering
+  [ ] Handle wide characters (2-column width)
+  [ ] Support both 16-color and TrueColor modes
+  [ ] Handle out-of-bounds cursor positions
+  [ ] Update contents buffer correctly
+  [ ] Fire events at proper times
+  [ ] Return correct values from methods
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+10. MINIMAL REFERENCE IMPLEMENTATION
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+See CUSTOM_DRIVER_INTEGRATION_GUIDE.md for a complete minimal implementation.
+
+This is the absolute minimum to get something working:
+
+   public class MinimalDriver : IConsoleDriver
+   {
+       public IClipboard Clipboard { get; } = new SystemClipboard();
+       public Rectangle Screen { get; set; } = new(0, 0, 80, 24);
+       public Rectangle Clip { get; set; }
+       public int Col { get; set; }
+       public int Cols => 80;
+       public Cell[,] Contents { get; set; } = new Cell[24, 80];
+       
+       // ... (all other properties)
+       
+       public void Init() { Console.Clear(); }
+       public void End() { }
+       public void Move(int col, int row) { Col = col; Row = row; }
+       public void AddRune(Rune rune) { Col++; }
+       
+       // ... (all other methods, returning default values)
+       
+       public event EventHandler<SizeChangedEventArgs> SizeChanged;
+       // ... (all other events)
+   }
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+11. REFERENCES & DOCUMENTATION SOURCES
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+Source XML:
+  ~/.nuget/packages/terminal.gui/2.0.0-alpha.3721/lib/net8.0/Terminal.Gui.xml
+
+GitHub Repository:
+  https://github.com/migueldeicaza/gui.cs
+
+Terminal.Gui Documentation:
+  https://github.com/migueldeicaza/gui.cs/tree/develop/Terminal.Gui
+
+Current KustoTerminal Usage:
+  src/KustoTerminal.CLI/Program.cs:44
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════
+
+SUMMARY: You need to implement a class that implements IConsoleDriver interface with:
+  • 13 properties returning/storing terminal state
+  • 25 methods handling initialization, rendering, input, colors, and ANSI sequences
+  • 5 events firing at appropriate times
+  
+The interface contract is COMPLETE. No methods are optional. All must be implemented.
+Use the provided template as your starting point.
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════

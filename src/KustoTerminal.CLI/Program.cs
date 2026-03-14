@@ -6,9 +6,11 @@ using Terminal.Gui.App;
 using Terminal.Gui.Views;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Configuration;
+using Terminal.Gui.Drivers;
 using KustoTerminal.Core.Services;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.UI;
+using KustoTerminal.Driver;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Threading;
@@ -37,11 +39,14 @@ class Program
             Console.WriteLine("Starting Terminal UI...");
 
             // Enable ConfigurationManager to load color schemes and themes
-            // This will load from embedded resources and user config files
             ConfigurationManager.Enable(ConfigLocations.All);
             ConfigurationManager.Apply();
 
-            Application.Init(driverName: "NetDriver");
+            // Parse --driver flag: kusto (default), net (fallback)
+            var driverArg = args.FirstOrDefault(a => a.StartsWith("--driver="));
+            var driverName = driverArg?.Split('=', 2).ElementAtOrDefault(1) ?? "kusto";
+
+            InitDriver(driverName);
 
             try
             {
@@ -59,6 +64,28 @@ class Program
             Console.WriteLine($"Fatal error: {ex.ToString()}");
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
+        }
+    }
+
+    static void InitDriver(string driverName)
+    {
+        if (driverName == "net")
+        {
+            Application.Init(driverName: "NetDriver");
+            return;
+        }
+
+        // Try the high-performance KustoConsoleDriver with auto-fallback
+        try
+        {
+            var driver = new KustoConsoleDriver();
+            Application.Init(driver: driver);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"KustoConsoleDriver init failed: {ex.Message}");
+            Console.Error.WriteLine("Falling back to NetDriver...");
+            Application.Init(driverName: "NetDriver");
         }
     }
 
