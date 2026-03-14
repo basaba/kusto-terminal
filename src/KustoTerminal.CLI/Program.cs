@@ -83,7 +83,7 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: KustoDriver failed ({ex.Message}), falling back to built-in driver.");
-            Application.Init(driverName: "ansi");
+            Application.Init(driverName: "NetDriver");
         }
     }
 
