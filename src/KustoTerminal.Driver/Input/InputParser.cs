@@ -1,6 +1,7 @@
 using Terminal.Gui;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drawing;
+using KustoTerminal.Driver.Platform;
 using static KustoTerminal.Driver.Input.AnsiSequenceReader;
 
 namespace KustoTerminal.Driver.Input;
@@ -65,8 +66,8 @@ internal static class InputParser
         {
             0 => new Key(KeyCode.Space | KeyCode.CtrlMask), // Ctrl+Space = NUL
             8 or 127 => Key.Backspace,
-            9 => Key.Tab,
-            10 or 13 => Key.Enter,
+            9 => ApplyPlatformModifiers(KeyCode.Tab),
+            10 or 13 => ApplyPlatformModifiers(KeyCode.Enter),
             27 => Key.Esc,
             32 => Key.Space,
             _ when codepoint >= 32 && codepoint < 127 =>
@@ -75,36 +76,86 @@ internal static class InputParser
         };
     }
 
+    /// <summary>
+    /// On macOS, query CoreGraphics for the real-time modifier key state.
+    /// This solves the problem where terminals send identical bytes for
+    /// Enter vs Shift+Enter (both \r). Works regardless of kitty/xterm protocol.
+    /// On Linux, returns the key unmodified (relies on kitty/modifyOtherKeys).
+    /// </summary>
+    private static Key ApplyPlatformModifiers(KeyCode baseKey)
+    {
+        var flags = Interop.GetMacOSModifierFlags();
+        if (flags == 0)
+            return new Key(baseKey);
+
+        KeyCode modifiers = KeyCode.Null;
+        if ((flags & Interop.kCGEventFlagMaskShift) != 0) modifiers |= KeyCode.ShiftMask;
+        if ((flags & Interop.kCGEventFlagMaskAlternate) != 0) modifiers |= KeyCode.AltMask;
+        if ((flags & Interop.kCGEventFlagMaskControl) != 0) modifiers |= KeyCode.CtrlMask;
+
+        return new Key(baseKey | modifiers);
+    }
+
     private static Key CsiToKey(byte final, ReadOnlySpan<byte> parameters)
     {
         // Parse numeric parameters (semicolon-separated)
         Span<int> nums = stackalloc int[8];
         int numCount = ParseCsiParams(parameters, nums);
 
+        // Kitty keyboard protocol: CSI codepoint ; modifier u
+        if (final == (byte)'u' && numCount >= 1)
+        {
+            KeyCode modifiers = numCount >= 2 ? DecodeModifier(nums[1]) : KeyCode.Null;
+            return new Key(CodepointToKeyCode(nums[0]) | modifiers);
+        }
+
         // Modifier from second parameter (CSI 1;mod X format)
-        KeyCode modifiers = KeyCode.Null;
+        KeyCode mods = KeyCode.Null;
         if (numCount >= 2)
         {
-            modifiers = DecodeModifier(nums[1]);
+            mods = DecodeModifier(nums[1]);
+        }
+
+        // xterm modifyOtherKeys: CSI 27 ; modifier ; codepoint ~
+        if (final == (byte)'~' && numCount >= 3 && nums[0] == 27)
+        {
+            KeyCode xMods = DecodeModifier(nums[1]);
+            return new Key(CodepointToKeyCode(nums[2]) | xMods);
         }
 
         return final switch
         {
-            (byte)'A' => new Key(KeyCode.CursorUp | modifiers),
-            (byte)'B' => new Key(KeyCode.CursorDown | modifiers),
-            (byte)'C' => new Key(KeyCode.CursorRight | modifiers),
-            (byte)'D' => new Key(KeyCode.CursorLeft | modifiers),
-            (byte)'H' => new Key(KeyCode.Home | modifiers),
-            (byte)'F' => new Key(KeyCode.End | modifiers),
+            (byte)'A' => new Key(KeyCode.CursorUp | mods),
+            (byte)'B' => new Key(KeyCode.CursorDown | mods),
+            (byte)'C' => new Key(KeyCode.CursorRight | mods),
+            (byte)'D' => new Key(KeyCode.CursorLeft | mods),
+            (byte)'H' => new Key(KeyCode.Home | mods),
+            (byte)'F' => new Key(KeyCode.End | mods),
             (byte)'Z' => new Key(KeyCode.Tab | KeyCode.ShiftMask), // Shift+Tab
-            (byte)'~' when numCount >= 1 => TildeKey(nums[0], modifiers),
-            (byte)'P' => new Key(KeyCode.F1 | modifiers),
-            (byte)'Q' => new Key(KeyCode.F2 | modifiers),
-            (byte)'R' => new Key(KeyCode.F3 | modifiers),
-            (byte)'S' => new Key(KeyCode.F4 | modifiers),
+            (byte)'~' when numCount >= 1 => TildeKey(nums[0], mods),
+            (byte)'P' => new Key(KeyCode.F1 | mods),
+            (byte)'Q' => new Key(KeyCode.F2 | mods),
+            (byte)'R' => new Key(KeyCode.F3 | mods),
+            (byte)'S' => new Key(KeyCode.F4 | mods),
             _ => Key.Empty
         };
     }
+
+    /// <summary>
+    /// Map a Unicode codepoint to Terminal.Gui KeyCode.
+    /// Handles special codepoints (Enter, Tab, Backspace, Escape)
+    /// and ASCII printable characters.
+    /// </summary>
+    private static KeyCode CodepointToKeyCode(int codepoint) => codepoint switch
+    {
+        8 or 127 => KeyCode.Backspace,
+        9 => KeyCode.Tab,
+        13 => KeyCode.Enter,
+        27 => KeyCode.Esc,
+        32 => KeyCode.Space,
+        _ when codepoint >= 33 && codepoint < 127 => (KeyCode)codepoint,
+        _ => (KeyCode)codepoint
+    };
 
     private static Key TildeKey(int num, KeyCode modifiers) => num switch
     {

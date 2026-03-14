@@ -85,4 +85,41 @@ internal static partial class Interop
     internal const short POLLIN = 0x0001;
     internal const short POLLHUP = 0x0010;
     internal const short POLLERR = 0x0008;
+
+    // === macOS CoreGraphics — modifier key state detection ===
+    // Allows querying real-time Shift/Ctrl/Alt/Cmd state independently of
+    // what the terminal sends, solving the Shift+Enter problem on macOS.
+
+    private const string CoreGraphics =
+        "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics";
+
+    [DllImport(CoreGraphics)]
+    private static extern ulong CGEventSourceFlagsState(int stateID);
+
+    private const int kCGEventSourceStateCombinedSessionState = 0;
+
+    internal const ulong kCGEventFlagMaskShift     = 0x00020000;
+    internal const ulong kCGEventFlagMaskControl   = 0x00040000;
+    internal const ulong kCGEventFlagMaskAlternate = 0x00080000;
+    internal const ulong kCGEventFlagMaskCommand   = 0x00100000;
+
+    /// <summary>
+    /// Query the current keyboard modifier flags from macOS.
+    /// Works regardless of terminal protocol support.
+    /// Returns 0 on non-macOS platforms.
+    /// </summary>
+    internal static ulong GetMacOSModifierFlags()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            return 0;
+
+        try
+        {
+            return CGEventSourceFlagsState(kCGEventSourceStateCombinedSessionState);
+        }
+        catch
+        {
+            return 0;
+        }
+    }
 }

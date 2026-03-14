@@ -77,6 +77,8 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         _ansiWriter.HideCursor();
         _ansiWriter.EnableMouse();
         _ansiWriter.EnableBracketedPaste();
+        _ansiWriter.EnableKittyKeyboard();
+        _ansiWriter.EnableModifyOtherKeys();
         _ansiWriter.ClearScreen();
         _ansiWriter.Flush();
 
@@ -105,6 +107,8 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     {
         if (_ansiWriter != null)
         {
+            _ansiWriter.DisableModifyOtherKeys();
+            _ansiWriter.DisableKittyKeyboard();
             _ansiWriter.DisableBracketedPaste();
             _ansiWriter.DisableMouse();
             _ansiWriter.ShowCursor();
@@ -122,6 +126,8 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     {
         if (_ansiWriter != null)
         {
+            _ansiWriter.DisableModifyOtherKeys();
+            _ansiWriter.DisableKittyKeyboard();
             _ansiWriter.DisableMouse();
             _ansiWriter.ShowCursor();
             _ansiWriter.ResetAttributes();

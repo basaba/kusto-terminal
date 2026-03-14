@@ -236,6 +236,27 @@ internal sealed class AnsiWriter
     /// <summary>Disable bracketed paste mode</summary>
     public void DisableBracketedPaste() => AppendLiteral("\x1b[?2004l"u8);
 
+    /// <summary>
+    /// Enable the kitty keyboard protocol (progressive enhancement level 1).
+    /// Makes the terminal send CSI u sequences for modified keys,
+    /// e.g. Shift+Enter → ESC[13;2u instead of bare \r.
+    /// Supported by: kitty, iTerm2 3.5+, WezTerm, foot, ghostty.
+    /// </summary>
+    public void EnableKittyKeyboard() => AppendLiteral("\x1b[>1u"u8);
+
+    /// <summary>Disable the kitty keyboard protocol (pop from stack)</summary>
+    public void DisableKittyKeyboard() => AppendLiteral("\x1b[<u"u8);
+
+    /// <summary>
+    /// Enable xterm modifyOtherKeys mode 2 as fallback for terminals
+    /// that don't support kitty protocol but do support modifyOtherKeys.
+    /// Makes the terminal send CSI 27;modifier;codepoint ~ for modified keys.
+    /// </summary>
+    public void EnableModifyOtherKeys() => AppendLiteral("\x1b[>4;2m"u8);
+
+    /// <summary>Disable xterm modifyOtherKeys mode</summary>
+    public void DisableModifyOtherKeys() => AppendLiteral("\x1b[>4;0m"u8);
+
     /// <summary>Reset all attributes</summary>
     public void ResetAttributes()
     {

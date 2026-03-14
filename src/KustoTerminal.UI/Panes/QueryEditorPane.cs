@@ -118,9 +118,14 @@ namespace KustoTerminal.UI.Panes
 
             _queryTextView.KeyDown += (sender, key) =>
             {
-                if (key == Key.F5)
+                // Shift+Enter executes query (like Azure Data Explorer).
+                // Check both: driver-reported modifier AND macOS CGEventSourceFlagsState
+                // (fallback for terminals/drivers that don't distinguish Shift+Enter).
+                if (key == Key.F5 || key == Key.Enter.WithShift
+                    || (key == Key.Enter && Common.PlatformModifiers.IsShiftHeld))
                 {
                     OnExecuteClicked();
+                    key.Handled = true;
                 }
                 else if (key == Key.F12)
                 {
