@@ -136,9 +136,25 @@ public sealed class KustoConsoleDriver : IConsoleDriver, IConsoleDriverFacade
         return prev;
     }
 
+    // Cached reflection fields for constructing Attribute without triggering MakeColor recursion
+    private static readonly System.Reflection.FieldInfo? s_fgField = typeof(TguiAttribute)
+        .GetField("<Foreground>k__BackingField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+    private static readonly System.Reflection.FieldInfo? s_bgField = typeof(TguiAttribute)
+        .GetField("<Background>k__BackingField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
     public TguiAttribute MakeColor(in TguiColor foreground, in TguiColor background)
     {
-        return new TguiAttribute(foreground, background);
+        // Cannot use new Attribute(Color, Color) — it calls Application.Driver.MakeColor() → infinite recursion.
+        // Construct via default + set backing fields directly.
+        var attr = new TguiAttribute();
+        if (s_fgField is not null && s_bgField is not null)
+        {
+            object boxed = attr;
+            s_fgField.SetValue(boxed, foreground);
+            s_bgField.SetValue(boxed, background);
+            return (TguiAttribute)boxed;
+        }
+        return attr;
     }
 
     public bool IsRuneSupported(Rune rune) => true;
