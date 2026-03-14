@@ -9,6 +9,7 @@ using Terminal.Gui.Configuration;
 using KustoTerminal.Core.Services;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.UI;
+using KustoTerminal.Driver;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Threading;
@@ -41,7 +42,9 @@ class Program
             ConfigurationManager.Enable(ConfigLocations.All);
             ConfigurationManager.Apply();
 
-            Application.Init(driverName: "NetDriver");
+            // Select driver: use high-performance Kusto driver with fallback
+            var driverName = args.FirstOrDefault(a => a.StartsWith("--driver="))?.Split('=')[1];
+            InitializeDriver(driverName);
 
             try
             {
@@ -59,6 +62,28 @@ class Program
             Console.WriteLine($"Fatal error: {ex.ToString()}");
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
+        }
+    }
+
+    static void InitializeDriver(string? driverName)
+    {
+        if (driverName is not null && driverName != "kusto")
+        {
+            // Explicit driver requested (e.g., --driver=ansi or --driver=dotnet)
+            Application.Init(driverName: driverName);
+            return;
+        }
+
+        // Try high-performance Kusto driver first
+        try
+        {
+            var kustoDriver = new KustoConsoleDriver();
+            Application.Init(driver: kustoDriver);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: KustoDriver failed ({ex.Message}), falling back to built-in driver.");
+            Application.Init(driverName: "ansi");
         }
     }
 
