@@ -59,7 +59,7 @@ namespace KustoTerminal.UI.Panes
                 Height = 1
             };
 
-            _queryTextView = new TextView()
+            _queryTextView = new Controls.SafeTextView()
             {
                 X = 0,
                 Y = 1,

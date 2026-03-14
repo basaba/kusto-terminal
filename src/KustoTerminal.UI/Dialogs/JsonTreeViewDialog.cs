@@ -357,7 +357,7 @@ namespace KustoTerminal.UI.Dialogs
                 Height = 1
             };
 
-            var nameText = new TextView()
+            var nameText = new Controls.SafeTextView()
             {
                 Text = propertyName,
                 X = 1,
@@ -376,7 +376,7 @@ namespace KustoTerminal.UI.Dialogs
                 Height = 1
             };
 
-            var pathText = new TextView()
+            var pathText = new Controls.SafeTextView()
             {
                 Text = jsonPath,
                 X = 1,
@@ -395,7 +395,7 @@ namespace KustoTerminal.UI.Dialogs
                 Height = 1
             };
 
-            var valueText = new TextView()
+            var valueText = new Controls.SafeTextView()
             {
                 Text = value,
                 X = 1,

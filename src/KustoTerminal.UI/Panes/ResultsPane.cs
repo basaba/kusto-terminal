@@ -64,7 +64,7 @@ public class ResultsPane : BasePane
             Height = 1
         };
 
-        _errorLabel = new TextView
+        _errorLabel = new Controls.SafeTextView
         {
             Text = "",
             X = 0,
@@ -689,7 +689,7 @@ public class ResultsPane : BasePane
             Modal = true,
             Arrangement = ViewArrangement.Resizable
         };
-        var textView = new TextView
+        var textView = new Controls.SafeTextView
         {
             X = 1,
             Y = 1,
