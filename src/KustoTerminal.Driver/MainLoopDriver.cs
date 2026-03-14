@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using Terminal.Gui.App;
 using Terminal.Gui.Input;
@@ -11,6 +12,10 @@ namespace KustoTerminal.Driver;
 /// DispatchProxy that implements the internal IMainLoopDriver interface.
 /// Terminal.Gui's IMainLoopDriver is internal, so we use DispatchProxy to
 /// create a runtime proxy that delegates to our actual implementation.
+///
+/// Uses adaptive poll timeout for low-latency input while minimizing idle CPU:
+///   Active (input detected): 2ms poll → sub-5ms keystroke latency
+///   Idle (no input for 200ms): 50ms poll → low CPU usage
 /// </summary>
 public class KustoMainLoopProxy : DispatchProxy
 {
@@ -23,6 +28,12 @@ public class KustoMainLoopProxy : DispatchProxy
 
     private readonly byte[] _inputBuffer = new byte[1024];
     private readonly AnsiSequenceReader _sequenceReader = new();
+
+    // Adaptive poll timeout: fast when active, slow when idle
+    private const int ActivePollMs = 2;
+    private const int IdlePollMs = 50;
+    private const long IdleAfterTicks = 200 * TimeSpan.TicksPerMillisecond;
+    private long _lastActivityTicks = Stopwatch.GetTimestamp();
 
     /// <summary>
     /// Configure the proxy after creation (DispatchProxy.Create uses parameterless ctor).
@@ -50,6 +61,18 @@ public class KustoMainLoopProxy : DispatchProxy
         proxy._driver = driver;
         proxy._terminal = terminal;
         return proxy;
+    }
+
+    /// <summary>
+    /// Signal the event loop to wake up immediately (thread-safe).
+    /// Call from any thread to trigger a redraw cycle without waiting for poll timeout.
+    /// </summary>
+    internal void SignalWakeup()
+    {
+        if (_wakeupWriteFd <= 0) return;
+        Span<byte> buf = stackalloc byte[1];
+        buf[0] = 1;
+        write(_wakeupWriteFd, buf, 1);
     }
 
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
@@ -95,19 +118,24 @@ public class KustoMainLoopProxy : DispatchProxy
     {
         if (_terminal == null) return false;
 
+        // Adaptive timeout: short when recently active, longer when idle
+        long elapsed = Stopwatch.GetTimestamp() - _lastActivityTicks;
+        int timeoutMs = elapsed < IdleAfterTicks ? ActivePollMs : IdlePollMs;
+
         Span<PollFd> fds = stackalloc PollFd[2];
         fds[0] = new PollFd { fd = _terminal.StdinFd, events = POLLIN };
         fds[1] = new PollFd { fd = _wakeupReadFd, events = POLLIN };
 
-        int result = poll(fds, 2, 100); // 100ms timeout
+        int result = poll(fds, 2, timeoutMs);
 
         if (result <= 0) return false;
 
-        // Drain wakeup pipe if signaled
+        // Drain wakeup pipe if signaled — briefly enter active mode for responsive redraws
         if ((fds[1].revents & POLLIN) != 0)
         {
             Span<byte> drain = stackalloc byte[64];
             read(_wakeupReadFd, drain, 64);
+            _lastActivityTicks = Stopwatch.GetTimestamp();
         }
 
         return (fds[0].revents & POLLIN) != 0;
@@ -119,6 +147,9 @@ public class KustoMainLoopProxy : DispatchProxy
 
         int bytesRead = _terminal.Read(_inputBuffer);
         if (bytesRead <= 0) return null;
+
+        // Input received — stay in active (low-latency) polling mode
+        _lastActivityTicks = Stopwatch.GetTimestamp();
 
         var sequences = new AnsiSequenceReader.ParsedSequence[64];
         int seqCount = _sequenceReader.Parse(_inputBuffer.AsSpan(0, bytesRead), sequences);

@@ -30,6 +30,7 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     private bool _firstFrame = true;
     private CursorVisibility _cursorVisibility = CursorVisibility.Default;
     private bool _cursorVisible = true;
+    private KustoMainLoopProxy? _loopProxy;
 
     // === IConsoleDriver Properties ===
 
@@ -98,6 +99,7 @@ public sealed class KustoConsoleDriver : IConsoleDriver
 
         // Create MainLoop via reflection + DispatchProxy (IMainLoopDriver is internal)
         var proxy = KustoMainLoopProxy.CreateProxy(this, _terminal);
+        _loopProxy = proxy as KustoMainLoopProxy;
         var ctor = typeof(MainLoop).GetConstructors(
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)[0];
         return (MainLoop)ctor.Invoke(new[] { proxy });
@@ -405,6 +407,13 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     internal void RaiseKeyDown(Key key) => KeyDown?.Invoke(this, key);
     internal void RaiseKeyUp(Key key) => KeyUp?.Invoke(this, key);
     internal void RaiseMouseEvent(MouseEventArgs args) => MouseEvent?.Invoke(this, args);
+
+    /// <summary>
+    /// Wake the event loop immediately (thread-safe).
+    /// Call from timer callbacks or background threads to trigger a redraw
+    /// without waiting for the poll timeout.
+    /// </summary>
+    public void Wakeup() => _loopProxy?.SignalWakeup();
 
     // === Helpers ===
 

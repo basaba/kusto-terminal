@@ -7,6 +7,7 @@ using Terminal.Gui.ViewBase;
 
 using KustoTerminal.Core.Models;
 using KustoTerminal.Core.Interfaces;
+using KustoTerminal.Driver;
 using Terminal.Gui.Input;
 using Terminal.Gui.Drivers;
 using KustoTerminal.UI.SyntaxHighlighting;
@@ -292,9 +293,10 @@ namespace KustoTerminal.UI.Panes
                     // Extract the message part (everything after the spinner character and space)
                     var messagePart = currentMessage.Length > 2 ? currentMessage.Substring(2) : "Running query...";
                     _progressLabel.Text = $"{_spinnerFrames[_spinnerIndex]} {messagePart}";
-                    //_progressLabel.SetNeedsDisplay();
                 }
             });
+            // Wake the event loop so the queued invoke runs immediately
+            (Application.Driver as KustoConsoleDriver)?.Wakeup();
         }
 
         public void UpdateProgressMessage(string message)
@@ -326,6 +328,7 @@ namespace KustoTerminal.UI.Panes
                 _temporaryMessageTimer?.Dispose();
                 _temporaryMessageTimer = null;
             });
+            (Application.Driver as KustoConsoleDriver)?.Wakeup();
         }
 
         public async void LoadLastQueryAsync()

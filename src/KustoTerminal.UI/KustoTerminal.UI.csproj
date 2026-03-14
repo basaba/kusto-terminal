@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KustoTerminal.Core\KustoTerminal.Core.csproj" />
+    <ProjectReference Include="..\KustoTerminal.Driver\KustoTerminal.Driver.csproj" />
     <ProjectReference Include="..\KustoTerminal.Language\KustoTerminal.Language.csproj" />
   </ItemGroup>
 
