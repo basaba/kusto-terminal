@@ -145,8 +145,9 @@ public sealed class KustoConsoleDriver : IConsoleDriver, IConsoleDriverFacade
     public TguiAttribute MakeColor(in TguiColor foreground, in TguiColor background)
     {
         // Cannot use new Attribute(Color, Color) — it calls Application.Driver.MakeColor() → infinite recursion.
-        // Construct via default + set backing fields directly.
-        var attr = new TguiAttribute();
+        // Cannot use new Attribute() — its default ctor accesses Attribute.Default which also calls MakeColor.
+        // Use default(TguiAttribute) to get zero-initialized struct with no ctor call, then set fields via reflection.
+        var attr = default(TguiAttribute);
         if (s_fgField is not null && s_bgField is not null)
         {
             object boxed = attr;
