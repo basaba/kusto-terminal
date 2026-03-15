@@ -317,6 +317,13 @@ public class MainWindow : Window
                     UpdateEditorFrameTitle();
                     key.Handled = true;
                 }
+                else if (key.KeyCode == (KeyCode.AltMask | KeyCode.ShiftMask | KeyCode.Tab)
+                      || key.KeyCode == (KeyCode.ShiftMask | KeyCode.AltMask | KeyCode.Tab))
+                {
+                    _tabManager.ActivatePreviousTab();
+                    UpdateEditorFrameTitle();
+                    key.Handled = true;
+                }
             };
 
             KeyDown += (o, key) =>
