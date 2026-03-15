@@ -16,10 +16,24 @@ public class TabBar : View
     private readonly List<TabItem> _tabs = new();
     private int _activeIndex = -1;
     private int _scrollOffset = 0;
+    private bool _isEditorFocused;
 
     public event EventHandler<int>? TabSelected;
     public event EventHandler<int>? TabCloseRequested;
     public event EventHandler? NewTabRequested;
+
+    public bool IsEditorFocused
+    {
+        get => _isEditorFocused;
+        set
+        {
+            if (_isEditorFocused != value)
+            {
+                _isEditorFocused = value;
+                SetNeedsDraw();
+            }
+        }
+    }
 
     public int ActiveIndex
     {
@@ -104,9 +118,25 @@ public class TabBar : View
         var viewport = Viewport;
         var x = 0;
 
+        // Use the resolved color scheme from Terminal.Gui (matches FrameView titles)
+        var scheme = GetScheme();
+        var inactiveTabAttr = new Attribute(Color.DarkGray, scheme.Normal.Background);
+        var normalAttr = _isEditorFocused ? inactiveTabAttr : inactiveTabAttr;
+        var activeAttr = _isEditorFocused ? scheme.Focus : new Attribute(Color.Cyan, scheme.Normal.Background);
+        var bgAttr = scheme.Normal;
+
+        // Fill entire row with background first
+        driver.SetAttribute(bgAttr);
+        for (int col = 0; col < viewport.Width; col++)
+        {
+            Move(col, 0);
+            driver.AddStr(" ");
+        }
+
         // Draw scroll indicator if needed
         if (_scrollOffset > 0)
         {
+            driver.SetAttribute(normalAttr);
             Move(x, 0);
             driver.AddStr("◀");
             x += 1;
@@ -121,11 +151,11 @@ public class TabBar : View
 
             if (isActive)
             {
-                driver.SetAttribute(new Attribute(Color.White, Color.Blue));
+                driver.SetAttribute(activeAttr);
             }
             else
             {
-                driver.SetAttribute(new Attribute(Color.Gray, Color.Black));
+                driver.SetAttribute(normalAttr);
             }
 
             Move(x, 0);
@@ -133,27 +163,19 @@ public class TabBar : View
             driver.AddStr(tabText);
             x += tabText.Length;
 
-            // Reset attribute
-            driver.SetAttribute(new Attribute(Color.White, Color.Black));
+            // Separator
+            driver.SetAttribute(bgAttr);
+            Move(x, 0);
+            driver.AddStr(" ");
+            x += 1;
         }
 
         // Draw [+] button
         if (x < viewport.Width - 3)
         {
             Move(x, 0);
-            driver.SetAttribute(new Attribute(Color.Green, Color.Black));
+            driver.SetAttribute(_isEditorFocused ? scheme.HotNormal : scheme.Disabled);
             driver.AddStr(" + ");
-            driver.SetAttribute(new Attribute(Color.White, Color.Black));
-        }
-
-        // Fill rest of line
-        x += 3;
-        driver.SetAttribute(new Attribute(Color.White, Color.Black));
-        while (x < viewport.Width)
-        {
-            Move(x, 0);
-            driver.AddStr(" ");
-            x++;
         }
 
         return true;

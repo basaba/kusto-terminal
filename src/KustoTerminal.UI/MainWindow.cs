@@ -104,18 +104,18 @@ public class MainWindow : Window
                 Arrangement = ViewArrangement.RightResizable
             };
 
-            // Tab bar sits above the right frames
             _tabBar = new TabBar()
             {
                 X = Pos.Right(_leftFrame),
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = 1,
+                SchemeName = "FrameView",
             };
 
             _rightTopFrame = new FrameView()
             {
-                Title = "Query Editor",
+                Title = "",
                 X = Pos.Right(_leftFrame),
                 Y = Pos.Bottom(_tabBar),
                 Width = Dim.Fill(),
@@ -201,6 +201,9 @@ public class MainWindow : Window
             _tabBar.TabCloseRequested += OnTabBarTabCloseRequested;
             _tabBar.NewTabRequested += OnTabBarNewTabRequested;
 
+            // Track focus to dim tabs when editor is not focused
+            _rightTopFrame.HasFocusChanged += (_, e) => _tabBar.IsEditorFocused = e.NewValue;
+
             // Set up tab manager events
             _tabManager.ActiveTabChanged += OnActiveTabChanged;
             _tabManager.TabCreated += OnTabCreated;
@@ -260,7 +263,7 @@ public class MainWindow : Window
                                 }
                             }
                             
-                            RefreshTabBar();
+                            UpdateEditorFrameTitle();
                         });
                     }
                 }
@@ -311,7 +314,7 @@ public class MainWindow : Window
                       || key.KeyCode == (KeyCode.Tab | KeyCode.AltMask))
                 {
                     _tabManager.ActivateNextTab();
-                    RefreshTabBar();
+                    UpdateEditorFrameTitle();
                     key.Handled = true;
                 }
             };
@@ -434,7 +437,7 @@ public class MainWindow : Window
             if (_tabManager.Tabs.Count >= TabManagerService.MaxTabs) return;
 
             _tabManager.CreateTab();
-            RefreshTabBar();
+            UpdateEditorFrameTitle();
         }
 
         private void OnTabCreated(object? sender, QueryTab tab)
@@ -453,7 +456,7 @@ public class MainWindow : Window
                 UnwireTabEvents(tab);
             }
             _tabManager.CloseTab(activeIndex);
-            RefreshTabBar();
+            UpdateEditorFrameTitle();
         }
 
         private void WireTabEvents(QueryTab tab)
@@ -482,8 +485,8 @@ public class MainWindow : Window
             _rightTopFrame.Add(newTab.EditorPane);
             _rightBottomFrame.Add(newTab.ResultsPane);
 
-            // Update tab bar
-            RefreshTabBar();
+            // Update frame title to show active tab
+            UpdateEditorFrameTitle();
 
             // Focus the editor
             newTab.EditorPane.FocusEditor();
@@ -503,7 +506,7 @@ public class MainWindow : Window
             var tab = _tabManager.Tabs[index];
             UnwireTabEvents(tab);
             _tabManager.CloseTab(index);
-            RefreshTabBar();
+            UpdateEditorFrameTitle();
         }
 
         private void OnTabBarNewTabRequested(object? sender, EventArgs e)
@@ -511,8 +514,9 @@ public class MainWindow : Window
             CreateNewTab();
         }
 
-        private void RefreshTabBar()
+        private void UpdateEditorFrameTitle()
         {
+            // Refresh the tab bar display
             var titles = _tabManager.GetTabTitles();
             _tabBar.SetTabs(titles, _tabManager.ActiveTabIndex);
         }
@@ -529,7 +533,7 @@ public class MainWindow : Window
                 activeTab.Connection = connection;
                 activeTab.EditorPane.SetConnection(connection);
                 activeTab.EditorPane.FocusEditor();
-                RefreshTabBar();
+                UpdateEditorFrameTitle();
             }
         }
 
@@ -622,7 +626,7 @@ public class MainWindow : Window
                 {
                     tab.Connection = connection;
                     tab.EditorPane.SetConnection(connection);
-                    RefreshTabBar();
+                    UpdateEditorFrameTitle();
                 }
 
                 var progress = new Progress<string>(message =>
@@ -745,7 +749,7 @@ public class MainWindow : Window
             _rightTopFrame.Y = 0;
             _rightTopFrame.Width = Dim.Fill();
             _rightTopFrame.Height = Dim.Fill();
-            _rightTopFrame.Title = "Query Editor (Maximized - F12 to restore)";
+            _rightTopFrame.Title = "Maximized - F12 to restore";
             
             _tabManager.ActiveTab?.EditorPane.FocusEditor();
             
@@ -790,7 +794,7 @@ public class MainWindow : Window
             _rightTopFrame.Y = _originalRightTopFrameY;
             _rightTopFrame.Width = Dim.Fill();
             _rightTopFrame.Height = _originalRightFrameHeight;
-            _rightTopFrame.Title = "Query Editor";
+            _rightTopFrame.Title = "";
             
             _rightBottomFrame.X = Pos.Right(_leftFrame);
             _rightBottomFrame.Y = _originalBottomFrameY;

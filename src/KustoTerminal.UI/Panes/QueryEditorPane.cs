@@ -54,17 +54,15 @@ namespace KustoTerminal.UI.Panes
         {
             _connectionLabel = new Label()
             {
-                Text = "No connection",
-                X = 0,
-                Y = 0,
-                Width = Dim.Fill(),
-                Height = 1
+                Visible = false,
+                Width = 0,
+                Height = 0
             };
 
             _lineNumberGutter = new Controls.LineNumberGutterView()
             {
                 X = 0,
-                Y = 1,
+                Y = 0,
                 Width = 4,
                 Height = Dim.Fill()! - 1,
             };
@@ -72,7 +70,7 @@ namespace KustoTerminal.UI.Panes
             _queryTextView = new Controls.SafeTextView()
             {
                 X = Pos.Right(_lineNumberGutter),
-                Y = 1,
+                Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Fill()! - 1,
                 Text = "",
