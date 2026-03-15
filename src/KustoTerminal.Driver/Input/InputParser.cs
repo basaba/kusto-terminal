@@ -193,12 +193,13 @@ internal static class InputParser
 
     private static KeyCode DecodeModifier(int mod)
     {
-        // CSI modifier encoding: value = 1 + (shift ? 1 : 0) + (alt ? 2 : 0) + (ctrl ? 4 : 0)
+        // CSI modifier encoding: value = 1 + (shift ? 1 : 0) + (alt ? 2 : 0) + (ctrl ? 4 : 0) + (super ? 8 : 0)
+        // Super = Cmd on macOS. Map Cmd → Ctrl so Cmd+C/V → Copy/Paste.
         mod -= 1;
         KeyCode result = KeyCode.Null;
         if ((mod & 1) != 0) result |= KeyCode.ShiftMask;
         if ((mod & 2) != 0) result |= KeyCode.AltMask;
-        if ((mod & 4) != 0) result |= KeyCode.CtrlMask;
+        if ((mod & 4) != 0 || (mod & 8) != 0) result |= KeyCode.CtrlMask;
         return result;
     }
 

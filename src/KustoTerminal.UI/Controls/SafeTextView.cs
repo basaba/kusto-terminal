@@ -10,11 +10,16 @@ namespace KustoTerminal.UI.Controls;
 /// </summary>
 public class SafeTextView : TextView
 {
+    /// <summary>Raised after a mouse event has been processed (cursor may have moved).</summary>
+    public event EventHandler? MouseProcessed;
+
     protected override bool OnMouseEvent(MouseEventArgs mouseEvent)
     {
         try
         {
-            return base.OnMouseEvent(mouseEvent);
+            var result = base.OnMouseEvent(mouseEvent);
+            MouseProcessed?.Invoke(this, EventArgs.Empty);
+            return result;
         }
         catch (ArgumentOutOfRangeException)
         {

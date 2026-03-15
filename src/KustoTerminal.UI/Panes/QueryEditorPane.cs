@@ -19,6 +19,7 @@ namespace KustoTerminal.UI.Panes
     public class QueryEditorPane : BasePane
     {
         private TextView _queryTextView = null!;
+        private Controls.LineNumberGutterView _lineNumberGutter = null!;
         private Label _connectionLabel = null!;
         private Label _progressLabel = null!;
         private Label _shortcutsLabel = null!;
@@ -60,9 +61,17 @@ namespace KustoTerminal.UI.Panes
                 Height = 1
             };
 
-            _queryTextView = new Controls.SafeTextView()
+            _lineNumberGutter = new Controls.LineNumberGutterView()
             {
                 X = 0,
+                Y = 1,
+                Width = 4,
+                Height = Dim.Fill()! - 1,
+            };
+
+            _queryTextView = new Controls.SafeTextView()
+            {
+                X = Pos.Right(_lineNumberGutter),
                 Y = 1,
                 Width = Dim.Fill(),
                 Height = Dim.Fill()! - 1,
@@ -147,7 +156,8 @@ namespace KustoTerminal.UI.Panes
 
         private void SetupLayout()
         {
-            Add(_connectionLabel, _queryTextView, _shortcutsLabel, _progressLabel, _temporaryMessageLabel);
+            _lineNumberGutter.SetTextView(_queryTextView);
+            Add(_connectionLabel, _lineNumberGutter, _queryTextView, _shortcutsLabel, _progressLabel, _temporaryMessageLabel);
             Add(_shortcutLabels);
         }
         
@@ -165,7 +175,36 @@ namespace KustoTerminal.UI.Panes
             
             _queryTextView.DrawingContent += (sender, args) =>
             {
+                // Sync line number gutter with scroll/cursor position
+                if (_lineNumberGutter.NeedsRedraw())
+                    _lineNumberGutter.SetNeedsDraw();
+
                 OnQueryTextViewDrawing();
+            };
+
+            // Mark gutter for redraw on any key press so it redraws in the
+            // same draw cycle with the updated cursor row. KeyDown fires
+            // before the key is processed, but the draw cycle runs after,
+            // so the gutter reads the correct CurrentRow.
+            _queryTextView.KeyDown += (sender, key) =>
+            {
+                _lineNumberGutter.SetNeedsDraw();
+            };
+
+            // Same for mouse clicks — cursor line can change on click.
+            if (_queryTextView is Controls.SafeTextView safeView)
+            {
+                safeView.MouseProcessed += (sender, args) =>
+                {
+                    _lineNumberGutter.SetNeedsDraw();
+                };
+            }
+
+            // Update gutter width when line count changes (e.g., paste, typing)
+            _queryTextView.ContentsChanged += (sender, args) =>
+            {
+                if (_lineNumberGutter.UpdateWidth())
+                    SetNeedsDraw();
             };
         }
 
