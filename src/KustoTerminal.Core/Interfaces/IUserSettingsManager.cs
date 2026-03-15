@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using KustoTerminal.Core.Models;
 
@@ -9,4 +10,6 @@ public interface IUserSettingsManager
     Task SaveSettingsAsync(UserSettings settings);
     Task SaveLastQueryAsync(string query);
     Task<string> GetLastQueryAsync();
+    Task SaveTabsAsync(List<TabState> tabs);
+    Task<List<TabState>> GetTabsAsync();
 }

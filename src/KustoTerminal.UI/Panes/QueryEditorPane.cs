@@ -393,6 +393,11 @@ namespace KustoTerminal.UI.Panes
             }
         }
 
+        public void SetQueryText(string text)
+        {
+            _queryTextView.Text = text ?? string.Empty;
+        }
+
         public async void SaveCurrentQueryAsync()
         {
             if (_userSettingsManager != null)

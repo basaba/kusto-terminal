@@ -77,5 +77,18 @@ namespace KustoTerminal.Core.Services
             var settings = await LoadSettingsAsync();
             return settings.LastQuery ?? string.Empty;
         }
+
+        public async Task SaveTabsAsync(List<TabState> tabs)
+        {
+            var settings = await LoadSettingsAsync();
+            settings.Tabs = tabs ?? new List<TabState>();
+            await SaveSettingsAsync(settings);
+        }
+
+        public async Task<List<TabState>> GetTabsAsync()
+        {
+            var settings = await LoadSettingsAsync();
+            return settings.Tabs ?? new List<TabState>();
+        }
     }
 }
