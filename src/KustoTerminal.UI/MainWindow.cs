@@ -33,7 +33,6 @@ public class MainWindow : Window
         private readonly ClusterSchemaService _clusterSchemaService;
         private readonly SyntaxHighlighter _syntaxHighlighter;
         private readonly HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
-        private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
         
         private ConnectionPane _connectionPane = null!;
         private FrameView _leftFrame = null!;
@@ -69,13 +68,12 @@ public class MainWindow : Window
                 CacheExpirationHours = 24
             };
             _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig);
-            _autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
 
-            // Initialize tab manager
+            // Initialize tab manager — passes languageService so each tab creates its own autocomplete generator
             _tabManager = new TabManagerService(
                 _userSettingsManager,
                 _syntaxHighlighter,
-                _autocompleteSuggestionGenerator,
+                languageService,
                 _htmlSyntaxHighlighter);
 
             X = 0;
@@ -307,6 +305,13 @@ public class MainWindow : Window
                 else if (IsAltKey(key, 'w'))
                 {
                     CloseActiveTab();
+                    key.Handled = true;
+                }
+                else if (key.KeyCode == (KeyCode.AltMask | KeyCode.Tab)
+                      || key.KeyCode == (KeyCode.Tab | KeyCode.AltMask))
+                {
+                    _tabManager.ActivateNextTab();
+                    RefreshTabBar();
                     key.Handled = true;
                 }
             };

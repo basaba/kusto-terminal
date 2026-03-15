@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
-using KustoTerminal.UI.AutoCompletion;
+using KustoTerminal.Language.Services;
 using KustoTerminal.UI.Models;
 using KustoTerminal.UI.SyntaxHighlighting;
 
@@ -15,7 +15,7 @@ public class TabManagerService : IDisposable
 
     private readonly IUserSettingsManager? _userSettingsManager;
     private readonly SyntaxHighlighter _syntaxHighlighter;
-    private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator;
+    private readonly LanguageService _languageService;
     private readonly HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
 
     private readonly List<QueryTab> _tabs = new();
@@ -34,12 +34,12 @@ public class TabManagerService : IDisposable
     public TabManagerService(
         IUserSettingsManager? userSettingsManager,
         SyntaxHighlighter syntaxHighlighter,
-        AutocompleteSuggestionGenerator autocompleteSuggestionGenerator,
+        LanguageService languageService,
         HtmlSyntaxHighlighter htmlSyntaxHighlighter)
     {
         _userSettingsManager = userSettingsManager;
         _syntaxHighlighter = syntaxHighlighter;
-        _autocompleteSuggestionGenerator = autocompleteSuggestionGenerator;
+        _languageService = languageService;
         _htmlSyntaxHighlighter = htmlSyntaxHighlighter;
     }
 
@@ -53,7 +53,7 @@ public class TabManagerService : IDisposable
             state,
             _userSettingsManager,
             _syntaxHighlighter,
-            _autocompleteSuggestionGenerator,
+            _languageService,
             _htmlSyntaxHighlighter);
 
         _tabs.Add(tab);
@@ -178,7 +178,7 @@ public class TabManagerService : IDisposable
                 state,
                 _userSettingsManager,
                 _syntaxHighlighter,
-                _autocompleteSuggestionGenerator,
+                _languageService,
                 _htmlSyntaxHighlighter);
 
             _tabs.Add(tab);

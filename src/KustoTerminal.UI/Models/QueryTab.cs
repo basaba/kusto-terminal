@@ -3,6 +3,7 @@ using System.Threading;
 using KustoTerminal.Core.Interfaces;
 using KustoTerminal.Core.Models;
 using KustoTerminal.Core.Services;
+using KustoTerminal.Language.Services;
 using KustoTerminal.UI.AutoCompletion;
 using KustoTerminal.UI.Panes;
 using KustoTerminal.UI.SyntaxHighlighting;
@@ -36,10 +37,13 @@ public class QueryTab : IDisposable
         TabState state,
         IUserSettingsManager? userSettingsManager,
         SyntaxHighlighter syntaxHighlighter,
-        AutocompleteSuggestionGenerator autocompleteSuggestionGenerator,
+        LanguageService languageService,
         HtmlSyntaxHighlighter htmlSyntaxHighlighter)
     {
         State = state ?? throw new ArgumentNullException(nameof(state));
+
+        // Each tab gets its own autocomplete generator so they don't share state
+        var autocompleteSuggestionGenerator = new AutocompleteSuggestionGenerator(languageService);
 
         EditorPane = new QueryEditorPane(userSettingsManager, syntaxHighlighter, autocompleteSuggestionGenerator)
         {
