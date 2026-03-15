@@ -153,6 +153,8 @@ internal static class InputParser
         13 => KeyCode.Enter,
         27 => KeyCode.Esc,
         32 => KeyCode.Space,
+        // Uppercase lowercase letters — Terminal.Gui keybindings use KeyCode.A-Z (65-90)
+        >= 'a' and <= 'z' => (KeyCode)(codepoint - 32),
         _ when codepoint >= 33 && codepoint < 127 => (KeyCode)codepoint,
         _ => (KeyCode)codepoint
     };

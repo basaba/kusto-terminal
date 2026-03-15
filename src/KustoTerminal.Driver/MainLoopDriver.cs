@@ -38,7 +38,7 @@ public class KustoMainLoopProxy : DispatchProxy
     /// <summary>
     /// Configure the proxy after creation (DispatchProxy.Create uses parameterless ctor).
     /// </summary>
-    internal KustoMainLoopProxy() { }
+    public KustoMainLoopProxy() { }
 
     internal KustoMainLoopProxy(KustoConsoleDriver driver, IPlatformTerminal terminal)
     {
@@ -53,13 +53,30 @@ public class KustoMainLoopProxy : DispatchProxy
     internal static object CreateProxy(KustoConsoleDriver driver, IPlatformTerminal terminal)
     {
         var imlType = typeof(MainLoop).Assembly.GetType("Terminal.Gui.App.IMainLoopDriver")!;
+
+        // Find the generic Create<T,TProxy>() method — use GetMethods to avoid
+        // AmbiguousMatchException when multiple Create overloads exist in .NET 8+
         var createMethod = typeof(DispatchProxy)
-            .GetMethod(nameof(DispatchProxy.Create), BindingFlags.Public | BindingFlags.Static)!
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .First(m => m.Name == nameof(DispatchProxy.Create)
+                        && m.IsGenericMethodDefinition
+                        && m.GetGenericArguments().Length == 2)
             .MakeGenericMethod(imlType, typeof(KustoMainLoopProxy));
 
-        var proxy = (KustoMainLoopProxy)createMethod.Invoke(null, null)!;
-        proxy._driver = driver;
-        proxy._terminal = terminal;
+        object proxy;
+        try
+        {
+            proxy = createMethod.Invoke(null, null)!;
+        }
+        catch (TargetInvocationException tie)
+        {
+            // Unwrap and rethrow the real exception for better diagnostics
+            throw tie.InnerException ?? tie;
+        }
+
+        var typedProxy = (KustoMainLoopProxy)proxy;
+        typedProxy._driver = driver;
+        typedProxy._terminal = terminal;
         return proxy;
     }
 
@@ -131,14 +148,17 @@ public class KustoMainLoopProxy : DispatchProxy
         if (result <= 0) return false;
 
         // Drain wakeup pipe if signaled — briefly enter active mode for responsive redraws
+        bool wokenUp = false;
         if ((fds[1].revents & POLLIN) != 0)
         {
             Span<byte> drain = stackalloc byte[64];
             read(_wakeupReadFd, drain, 64);
             _lastActivityTicks = Stopwatch.GetTimestamp();
+            wokenUp = true;
         }
 
-        return (fds[0].revents & POLLIN) != 0;
+        // Return true if stdin has data OR wakeup was signaled (timers, Invoke, resize)
+        return (fds[0].revents & POLLIN) != 0 || wokenUp;
     }
 
     private object? DoIteration()

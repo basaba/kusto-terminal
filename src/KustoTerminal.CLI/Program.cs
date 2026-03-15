@@ -19,6 +19,9 @@ namespace KustoTerminal.CLI;
 
 class Program
 {
+    private static string? s_fpsLogPath;
+    private static KustoConsoleDriver? s_kustoDriver;
+
     static async Task Main(string[] args)
     {
         try
@@ -45,8 +48,18 @@ class Program
             // Parse --driver flag: kusto (default), net (fallback)
             var driverArg = args.FirstOrDefault(a => a.StartsWith("--driver="));
             var driverName = driverArg?.Split('=', 2).ElementAtOrDefault(1) ?? "kusto";
+            bool showFps = args.Contains("--fps");
 
-            InitDriver(driverName);
+            if (showFps)
+            {
+                s_fpsLogPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    ".kusto-terminal-fps.log");
+                // Write stats on process exit (handles SIGTERM, normal exit, etc.)
+                AppDomain.CurrentDomain.ProcessExit += (_, _) => WriteFpsLog();
+            }
+
+            InitDriver(driverName, showFps);
 
             try
             {
@@ -56,7 +69,10 @@ class Program
             }
             finally
             {
+                // Grab driver reference BEFORE Shutdown disposes it
+                s_kustoDriver ??= Application.Driver as KustoConsoleDriver;
                 Application.Shutdown();
+                WriteFpsLog();
             }
         }
         catch (Exception ex)
@@ -67,7 +83,19 @@ class Program
         }
     }
 
-    static void InitDriver(string driverName)
+    static void WriteFpsLog()
+    {
+        if (s_fpsLogPath == null) return;
+        try
+        {
+            var summary = s_kustoDriver?.GetRenderStatsSummary()
+                ?? "No frames recorded (driver may have fallen back to NetDriver).\n";
+            File.WriteAllText(s_fpsLogPath, summary);
+        }
+        catch { }
+    }
+
+    static void InitDriver(string driverName, bool showFps)
     {
         if (driverName == "net")
         {
@@ -79,7 +107,10 @@ class Program
         try
         {
             var driver = new KustoConsoleDriver();
+            if (showFps)
+                driver.EnableRenderStats();
             Application.Init(driver: driver);
+            s_kustoDriver = driver;
         }
         catch (Exception ex)
         {

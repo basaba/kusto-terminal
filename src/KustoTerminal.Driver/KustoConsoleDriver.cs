@@ -37,6 +37,10 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     private long _lastRenderTicks;
     private const long MinRenderIntervalTicks = 8 * TimeSpan.TicksPerMillisecond; // ~120fps
 
+    // Optional performance stats (null when disabled, zero-cost check)
+    private RenderStats? _renderStats;
+    private string? _renderStatsPath;
+
     // === IConsoleDriver Properties ===
 
     public int Cols { get; set; }
@@ -216,11 +220,12 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     public void Refresh()
     {
         // Frame rate cap: skip if the last render was too recent.
-        // The next poll cycle (~2ms) will retry, preventing the terminal
-        // emulator from being flooded with ANSI data during fast scrolling.
         long now = Stopwatch.GetTimestamp();
         if (now - _lastRenderTicks < MinRenderIntervalTicks)
+        {
+            _renderStats?.RecordSkipped();
             return;
+        }
 
         if (UpdateScreen())
             _lastRenderTicks = now;
@@ -234,6 +239,10 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         int cols = Contents.GetLength(1);
         if (rows == 0 || cols == 0) return false;
 
+        // Stamp FPS stats timing start
+        long frameStart = _renderStats != null ? Stopwatch.GetTimestamp() : 0;
+        string renderMode = "full";
+
         _ansiWriter.BeginSynchronizedUpdate();
         _ansiWriter.HideCursor();
 
@@ -242,16 +251,13 @@ public sealed class KustoConsoleDriver : IConsoleDriver
             || _frontBuffer.GetLength(1) != cols)
         {
             RenderFull(rows, cols);
+            renderMode = "full";
             _firstFrame = false;
         }
         else
         {
-            // Try scroll-optimized rendering first, fall back to cell-level diff
-            int scrollDelta = DetectScrollDelta(rows, cols);
-            if (scrollDelta != 0)
-                RenderScroll(rows, cols, scrollDelta);
-            else
-                RenderDiff(rows, cols);
+            RenderDiff(rows, cols);
+            renderMode = "diff";
         }
 
         if (_cursorVisible && Col >= 0 && Col < cols && Row >= 0 && Row < rows)
@@ -260,11 +266,29 @@ public sealed class KustoConsoleDriver : IConsoleDriver
             _ansiWriter.ShowCursor();
         }
 
+        int ansiBytes = _ansiWriter.Length;
+
         _ansiWriter.EndSynchronizedUpdate();
         _ansiWriter.Flush();
 
         CopyToFrontBuffer(rows, cols);
         _ansiWriter.ResetState();
+
+        if (_renderStats != null)
+        {
+            long frameEnd = Stopwatch.GetTimestamp();
+            int cellsEstimate = Math.Max(0, ansiBytes / 4);
+            _renderStats.RecordFrame(frameStart, frameEnd, cellsEstimate, ansiBytes, renderMode);
+
+            // Flush stats to file every 60 frames (~1-2 seconds)
+            // so stats survive even an unclean exit
+            if (_renderStatsPath != null && _renderStats.TotalFrames % 60 == 0)
+            {
+                try { File.WriteAllText(_renderStatsPath, _renderStats.FormatSummary()); }
+                catch { }
+            }
+        }
+
         return true;
     }
 
@@ -573,6 +597,20 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     /// </summary>
     public void Wakeup() => _loopProxy?.SignalWakeup();
 
+    /// <summary>Enable FPS/render performance tracking.</summary>
+    public void EnableRenderStats()
+    {
+        _renderStats = new RenderStats();
+        _renderStatsPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".kusto-terminal-fps.log");
+        Console.Error.WriteLine($"[FPS] Render stats enabled → {_renderStatsPath}");
+    }
+
+    /// <summary>Get render stats summary, or null if stats not enabled or no frames recorded.</summary>
+    public string? GetRenderStatsSummary() =>
+        _renderStats is { TotalFrames: > 0 } ? _renderStats.FormatSummary() : null;
+
     // === Helpers ===
 
     private void InitContents(int cols, int rows)
@@ -620,7 +658,7 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     /// </summary>
     private static Attribute CreateAttributeDirect(Color foreground, Color background)
     {
-        int platformColor = 0;
+        int platformColor = -1;
         object[] args = { platformColor, foreground, background };
         return (Attribute)s_attrCtor.Invoke(args);
     }
