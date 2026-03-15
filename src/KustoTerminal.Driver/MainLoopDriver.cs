@@ -135,9 +135,19 @@ public class KustoMainLoopProxy : DispatchProxy
     {
         if (_terminal == null) return false;
 
-        // Adaptive timeout: short when recently active, longer when idle
-        long elapsed = Stopwatch.GetTimestamp() - _lastActivityTicks;
-        int timeoutMs = elapsed < IdleAfterTicks ? ActivePollMs : IdlePollMs;
+        // Adaptive timeout: short when recently active, longer when idle.
+        // When a refresh is pending (rate-capped frame), use a short timeout
+        // so the main loop iterates again quickly and Terminal.Gui retries Refresh.
+        int timeoutMs;
+        if (_driver?.RefreshPending ?? false)
+        {
+            timeoutMs = ActivePollMs;
+        }
+        else
+        {
+            long elapsed = Stopwatch.GetTimestamp() - _lastActivityTicks;
+            timeoutMs = elapsed < IdleAfterTicks ? ActivePollMs : IdlePollMs;
+        }
 
         Span<PollFd> fds = stackalloc PollFd[2];
         fds[0] = new PollFd { fd = _terminal.StdinFd, events = POLLIN };
@@ -145,7 +155,9 @@ public class KustoMainLoopProxy : DispatchProxy
 
         int result = poll(fds, 2, timeoutMs);
 
-        if (result <= 0) return false;
+        // Poll timed out — still return true if a refresh is pending
+        if (result <= 0)
+            return _driver?.RefreshPending ?? false;
 
         // Drain wakeup pipe if signaled — briefly enter active mode for responsive redraws
         bool wokenUp = false;

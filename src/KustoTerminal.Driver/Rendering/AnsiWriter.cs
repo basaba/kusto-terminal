@@ -265,6 +265,34 @@ internal sealed class AnsiWriter
         _lastBg = -1;
     }
 
+    /// <summary>Emit SGR codes for text style flags (bold, underline, reverse, etc).</summary>
+    public void SetStyle(int style)
+    {
+        // TextStyle flags: Bold=1, Faint=2, Italic=4, Underline=8, Blink=16, Reverse=32, Strikethrough=64
+        EnsureCapacity(24);
+        _buffer[_length++] = 0x1b;
+        _buffer[_length++] = (byte)'[';
+        bool first = true;
+
+        if ((style & 1) != 0) { AppendSgrParam(ref first, 1); }   // Bold
+        if ((style & 2) != 0) { AppendSgrParam(ref first, 2); }   // Faint
+        if ((style & 4) != 0) { AppendSgrParam(ref first, 3); }   // Italic
+        if ((style & 8) != 0) { AppendSgrParam(ref first, 4); }   // Underline
+        if ((style & 16) != 0) { AppendSgrParam(ref first, 5); }  // Blink
+        if ((style & 32) != 0) { AppendSgrParam(ref first, 7); }  // Reverse
+        if ((style & 64) != 0) { AppendSgrParam(ref first, 9); }  // Strikethrough
+
+        _buffer[_length++] = (byte)'m';
+    }
+
+    private void AppendSgrParam(ref bool first, int code)
+    {
+        if (!first)
+            _buffer[_length++] = (byte)';';
+        first = false;
+        AppendInt(code);
+    }
+
     /// <summary>Clear entire screen</summary>
     public void ClearScreen() => AppendLiteral("\x1b[2J"u8);
 

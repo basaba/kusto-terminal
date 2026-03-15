@@ -37,6 +37,11 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     private long _lastRenderTicks;
     private const long MinRenderIntervalTicks = 8 * TimeSpan.TicksPerMillisecond; // ~120fps
 
+    // When true, a Refresh was skipped by the rate cap and needs to be retried.
+    // DoEventsPending uses this to return true after its poll timeout so the
+    // main loop iterates again and Terminal.Gui calls Refresh.
+    internal bool RefreshPending { get; private set; }
+
     // Optional performance stats (null when disabled, zero-cost check)
     private RenderStats? _renderStats;
     private string? _renderStatsPath;
@@ -224,9 +229,11 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         if (now - _lastRenderTicks < MinRenderIntervalTicks)
         {
             _renderStats?.RecordSkipped();
+            RefreshPending = true;
             return;
         }
 
+        RefreshPending = false;
         if (UpdateScreen())
             _lastRenderTicks = now;
     }
@@ -297,12 +304,12 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         for (int row = 0; row < rows; row++)
         {
             _ansiWriter!.MoveTo(0, row);
-            int lastFg = -1, lastBg = -1;
+            int lastFg = -1, lastBg = -1, lastStyle = -1;
 
             for (int col = 0; col < cols; col++)
             {
                 ref var cell = ref Contents[row, col];
-                EmitCellColor(ref cell, ref lastFg, ref lastBg);
+                EmitCellAttributes(ref cell, ref lastFg, ref lastBg, ref lastStyle);
                 _ansiWriter.WriteRune(cell.Rune);
             }
         }
@@ -326,11 +333,11 @@ public sealed class KustoConsoleDriver : IConsoleDriver
                     col++;
 
                 _ansiWriter!.MoveTo(runStart, row);
-                int lastFg = -1, lastBg = -1;
+                int lastFg = -1, lastBg = -1, lastStyle = -1;
                 for (int c = runStart; c < col; c++)
                 {
                     ref var cell = ref Contents[row, c];
-                    EmitCellColor(ref cell, ref lastFg, ref lastBg);
+                    EmitCellAttributes(ref cell, ref lastFg, ref lastBg, ref lastStyle);
                     _ansiWriter.WriteRune(cell.Rune);
                 }
             }
@@ -468,20 +475,34 @@ public sealed class KustoConsoleDriver : IConsoleDriver
     private void RenderRow(int row, int cols)
     {
         _ansiWriter!.MoveTo(0, row);
-        int lastFg = -1, lastBg = -1;
+        int lastFg = -1, lastBg = -1, lastStyle = -1;
         for (int col = 0; col < cols; col++)
         {
             ref var cell = ref Contents[row, col];
-            EmitCellColor(ref cell, ref lastFg, ref lastBg);
+            EmitCellAttributes(ref cell, ref lastFg, ref lastBg, ref lastStyle);
             _ansiWriter.WriteRune(cell.Rune);
         }
     }
 
-    private void EmitCellColor(ref Cell cell, ref int lastFg, ref int lastBg)
+    private void EmitCellAttributes(ref Cell cell, ref int lastFg, ref int lastBg, ref int lastStyle)
     {
         var attr = cell.Attribute ?? CurrentAttribute;
         int fg = (attr.Foreground.R << 16) | (attr.Foreground.G << 8) | attr.Foreground.B;
         int bg = (attr.Background.R << 16) | (attr.Background.G << 8) | attr.Background.B;
+        int style = (int)attr.Style;
+
+        if (style != lastStyle)
+        {
+            // Reset all attributes first, then re-apply colors + new style.
+            // This is the safest way to handle style transitions.
+            _ansiWriter!.ResetAttributes();
+            lastFg = -1;
+            lastBg = -1;
+            lastStyle = style;
+
+            if (style != 0)
+                _ansiWriter.SetStyle(style);
+        }
 
         if (fg != lastFg || bg != lastBg)
         {
@@ -505,7 +526,8 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         var attrB = b.Attribute;
         if (attrA == null && attrB == null) return true;
         if (attrA == null || attrB == null) return false;
-        return attrA.Value.Foreground.R == attrB.Value.Foreground.R
+        return attrA.Value.Style == attrB.Value.Style
+            && attrA.Value.Foreground.R == attrB.Value.Foreground.R
             && attrA.Value.Foreground.G == attrB.Value.Foreground.G
             && attrA.Value.Foreground.B == attrB.Value.Foreground.B
             && attrA.Value.Background.R == attrB.Value.Background.R
@@ -525,6 +547,11 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         }
         else
             _ansiWriter.HideCursor();
+        // Cursor updates need their own flush since they happen outside Refresh()
+        // Wrap in a synchronized update to avoid tearing
+        _ansiWriter.BeginSynchronizedUpdate();
+        _ansiWriter.Flush();
+        _ansiWriter.EndSynchronizedUpdate();
         _ansiWriter.Flush();
     }
 
