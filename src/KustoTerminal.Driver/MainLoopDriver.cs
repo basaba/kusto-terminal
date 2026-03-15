@@ -155,22 +155,21 @@ public class KustoMainLoopProxy : DispatchProxy
 
         int result = poll(fds, 2, timeoutMs);
 
-        // Poll timed out — still return true if a refresh is pending
-        if (result <= 0)
-            return _driver?.RefreshPending ?? false;
-
-        // Drain wakeup pipe if signaled — briefly enter active mode for responsive redraws
-        bool wokenUp = false;
-        if ((fds[1].revents & POLLIN) != 0)
+        // Drain wakeup pipe if signaled
+        if (result > 0 && (fds[1].revents & POLLIN) != 0)
         {
             Span<byte> drain = stackalloc byte[64];
             read(_wakeupReadFd, drain, 64);
             _lastActivityTicks = Stopwatch.GetTimestamp();
-            wokenUp = true;
         }
 
-        // Return true if stdin has data OR wakeup was signaled (timers, Invoke, resize)
-        return (fds[0].revents & POLLIN) != 0 || wokenUp;
+        if (result > 0 && (fds[0].revents & POLLIN) != 0)
+            _lastActivityTicks = Stopwatch.GetTimestamp();
+
+        // Always return true so Terminal.Gui processes timer callbacks,
+        // Application.Invoke, and other pending work. The poll timeout
+        // already throttles CPU when idle (~20 wakeups/sec at 50ms).
+        return true;
     }
 
     private object? DoIteration()

@@ -158,6 +158,11 @@ internal sealed class AnsiWriter
     /// <summary>Write a single rune at the current position (advances cursor)</summary>
     public void WriteRune(Rune rune)
     {
+        // Skip zero-width runes (NUL continuation cells, control chars).
+        // Writing NUL bytes confuses some terminals and cursor tracking.
+        int colWidth = Terminal.Gui.Text.RuneExtensions.GetColumns(rune);
+        if (colWidth <= 0) return;
+
         EnsureCapacity(4);
         Span<byte> utf8 = stackalloc byte[4];
         rune.TryEncodeToUtf8(utf8, out int bytesWritten);
@@ -168,8 +173,7 @@ internal sealed class AnsiWriter
             _length += bytesWritten;
         }
 
-        // Track cursor advance (wide chars take 2 columns)
-        _lastCol += rune.Utf16SequenceLength > 1 ? 2 : 1;
+        _lastCol += colWidth;
     }
 
     /// <summary>Write a string at current position</summary>

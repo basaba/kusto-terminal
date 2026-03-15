@@ -246,6 +246,10 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         int cols = Contents.GetLength(1);
         if (rows == 0 || cols == 0) return false;
 
+        // Reset tracking at frame start so stale state from UpdateCursor()
+        // (called between frames) doesn't corrupt MoveTo optimizations.
+        _ansiWriter.ResetState();
+
         // Stamp FPS stats timing start
         long frameStart = _renderStats != null ? Stopwatch.GetTimestamp() : 0;
         string renderMode = "full";
@@ -279,7 +283,6 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         _ansiWriter.Flush();
 
         CopyToFrontBuffer(rows, cols);
-        _ansiWriter.ResetState();
 
         if (_renderStats != null)
         {
@@ -547,11 +550,6 @@ public sealed class KustoConsoleDriver : IConsoleDriver
         }
         else
             _ansiWriter.HideCursor();
-        // Cursor updates need their own flush since they happen outside Refresh()
-        // Wrap in a synchronized update to avoid tearing
-        _ansiWriter.BeginSynchronizedUpdate();
-        _ansiWriter.Flush();
-        _ansiWriter.EndSynchronizedUpdate();
         _ansiWriter.Flush();
     }
 
