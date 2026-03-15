@@ -145,35 +145,50 @@ public class KustoMainLoopProxy : DispatchProxy
     {
         if (_terminal == null || _driver == null) return null;
 
-        int bytesRead = _terminal.Read(_inputBuffer);
-        if (bytesRead <= 0) return null;
+        // Drain all available stdin data before returning.
+        // Fast trackpad scrolling can queue hundreds of mouse events;
+        // reading them all in one go ensures Terminal.Gui renders once
+        // after processing the entire burst instead of once per 1024-byte chunk.
+        int drainLoops = 0;
+        const int MaxDrainLoops = 32; // safety limit
 
-        // Input received — stay in active (low-latency) polling mode
-        _lastActivityTicks = Stopwatch.GetTimestamp();
-
-        var sequences = new AnsiSequenceReader.ParsedSequence[64];
-        int seqCount = _sequenceReader.Parse(_inputBuffer.AsSpan(0, bytesRead), sequences);
-
-        for (int i = 0; i < seqCount; i++)
+        do
         {
-            ref var seq = ref sequences[i];
+            int bytesRead = _terminal.Read(_inputBuffer);
+            if (bytesRead <= 0) break;
 
-            // Try mouse first
-            var mouse = InputParser.ToMouse(ref seq);
-            if (mouse != null)
-            {
-                _driver.RaiseMouseEvent(mouse);
-                continue;
-            }
+            _lastActivityTicks = Stopwatch.GetTimestamp();
 
-            // Try key
-            var key = InputParser.ToKey(ref seq);
-            if (key != null && key != Key.Empty)
+            int offset = 0;
+            while (offset < bytesRead)
             {
-                _driver.RaiseKeyDown(key);
-                _driver.RaiseKeyUp(key);
+                var sequences = new AnsiSequenceReader.ParsedSequence[128];
+                int seqCount = _sequenceReader.Parse(
+                    _inputBuffer.AsSpan(offset, bytesRead - offset), sequences, out int consumed);
+                offset += consumed;
+
+                for (int i = 0; i < seqCount; i++)
+                {
+                    ref var seq = ref sequences[i];
+
+                    var mouse = InputParser.ToMouse(ref seq);
+                    if (mouse != null)
+                    {
+                        _driver.RaiseMouseEvent(mouse);
+                        continue;
+                    }
+
+                    var key = InputParser.ToKey(ref seq);
+                    if (key != null && key != Key.Empty)
+                    {
+                        _driver.RaiseKeyDown(key);
+                        _driver.RaiseKeyUp(key);
+                    }
+                }
+
+                if (seqCount == 0) break;
             }
-        }
+        } while (++drainLoops < MaxDrainLoops && HasPendingStdinData());
 
         // Flush pending escape timeout
         if (_sequenceReader.FlushPendingEscape(out var escSeq))
@@ -187,5 +202,14 @@ public class KustoMainLoopProxy : DispatchProxy
         }
 
         return null;
+    }
+
+    /// <summary>Check if stdin has more data without blocking (poll with 0 timeout).</summary>
+    private bool HasPendingStdinData()
+    {
+        if (_terminal == null) return false;
+        Span<PollFd> fds = stackalloc PollFd[1];
+        fds[0] = new PollFd { fd = _terminal.StdinFd, events = POLLIN };
+        return poll(fds, 1, 0) > 0 && (fds[0].revents & POLLIN) != 0;
     }
 }

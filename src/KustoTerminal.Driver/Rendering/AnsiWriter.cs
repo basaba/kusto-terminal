@@ -268,6 +268,59 @@ internal sealed class AnsiWriter
     /// <summary>Clear entire screen</summary>
     public void ClearScreen() => AppendLiteral("\x1b[2J"u8);
 
+    /// <summary>Set scroll region (DECSTBM): CSI top+1 ; bottom+1 r (0-based input)</summary>
+    public void SetScrollRegion(int top, int bottom)
+    {
+        EnsureCapacity(16);
+        _buffer[_length++] = 0x1b;
+        _buffer[_length++] = (byte)'[';
+        AppendInt(top + 1);
+        _buffer[_length++] = (byte)';';
+        AppendInt(bottom + 1);
+        _buffer[_length++] = (byte)'r';
+        // Scroll region changes invalidate cursor position
+        _lastCol = -1;
+        _lastRow = -1;
+    }
+
+    /// <summary>Reset scroll region to full screen: CSI 1 ; rows r</summary>
+    public void ResetScrollRegion(int totalRows)
+    {
+        EnsureCapacity(16);
+        _buffer[_length++] = 0x1b;
+        _buffer[_length++] = (byte)'[';
+        _buffer[_length++] = (byte)'1';
+        _buffer[_length++] = (byte)';';
+        AppendInt(totalRows);
+        _buffer[_length++] = (byte)'r';
+        _lastCol = -1;
+        _lastRow = -1;
+    }
+
+    /// <summary>Scroll up n lines within scroll region: CSI n S</summary>
+    public void ScrollUp(int n)
+    {
+        EnsureCapacity(12);
+        _buffer[_length++] = 0x1b;
+        _buffer[_length++] = (byte)'[';
+        AppendInt(n);
+        _buffer[_length++] = (byte)'S';
+        _lastCol = -1;
+        _lastRow = -1;
+    }
+
+    /// <summary>Scroll down n lines within scroll region: CSI n T</summary>
+    public void ScrollDown(int n)
+    {
+        EnsureCapacity(12);
+        _buffer[_length++] = 0x1b;
+        _buffer[_length++] = (byte)'[';
+        AppendInt(n);
+        _buffer[_length++] = (byte)'T';
+        _lastCol = -1;
+        _lastRow = -1;
+    }
+
     /// <summary>Flush accumulated buffer to terminal in a single write</summary>
     public void Flush()
     {

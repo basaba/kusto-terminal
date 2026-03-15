@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Kusto.Language.Editor;
 using KustoTerminal.Core;
 using KustoTerminal.Core.Models;
@@ -18,6 +17,12 @@ public class SyntaxHighlighter
 {
     private readonly LanguageService _languageService;
 
+    // Cache: skip re-parsing when text hasn't changed (e.g., during scroll)
+    private string _cachedText = "";
+    private string _cachedCluster = "";
+    private string _cachedDatabase = "";
+    private Classification[] _cachedClassifications = Array.Empty<Classification>();
+
     public SyntaxHighlighter(LanguageService languageService)
     {
         _languageService = languageService;
@@ -25,18 +30,54 @@ public class SyntaxHighlighter
 
     public void Highlight(TextView textView, KustoConnection connection)
     {
-        var textModel = new TextModel(textView);
+        var text = textView.Text ?? "";
         var clusterName = connection?.GetClusterNameFromUrl() ?? "";
-        var classificationResult = _languageService.GetClassifications(textModel, clusterName, connection?.Database ?? "");
+        var databaseName = connection?.Database ?? "";
 
-        ApplyClassifications(textView, classificationResult.Classifications);
+        // Only re-parse if the text or connection actually changed.
+        // During scroll, text is unchanged — reuse cached classifications.
+        if (text != _cachedText || clusterName != _cachedCluster || databaseName != _cachedDatabase)
+        {
+            var textModel = new TextModel(textView);
+            var classificationResult = _languageService.GetClassifications(textModel, clusterName, databaseName);
+            _cachedClassifications = classificationResult.Classifications;
+            _cachedText = text;
+            _cachedCluster = clusterName;
+            _cachedDatabase = databaseName;
+        }
+
+        ApplyClassifications(textView, _cachedClassifications);
+    }
+
+    /// <summary>
+    /// Invalidate the cache so the next Highlight() call re-parses.
+    /// Call when external state changes (e.g., schema updates).
+    /// </summary>
+    public void InvalidateCache()
+    {
+        _cachedText = "";
     }
 
     private void ApplyClassifications(TextView textView, Classification[] classifications)
     {
+        if (classifications.Length == 0)
+        {
+            ApplyDefault(textView);
+            return;
+        }
+
         var defaultAttribute = new Attribute(Color.White, Color.Black);
 
+        // Sort by start position for efficient linear scan (O(n+m) instead of O(n*m))
+        var sorted = classifications;
+        if (classifications.Length > 1)
+        {
+            sorted = (Classification[])classifications.Clone();
+            Array.Sort(sorted, (a, b) => a.Start.CompareTo(b.Start));
+        }
+
         var pos = 0;
+        int classIdx = 0;
 
         for (var y = 0; y < textView.Lines; y++)
         {
@@ -44,15 +85,19 @@ public class SyntaxHighlighter
 
             for (var x = 0; x < line.Count; x++)
             {
+                // Advance past classifications that end before current position
+                while (classIdx < sorted.Length
+                    && sorted[classIdx].Start + sorted[classIdx].Length <= pos)
+                    classIdx++;
+
                 Cell cell = line[x];
 
-                var classification = classifications.FirstOrDefault(c =>
-                    pos >= c.Start && pos < c.Start + c.Length);
-
-                if (classification != null)
+                if (classIdx < sorted.Length
+                    && pos >= sorted[classIdx].Start
+                    && pos < sorted[classIdx].Start + sorted[classIdx].Length)
                 {
-                    var attribute = ClassificationColorMapper.GetAttributeForClassification(classification.Kind);
-                    cell.Attribute = attribute ?? defaultAttribute;
+                    cell.Attribute = ClassificationColorMapper.GetAttributeForClassification(sorted[classIdx].Kind)
+                        ?? defaultAttribute;
                 }
                 else
                 {
@@ -64,6 +109,21 @@ public class SyntaxHighlighter
             }
 
             pos += Environment.NewLine.Length;
+        }
+    }
+
+    private static void ApplyDefault(TextView textView)
+    {
+        var defaultAttribute = new Attribute(Color.White, Color.Black);
+        for (var y = 0; y < textView.Lines; y++)
+        {
+            List<Cell> line = textView.GetLine(y);
+            for (var x = 0; x < line.Count; x++)
+            {
+                Cell cell = line[x];
+                cell.Attribute = defaultAttribute;
+                line[x] = cell;
+            }
         }
     }
 }

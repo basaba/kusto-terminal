@@ -46,6 +46,16 @@ internal sealed class AnsiSequenceReader
     /// </summary>
     public int Parse(ReadOnlySpan<byte> input, Span<ParsedSequence> output)
     {
+        return Parse(input, output, out _);
+    }
+
+    /// <summary>
+    /// Feed bytes from stdin into the parser, reporting how many bytes were consumed.
+    /// If the output array fills before all input is processed, bytesConsumed will be
+    /// less than input.Length — call again with the remaining slice.
+    /// </summary>
+    public int Parse(ReadOnlySpan<byte> input, Span<ParsedSequence> output, out int bytesConsumed)
+    {
         int outputCount = 0;
         int i = 0;
 
@@ -144,6 +154,7 @@ internal sealed class AnsiSequenceReader
             }
         }
 
+        bytesConsumed = i;
         return outputCount;
     }
 
