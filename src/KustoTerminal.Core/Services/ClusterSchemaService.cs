@@ -68,8 +68,7 @@ namespace KustoTerminal.Core.Services
                 if (clusterSchema != null)
                 {
                     // If the connected database has entity groups but no tables, the cache
-                    // is incomplete (predates backfill or backfill failed). Discard it and
-                    // re-fetch so BackfillEntityGroupDatabasesAsync can resolve the tables.
+                    // is incomplete. Discard it and re-fetch so backfill can resolve tables.
                     if (NeedsEntityGroupBackfill(clusterSchema, connection.Database))
                     {
                         clusterSchema = null;
@@ -78,6 +77,15 @@ namespace KustoTerminal.Core.Services
                     {
                         // Update language service with cached schema
                         _languageService.AddOrUpdateCluster(clusterName, clusterSchema);
+
+                        // If functions still have macro-expand bodies, backfill them in background
+                        if (NeedsFunctionBodyBackfill(clusterSchema, connection.Database))
+                        {
+                            var bgAuth = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
+                            var bgClient = new KustoClient(connection, bgAuth);
+                            _ = BackfillFunctionBodiesInBackgroundAsync(
+                                bgClient, clusterSchema, connection.Database, clusterName);
+                        }
                         return;
                     }
                 }
@@ -94,9 +102,9 @@ namespace KustoTerminal.Core.Services
                 {
                     // For databases that have entity groups but no tables, fetch the
                     // resolved database schema to get actual table definitions with columns.
-                    await BackfillEntityGroupDatabasesAsync(kustoClient, clusterSchema, connection.Database);
+                    await BackfillEntityGroupTablesAsync(kustoClient, clusterSchema, connection.Database);
 
-                    // Update language service with the schema
+                    // Update language service with the schema (tables + basic functions)
                     _languageService.AddOrUpdateCluster(clusterName, clusterSchema);
 
                     // Save to cache
@@ -104,21 +112,22 @@ namespace KustoTerminal.Core.Services
                     {
                         await _cacheManager.SaveSchemaToCacheAsync(clusterName, clusterSchema);
                     }
+
+                    // Resolve function output schemas in the background so it doesn't
+                    // block initial autocomplete. When done, update the language service
+                    // and cache again with the enriched function bodies.
+                    _ = BackfillFunctionBodiesInBackgroundAsync(
+                        kustoClient, clusterSchema, connection.Database, clusterName);
                 }
             }
             catch { }
-            finally
-            {
-                kustoClient?.Dispose();
-            }
         }
 
         /// <summary>
         /// For the connected database, if it has entity groups but no tables, fetch
-        /// the resolved database schema and merge the tables into the cluster schema.
-        /// Tries .show database schema as json first, then falls back to getschema queries.
+        /// the resolved table schemas and merge them into the cluster schema.
         /// </summary>
-        private static async Task BackfillEntityGroupDatabasesAsync(
+        private static async Task BackfillEntityGroupTablesAsync(
             KustoClient kustoClient, ClusterSchema clusterSchema, string connectedDatabase)
         {
             if (clusterSchema.Databases == null || string.IsNullOrEmpty(connectedDatabase))
@@ -130,10 +139,53 @@ namespace KustoTerminal.Core.Services
             if (!NeedsEntityGroupBackfill(dbSchema))
                 return;
 
+            await BackfillTablesAsync(kustoClient, dbSchema, connectedDatabase);
+        }
+
+        /// <summary>
+        /// Runs function body backfill in the background, then updates the language service
+        /// and cache with enriched function schemas. Disposes the kustoClient when done.
+        /// </summary>
+        private async Task BackfillFunctionBodiesInBackgroundAsync(
+            KustoClient kustoClient, ClusterSchema clusterSchema, string connectedDatabase, string clusterName)
+        {
+            try
+            {
+                if (clusterSchema.Databases == null || string.IsNullOrEmpty(connectedDatabase))
+                    return;
+                if (!clusterSchema.Databases.TryGetValue(connectedDatabase, out var dbSchema))
+                    return;
+                if (dbSchema.EntityGroups == null || dbSchema.EntityGroups.Count == 0)
+                    return;
+
+                await BackfillFunctionBodiesAsync(kustoClient, dbSchema, connectedDatabase);
+
+                // Re-update language service with enriched function bodies
+                _languageService.AddOrUpdateCluster(clusterName, clusterSchema);
+
+                // Re-save cache with enriched schemas
+                if (_cacheManager != null)
+                {
+                    await _cacheManager.SaveSchemaToCacheAsync(clusterName, clusterSchema);
+                }
+            }
+            catch { }
+            finally
+            {
+                kustoClient?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Backfills table schemas for entity group databases.
+        /// </summary>
+        private static async Task BackfillTablesAsync(
+            KustoClient kustoClient, DatabaseSchema dbSchema, string databaseName)
+        {
             // First try .show database schema as json (fast, single call)
             try
             {
-                var resolvedSchema = await kustoClient.GetDatabaseSchemaAsync(connectedDatabase);
+                var resolvedSchema = await kustoClient.GetDatabaseSchemaAsync(databaseName);
                 if (resolvedSchema?.Tables != null && resolvedSchema.Tables.Count > 0)
                 {
                     foreach (var table in resolvedSchema.Tables)
@@ -153,12 +205,68 @@ namespace KustoTerminal.Core.Services
             }
             catch { }
 
-            // If we still have no tables, fall back to getschema queries for shortcut functions.
-            // These go through the query engine which resolves entity group references.
+            // If we still have no tables, fall back to getschema queries for shortcut functions
             if (dbSchema.Tables == null || dbSchema.Tables.Count == 0)
             {
-                await BackfillViaGetSchemaAsync(kustoClient, dbSchema, connectedDatabase);
+                await BackfillViaGetSchemaAsync(kustoClient, dbSchema, databaseName);
             }
+        }
+
+        /// <summary>
+        /// Resolves function output schemas via getschema queries and replaces unparseable
+        /// macro-expand bodies with datatable(...)[]-style bodies the language service can parse.
+        /// </summary>
+        private static async Task BackfillFunctionBodiesAsync(
+            KustoClient kustoClient, DatabaseSchema dbSchema, string databaseName)
+        {
+            if (dbSchema.Functions == null || dbSchema.Functions.Count == 0)
+                return;
+
+            // Collect non-shortcut functions that have macro-expand bodies
+            var functionsToResolve = new List<(string Name, IList<FunctionParameterSchema>? Parameters)>();
+            foreach (var funcKvp in dbSchema.Functions)
+            {
+                var fs = funcKvp.Value;
+                if (fs.Body != null && fs.Body.Contains("macro-expand"))
+                {
+                    // Skip shortcuts — they're already promoted to TableSymbols
+                    if (fs.Folder == "Shortcuts"
+                        && (fs.InputParameters == null || fs.InputParameters.Count == 0))
+                        continue;
+
+                    functionsToResolve.Add((funcKvp.Key, fs.InputParameters));
+                }
+            }
+
+            if (functionsToResolve.Count == 0)
+                return;
+
+            try
+            {
+                var schemas = await kustoClient.GetFunctionSchemasViaQueryAsync(
+                    databaseName, functionsToResolve);
+
+                foreach (var kvp in schemas)
+                {
+                    if (!dbSchema.Functions.TryGetValue(kvp.Key, out var funcSchema))
+                        continue;
+
+                    // Build a datatable body from the resolved columns
+                    var datatableBody = BuildDatatableBody(kvp.Value);
+                    funcSchema.Body = datatableBody;
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Builds a datatable(col1:type1, col2:type2, ...)[] function body string
+        /// from a list of column definitions.
+        /// </summary>
+        private static string BuildDatatableBody(List<(string Name, string DataType, string CslType)> columns)
+        {
+            var colDefs = columns.Select(c => $"{c.Name}:{c.CslType}");
+            return $"{{ datatable({string.Join(", ", colDefs)})[] }}";
         }
 
         /// <summary>
@@ -223,6 +331,36 @@ namespace KustoTerminal.Core.Services
             bool hasNoTables = dbSchema.Tables == null || dbSchema.Tables.Count == 0;
             bool hasEntityGroups = dbSchema.EntityGroups != null && dbSchema.EntityGroups.Count > 0;
             return hasNoTables && hasEntityGroups;
+        }
+
+        /// <summary>
+        /// Checks whether functions in the connected database still have macro-expand bodies
+        /// that need to be replaced with parseable datatable bodies.
+        /// </summary>
+        private static bool NeedsFunctionBodyBackfill(ClusterSchema clusterSchema, string connectedDatabase)
+        {
+            if (clusterSchema.Databases == null || string.IsNullOrEmpty(connectedDatabase))
+                return false;
+            if (!clusterSchema.Databases.TryGetValue(connectedDatabase, out var dbSchema))
+                return false;
+            if (dbSchema.EntityGroups == null || dbSchema.EntityGroups.Count == 0)
+                return false;
+            if (dbSchema.Functions == null)
+                return false;
+
+            // Check if any non-shortcut function still has a macro-expand body
+            foreach (var funcKvp in dbSchema.Functions)
+            {
+                var fs = funcKvp.Value;
+                if (fs.Body != null && fs.Body.Contains("macro-expand"))
+                {
+                    if (fs.Folder == "Shortcuts"
+                        && (fs.InputParameters == null || fs.InputParameters.Count == 0))
+                        continue;
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

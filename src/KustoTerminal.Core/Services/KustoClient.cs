@@ -391,6 +391,100 @@ namespace KustoTerminal.Core.Services
             return result;
         }
 
+        /// <summary>
+        /// Fetches output schemas for functions by running getschema queries.
+        /// For parameterized functions, default values are generated based on parameter types.
+        /// Returns a dictionary mapping function name → list of (columnName, dataType, cslType).
+        /// </summary>
+        public async Task<Dictionary<string, List<(string Name, string DataType, string CslType)>>> GetFunctionSchemasViaQueryAsync(
+            string databaseName, IEnumerable<(string Name, IList<FunctionParameterSchema>? Parameters)> functions)
+        {
+            var result = new Dictionary<string, List<(string Name, string DataType, string CslType)>>();
+
+            try
+            {
+                await EnsureConnectionAsync();
+                if (_queryProvider == null)
+                    throw new InvalidOperationException("Query provider is not initialized");
+
+                foreach (var func in functions)
+                {
+                    try
+                    {
+                        var callArgs = BuildDefaultArgs(func.Parameters);
+                        var query = $"{func.Name}({callArgs}) | getschema";
+                        var clientRequestProperties = new ClientRequestProperties();
+                        using var reader = await _queryProvider.ExecuteQueryAsync(
+                            databaseName, query, clientRequestProperties);
+
+                        var columns = new List<(string Name, string DataType, string CslType)>();
+                        while (reader.Read())
+                        {
+                            var columnName = reader["ColumnName"]?.ToString();
+                            var dataType = reader["DataType"]?.ToString() ?? "";
+                            var columnType = reader["ColumnType"]?.ToString() ?? "string";
+                            if (!string.IsNullOrEmpty(columnName))
+                            {
+                                columns.Add((columnName, dataType, columnType));
+                            }
+                        }
+
+                        if (columns.Count > 0)
+                        {
+                            result[func.Name] = columns;
+                        }
+                    }
+                    catch
+                    {
+                        // Skip functions whose schema can't be resolved
+                    }
+                }
+            }
+            catch
+            {
+                // Connection-level failure
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a comma-separated list of default argument values for a function call.
+        /// </summary>
+        private static string BuildDefaultArgs(IList<FunctionParameterSchema>? parameters)
+        {
+            if (parameters == null || parameters.Count == 0)
+                return string.Empty;
+
+            var args = new List<string>();
+            foreach (var p in parameters)
+            {
+                args.Add(GetDefaultValueForCslType(p.CslType ?? "string"));
+            }
+            return string.Join(", ", args);
+        }
+
+        /// <summary>
+        /// Returns a safe default literal for a given CSL type.
+        /// </summary>
+        private static string GetDefaultValueForCslType(string cslType)
+        {
+            return cslType.ToLowerInvariant() switch
+            {
+                "string" => "''",
+                "long" => "long(0)",
+                "int" => "int(0)",
+                "real" or "double" => "real(0.0)",
+                "datetime" => "datetime(2024-01-01)",
+                "timespan" => "time(1h)",
+                "bool" or "boolean" => "false",
+                "guid" or "uniqueid" => "guid(null)",
+                "dynamic" => "dynamic(null)",
+                "decimal" => "decimal(0)",
+                _ => "''"
+            };
+        }
+
         private async Task EnsureConnectionAsync()
         {
             if (_queryProvider != null && _adminProvider != null)
