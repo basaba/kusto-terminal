@@ -296,6 +296,101 @@ namespace KustoTerminal.Core.Services
             }
         }
 
+        /// <summary>
+        /// Fetches the resolved schema for a specific database. Unlike the cluster-level
+        /// schema, this resolves entity group shortcuts and returns actual table definitions.
+        /// </summary>
+        public async Task<DatabaseSchema?> GetDatabaseSchemaAsync(string databaseName)
+        {
+            try
+            {
+                await EnsureConnectionAsync();
+                
+                if (_adminProvider == null)
+                    throw new InvalidOperationException("Admin provider is not initialized");
+
+                var query = $".show database schema as json";
+                var clientRequestProperties = new ClientRequestProperties();
+                using var reader = await _adminProvider.ExecuteControlCommandAsync(databaseName, query, clientRequestProperties);
+                
+                if (reader.Read())
+                {
+                    var jsonSchema = reader[0]?.ToString();
+                    if (!string.IsNullOrEmpty(jsonSchema))
+                    {
+                        var clusterSchema = JsonConvert.DeserializeObject<ClusterSchema>(jsonSchema);
+                        if (clusterSchema?.Databases != null 
+                            && clusterSchema.Databases.TryGetValue(databaseName, out var dbSchema))
+                        {
+                            return dbSchema;
+                        }
+                    }
+                }
+                
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Fetches column schemas for entity group shortcut functions by running
+        /// getschema queries through the query engine, which resolves entity groups.
+        /// Returns a dictionary mapping table/function name → list of (columnName, dataType, cslType).
+        /// </summary>
+        public async Task<Dictionary<string, List<(string Name, string DataType, string CslType)>>> GetTableSchemasViaQueryAsync(
+            string databaseName, IEnumerable<string> tableNames)
+        {
+            var result = new Dictionary<string, List<(string Name, string DataType, string CslType)>>();
+
+            try
+            {
+                await EnsureConnectionAsync();
+                if (_queryProvider == null)
+                    throw new InvalidOperationException("Query provider is not initialized");
+
+                foreach (var tableName in tableNames)
+                {
+                    try
+                    {
+                        var query = $"{tableName} | getschema";
+                        var clientRequestProperties = new ClientRequestProperties();
+                        using var reader = await _queryProvider.ExecuteQueryAsync(
+                            databaseName, query, clientRequestProperties);
+
+                        var columns = new List<(string Name, string DataType, string CslType)>();
+                        while (reader.Read())
+                        {
+                            var columnName = reader["ColumnName"]?.ToString();
+                            var dataType = reader["DataType"]?.ToString() ?? "";
+                            var columnType = reader["ColumnType"]?.ToString() ?? "string";
+                            if (!string.IsNullOrEmpty(columnName))
+                            {
+                                columns.Add((columnName, dataType, columnType));
+                            }
+                        }
+
+                        if (columns.Count > 0)
+                        {
+                            result[tableName] = columns;
+                        }
+                    }
+                    catch
+                    {
+                        // Skip tables whose schema can't be resolved
+                    }
+                }
+            }
+            catch
+            {
+                // Connection-level failure
+            }
+
+            return result;
+        }
+
         private async Task EnsureConnectionAsync()
         {
             if (_queryProvider != null && _adminProvider != null)

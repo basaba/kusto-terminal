@@ -13,6 +13,7 @@ public interface IKustoClient
     Task<string[]> GetDatabasesAsync();
     Task<string[]> GetTablesAsync(string database);
     Task<ClusterSchema?> GetClusterSchemaAsync();
+    Task<DatabaseSchema?> GetDatabaseSchemaAsync(string databaseName);
     Task CancelCurrentQueryAsync();
     void Dispose();
 }

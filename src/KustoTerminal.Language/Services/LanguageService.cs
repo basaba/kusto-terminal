@@ -141,7 +141,10 @@ namespace KustoTerminal.Language.Services
         }
 
         /// <summary>
-        /// Creates all database members (tables, functions, materialized views, entity groups)
+        /// Creates all database members (tables, functions, materialized views, entity groups).
+        /// For databases that use entity groups with no direct tables, shortcut functions
+        /// (Folder == "Shortcuts", no input parameters) are also promoted to TableSymbol
+        /// so they appear as table-style completions in autocomplete.
         /// </summary>
         /// <param name="dbSchema">Database schema</param>
         /// <returns>List of database member symbols</returns>
@@ -149,12 +152,57 @@ namespace KustoTerminal.Language.Services
         {
             var databaseMembers = new List<Symbol>();
             
-            databaseMembers.AddRange(ConvertTables(dbSchema.Tables));
-            databaseMembers.AddRange(ConvertFunctions(dbSchema.Functions));
+            var tables = ConvertTables(dbSchema.Tables);
+            databaseMembers.AddRange(tables);
+            
+            // Collect table names so we can exclude shortcut functions that shadow them.
+            // When both TableSymbol and FunctionSymbol share a name, the function shadows
+            // the table in the language service, which breaks column autocomplete.
+            var tableNames = new HashSet<string>(tables.Select(t => t.Name));
+            
+            if (tableNames.Count > 0 && dbSchema.EntityGroups is { Count: > 0 })
+            {
+                // Filter out shortcut functions whose names match backfilled tables
+                databaseMembers.AddRange(ConvertFunctions(dbSchema.Functions, tableNames));
+            }
+            else
+            {
+                databaseMembers.AddRange(ConvertFunctions(dbSchema.Functions));
+            }
+            
             databaseMembers.AddRange(ConvertMaterializedViews(dbSchema.MaterializedViews));
             databaseMembers.AddRange(ConvertEntityGroups(dbSchema.EntityGroups));
 
+            // When a database has entity groups but no tables, the "tables" are
+            // exposed as shortcut functions whose bodies use macro-expand/entity_group().
+            // Promote these to TableSymbol so autocomplete suggests them as tables.
+            if (tables.Count == 0
+                && dbSchema.EntityGroups is { Count: > 0 }
+                && dbSchema.Functions is { Count: > 0 })
+            {
+                databaseMembers.AddRange(CreateTablesFromShortcutFunctions(dbSchema.Functions));
+            }
+
             return databaseMembers;
+        }
+
+        /// <summary>
+        /// Creates TableSymbol entries from shortcut functions (Folder == "Shortcuts", no input parameters).
+        /// These represent tables that are accessed via entity groups in federated clusters.
+        /// </summary>
+        private static List<TableSymbol> CreateTablesFromShortcutFunctions(IDictionary<string, FunctionSchema> functions)
+        {
+            var tables = new List<TableSymbol>();
+            foreach (var funcKvp in functions)
+            {
+                var funcSchema = funcKvp.Value;
+                if (funcSchema.Folder == "Shortcuts"
+                    && (funcSchema.InputParameters == null || funcSchema.InputParameters.Count == 0))
+                {
+                    tables.Add(new TableSymbol(funcKvp.Key, new List<ColumnSymbol>()));
+                }
+            }
+            return tables;
         }
 
         /// <summary>
@@ -212,8 +260,14 @@ namespace KustoTerminal.Language.Services
         /// Converts function schemas to function symbols
         /// </summary>
         /// <param name="functionSchemas">Dictionary of function schemas</param>
+        /// <param name="excludeShortcutNames">
+        /// Optional set of names to exclude when they are shortcut functions (Folder == "Shortcuts", no parameters).
+        /// Used to prevent shortcut functions from shadowing backfilled TableSymbols.
+        /// </param>
         /// <returns>List of function symbols</returns>
-        private static List<FunctionSymbol> ConvertFunctions(IDictionary<string, FunctionSchema>? functionSchemas)
+        private static List<FunctionSymbol> ConvertFunctions(
+            IDictionary<string, FunctionSchema>? functionSchemas,
+            HashSet<string>? excludeShortcutNames = null)
         {
             var functions = new List<FunctionSymbol>();
 
@@ -224,6 +278,15 @@ namespace KustoTerminal.Language.Services
             {
                 var functionName = functionSchemaKvp.Key;
                 var functionSchema = functionSchemaKvp.Value;
+                
+                // Skip shortcut functions that would shadow a backfilled table
+                if (excludeShortcutNames != null
+                    && excludeShortcutNames.Contains(functionName)
+                    && functionSchema.Folder == "Shortcuts"
+                    && (functionSchema.InputParameters == null || functionSchema.InputParameters.Count == 0))
+                {
+                    continue;
+                }
                 
                 // Convert function parameters to Parameter objects
                 var parameters = ConvertFunctionParameters(functionSchema.InputParameters);
