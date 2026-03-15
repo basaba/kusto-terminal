@@ -54,10 +54,12 @@ internal static class InputParser
 
     private static Key CharToKey(int codepoint)
     {
-        // Control characters
-        if (codepoint >= 1 && codepoint <= 26)
+        // Control characters — but NOT those with dedicated key mappings
+        // (Tab=9/Ctrl+I, LF=10/Ctrl+J, CR=13/Ctrl+M, BS=8/Ctrl+H)
+        if (codepoint >= 1 && codepoint <= 26
+            && codepoint != 8 && codepoint != 9 && codepoint != 10 && codepoint != 13)
         {
-            // Ctrl+A through Ctrl+Z
+            // Ctrl+A through Ctrl+Z (excluding the special ones above)
             var letter = (KeyCode)((int)KeyCode.A + codepoint - 1);
             return new Key(letter | KeyCode.CtrlMask);
         }
@@ -70,6 +72,8 @@ internal static class InputParser
             10 or 13 => ApplyPlatformModifiers(KeyCode.Enter),
             27 => Key.Esc,
             32 => Key.Space,
+            // Uppercase letters need ShiftMask — Terminal.Gui uses KeyCode.A='a', KeyCode.A|Shift='A'
+            >= 'A' and <= 'Z' => new Key((KeyCode)codepoint | KeyCode.ShiftMask),
             _ when codepoint >= 32 && codepoint < 127 =>
                 new Key((KeyCode)codepoint),
             _ => new Key((KeyCode)codepoint)
