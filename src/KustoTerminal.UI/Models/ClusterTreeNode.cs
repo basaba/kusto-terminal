@@ -30,14 +30,13 @@ public class ClusterTreeNode : TreeNode
 
     private static string GetDisplayText(KustoConnection connection)
     {
-        return $"  {connection.DisplayName}";
+        return connection.DisplayName;
     }
 
     private string GetDisplayText()
     {
-        var prefix = "  ";
         var suffix = _isLoadingDatabases ? " (Loading)" : "";
-        return $"{prefix}{Connection.DisplayName}{suffix}";
+        return $"{Connection.DisplayName}{suffix}";
     }
 
     public void SetLoadingState(bool isLoading)
