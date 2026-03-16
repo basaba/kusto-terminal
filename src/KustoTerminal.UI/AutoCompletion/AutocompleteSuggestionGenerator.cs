@@ -45,18 +45,20 @@ public class AutocompleteSuggestionGenerator : ISuggestionGenerator
         var position = GetPosition(_queryTextView);
         var textModel = new TextModel(_queryTextView);
         
-        var isEmptyBlock = _languageService.IsEmptyBlock(textModel, position, clusterName, databaseName);
         // To prevent intrusive autocomplete popup in case user is just changing the cursor position,
         // we allow displaying popup only when new character is typed, this is achieved by storing the last changed 
         // character position.
         if (_queryTextView.CurrentColumn != _allowedColumn
-            || _queryTextView.CurrentRow != _allowedRow
-            || isEmptyBlock)
+            || _queryTextView.CurrentRow != _allowedRow)
         {
             return s_emptyResult;
         }
 
-        var items = _languageService.GetCompletions(textModel, position, clusterName, databaseName);
+        // Single call checks for empty block and gets completions in one parse
+        var items = _languageService.GetCompletionsIfNotEmpty(textModel, position, clusterName, databaseName);
+        if (items == null)
+            return s_emptyResult;
+
         return items.Items
             .Where(item => 
                 item.DisplayText.StartsWith(currentWord, StringComparison.OrdinalIgnoreCase)

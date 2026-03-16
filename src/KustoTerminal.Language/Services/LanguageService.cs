@@ -16,35 +16,100 @@ namespace KustoTerminal.Language.Services
     public class LanguageService
     {
         private GlobalState _globalState;
+
+        // GlobalState caching — avoid redundant WithCluster/WithDatabase when unchanged
+        private string _cachedClusterName = "";
+        private string _cachedDatabaseName = "";
+
+        // CodeScript caching — use incremental WithText() instead of full CodeScript.From()
+        private CodeScript? _cachedScript;
+        private string _cachedScriptText = "";
+        private bool _globalStateChanged;
+
         public LanguageService()
         {
-            _globalState = GlobalState.Default;
+            _globalState = GlobalState.Default.WithCache();
+        }
+
+        private void EnsureGlobalState(string clusterName, string databaseName)
+        {
+            if (clusterName != _cachedClusterName || databaseName != _cachedDatabaseName)
+            {
+                _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
+                _cachedClusterName = clusterName;
+                _cachedDatabaseName = databaseName;
+                _globalStateChanged = true;
+            }
+        }
+
+        private CodeScript GetOrUpdateScript(string text)
+        {
+            if (_cachedScript == null)
+            {
+                _cachedScript = CodeScript.From(text, _globalState);
+            }
+            else if (_globalStateChanged)
+            {
+                // Schema or cluster/database changed — update globals, then text if needed
+                _cachedScript = _cachedScript.WithGlobals(_globalState);
+                if (text != _cachedScriptText)
+                    _cachedScript = _cachedScript.WithText(text);
+            }
+            else if (text != _cachedScriptText)
+            {
+                // Only text changed — incremental reparse
+                _cachedScript = _cachedScript.WithText(text);
+            }
+
+            _cachedScriptText = text;
+            _globalStateChanged = false;
+            return _cachedScript;
         }
 
         public ClassificationResult GetClassifications(ITextModel textModel, string clusterName, string databaseName)
         {
-            _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
+            EnsureGlobalState(clusterName, databaseName);
+            var script = GetOrUpdateScript(textModel.GetText());
 
-            var classifications = CodeScript.From(textModel.GetText(), _globalState)
-            .Blocks
-            .SelectMany(block => block.Service.GetClassifications(block.Start, block.Length).Classifications)
-            .Select(classification => new Classification
-            {
-                Kind = classification.Kind,
-                Start = classification.Start,
-                Length = classification.Length
-            })
-            .ToList();
+            var classifications = script.Blocks
+                .SelectMany(block => block.Service.GetClassifications(block.Start, block.Length).Classifications)
+                .Select(classification => new Classification
+                {
+                    Kind = classification.Kind,
+                    Start = classification.Start,
+                    Length = classification.Length
+                })
+                .ToList();
 
             return new ClassificationResult { Classifications = classifications.ToArray() };
         }
 
         public CompletionResult GetCompletions(ITextModel textModel, int position, string clusterName, string databaseName)
         {
-            _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
+            EnsureGlobalState(clusterName, databaseName);
+            var script = GetOrUpdateScript(textModel.GetText(normalize: true));
 
-            var script = CodeScript.From(textModel.GetText(normalize: true), _globalState);
             var block = script.GetBlockAtPosition(position);
+            var completions = block.Service.GetCompletionItems(position)
+                .Items
+                .Select(item => new KustoTerminal.Language.Models.CompletionItem{DisplayText = item.DisplayText, ApplyText  = string.Concat(item.ApplyTexts.Select(x=>x.Text)),OrderText = item.OrderText})
+                .ToList();
+            return new CompletionResult { Items = completions };
+        }
+
+        /// <summary>
+        /// Combined check: returns null if the block at position is empty (no completions needed),
+        /// otherwise returns completions. Uses a single parse instead of separate IsEmptyBlock + GetCompletions.
+        /// </summary>
+        public CompletionResult? GetCompletionsIfNotEmpty(ITextModel textModel, int position, string clusterName, string databaseName)
+        {
+            EnsureGlobalState(clusterName, databaseName);
+            var script = GetOrUpdateScript(textModel.GetText(normalize: true));
+
+            var block = script.GetBlockAtPosition(position);
+            if (string.IsNullOrWhiteSpace(block.Text))
+                return null;
+
             var completions = block.Service.GetCompletionItems(position)
                 .Items
                 .Select(item => new KustoTerminal.Language.Models.CompletionItem{DisplayText = item.DisplayText, ApplyText  = string.Concat(item.ApplyTexts.Select(x=>x.Text)),OrderText = item.OrderText})
@@ -54,22 +119,21 @@ namespace KustoTerminal.Language.Services
 
         public bool IsEmptyBlock(ITextModel textModel, int position, string clusterName, string databaseName)
         {
-            _globalState = _globalState.WithCluster(clusterName).WithDatabase(databaseName);
-            
-            var script = CodeScript.From(textModel.GetText(normalize: true), _globalState);
-            var block = script.GetBlockAtPosition(position);
-            if (string.IsNullOrWhiteSpace(block.Text))
-            {
-                return true;
-            }
+            EnsureGlobalState(clusterName, databaseName);
+            var script = GetOrUpdateScript(textModel.GetText(normalize: true));
 
-            return false;
+            var block = script.GetBlockAtPosition(position);
+            return string.IsNullOrWhiteSpace(block.Text);
         }
 
         public void AddOrUpdateCluster(string clusterName, ClusterSchema schema)
         {
             var clusterSymbol = ConvertToClusterSymbol(schema, clusterName);
             _globalState = _globalState.WithCluster(clusterSymbol);
+            // Invalidate caches so next call reparses with updated schema
+            _cachedScript = null;
+            _cachedClusterName = "";
+            _cachedDatabaseName = "";
         }
 
         public RenderInfo GetRenderInfo(string queryText, string clusterName, string databaseName)
