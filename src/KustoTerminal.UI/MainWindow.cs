@@ -542,6 +542,14 @@ public class MainWindow : Window
                 activeTab.EditorPane.FocusEditor();
                 UpdateEditorFrameTitle();
             }
+
+            // Ensure schema is loaded for the selected connection so autocompletion works
+            // immediately. Uses cache when available, so this is fast if the startup
+            // background load already completed.
+            _ = Task.Run(async () =>
+            {
+                await _clusterSchemaService.FetchAndUpdateClusterSchemaAsync(connection);
+            });
         }
 
         #endregion
