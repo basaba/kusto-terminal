@@ -278,6 +278,70 @@ public class ConnectionPane : View
             return _selectedConnection;
         }
 
+        /// <summary>
+        /// Finds a saved connection matching the given cluster URI and selects it in the tree.
+        /// If no matching connection exists, creates and persists a new one.
+        /// If a database is specified and exists as a child node, selects that database node instead.
+        /// </summary>
+        public async Task SelectByClusterUriAsync(string clusterUri, string? databaseName = null, string? displayName = null)
+        {
+            if (string.IsNullOrWhiteSpace(clusterUri))
+                return;
+
+            // Try to find an existing connection
+            var found = TrySelectNode(clusterUri, databaseName);
+            if (found)
+                return;
+
+            // No matching connection — create and persist a new one
+            var newConnection = new KustoConnection
+            {
+                Name = displayName ?? "",
+                ClusterUri = clusterUri,
+                Database = databaseName ?? "",
+                AuthType = AuthenticationType.AzureCli
+            };
+
+            await _connectionManager.AddConnectionAsync(newConnection);
+            RefreshConnections();
+
+            // Now select the newly added node
+            TrySelectNode(clusterUri, databaseName);
+        }
+
+        private bool TrySelectNode(string clusterUri, string? databaseName)
+        {
+            foreach (var obj in _connectionsTree.Objects)
+            {
+                if (obj is not ClusterTreeNode clusterNode)
+                    continue;
+
+                if (!clusterNode.Connection.ClusterUri.Equals(clusterUri, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Found matching cluster — expand and select
+                _connectionsTree.Expand(clusterNode);
+
+                if (!string.IsNullOrWhiteSpace(databaseName))
+                {
+                    var dbNode = clusterNode.Children
+                        .OfType<DatabaseTreeNode>()
+                        .FirstOrDefault(db => db.DatabaseName.Equals(databaseName, StringComparison.OrdinalIgnoreCase));
+
+                    if (dbNode != null)
+                    {
+                        _connectionsTree.GoTo(dbNode);
+                        return true;
+                    }
+                }
+
+                _connectionsTree.GoTo(clusterNode);
+                return true;
+            }
+
+            return false;
+        }
+
         private IKustoClient GetKustoClient(KustoConnection connection)
         {
             if (!_kustoClients.TryGetValue(connection.Id, out var client))

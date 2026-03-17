@@ -644,6 +644,50 @@ public class MainWindow : Window
                     UpdateEditorFrameTitle();
                 }
 
+                // Handle #connect directive — switch connection context before executing
+                if (ConnectDirectiveParser.TryParse(query, out var connectClusterUri, out var connectDisplayName, out var connectDatabase, out var connectRemainingQuery))
+                {
+                    var newConnection = new KustoConnection
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = connectDisplayName,
+                        ClusterUri = connectClusterUri,
+                        Database = connectDatabase ?? "",
+                        AuthType = connection.AuthType
+                    };
+
+                    tab.Connection = newConnection;
+                    connection = newConnection;
+                    Application.Invoke(async () =>
+                    {
+                        tab.EditorPane.SetConnection(newConnection);
+                        await _connectionPane.SelectByClusterUriAsync(connectClusterUri, connectDatabase, connectDisplayName);
+                        UpdateEditorFrameTitle();
+                    });
+
+                    // Load schema and resolve databases for the new cluster
+                    _ = Task.Run(async () =>
+                    {
+                        await _clusterSchemaService.FetchAndUpdateClusterSchemaAsync(newConnection);
+                    });
+
+                    // If no database specified, just switch cluster context without running
+                    if (string.IsNullOrWhiteSpace(connectDatabase))
+                    {
+                        Application.Invoke(() => tab.EditorPane.SetExecuting(false));
+                        return;
+                    }
+
+                    // If no remaining query after the directive, just switch context
+                    if (string.IsNullOrWhiteSpace(connectRemainingQuery))
+                    {
+                        Application.Invoke(() => tab.EditorPane.SetExecuting(false));
+                        return;
+                    }
+
+                    query = connectRemainingQuery;
+                }
+
                 var progress = new Progress<string>(message =>
                 {
                     Application.Invoke(() =>

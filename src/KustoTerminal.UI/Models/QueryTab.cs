@@ -24,10 +24,12 @@ public class QueryTab : IDisposable
     {
         get
         {
-            if (Connection != null && !string.IsNullOrEmpty(Connection.Database))
+            if (Connection != null)
             {
                 var clusterName = Connection.GetClusterNameFromUrl();
-                return $"{Connection.Database} @ {clusterName}";
+                if (!string.IsNullOrEmpty(Connection.Database))
+                    return $"{Connection.Database} @ {clusterName}";
+                return clusterName;
             }
             return State.Title;
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kusto.Language.Editor;
 using KustoTerminal.Core;
 using KustoTerminal.Core.Models;
@@ -63,9 +64,41 @@ public class SyntaxHighlighter
         if (classifications.Length == 0)
         {
             ApplyDefault(textView);
-            return;
+        }
+        else
+        {
+            ApplyKustoClassifications(textView, classifications);
         }
 
+        // Apply directive highlighting on top (overrides Kusto classifications for #connect lines)
+        ApplyDirectiveHighlighting(textView);
+    }
+
+    private static void ApplyDirectiveHighlighting(TextView textView)
+    {
+        var directiveAttribute = new Attribute(ColorsCollection.OliveDrab, Color.Black);
+
+        for (var y = 0; y < textView.Lines; y++)
+        {
+            List<Cell> line = textView.GetLine(y);
+            if (line.Count < 8) continue; // "#connect" is 8 chars minimum
+
+            // Check if line starts with #connect (skip leading whitespace)
+            var lineText = new string(line.Select(c => (char)c.Rune.Value).ToArray()).TrimStart();
+            if (!lineText.StartsWith("#connect", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            for (var x = 0; x < line.Count; x++)
+            {
+                Cell cell = line[x];
+                cell.Attribute = directiveAttribute;
+                line[x] = cell;
+            }
+        }
+    }
+
+    private static void ApplyKustoClassifications(TextView textView, Classification[] classifications)
+    {
         var defaultAttribute = new Attribute(Color.White, Color.Black);
 
         // Sort by start position for efficient linear scan (O(n+m) instead of O(n*m))

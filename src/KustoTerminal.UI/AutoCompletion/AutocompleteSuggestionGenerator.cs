@@ -42,6 +42,12 @@ public class AutocompleteSuggestionGenerator : ISuggestionGenerator
         
         var line = context.CurrentLine.Select (c => c.Rune).ToList ();
         var currentWord = IdxToWord (line, context.CursorPosition, out int startIdx);
+
+        // No KQL autocomplete on #connect directive lines
+        var lineText = new string(line.Select(c => (char)c.Value).ToArray()).TrimStart();
+        if (lineText.StartsWith("#connect", StringComparison.OrdinalIgnoreCase))
+            return s_emptyResult;
+
         var position = GetPosition(_queryTextView);
         var textModel = new TextModel(_queryTextView);
         
