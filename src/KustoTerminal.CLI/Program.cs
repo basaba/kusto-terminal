@@ -60,6 +60,9 @@ class Program
             }
 
             InitDriver(driverName, showFps);
+            // Prevent Application.QuitKey (default: Esc) from intercepting Esc
+            // in dialogs. We use Ctrl+Q for quit instead.
+            Application.QuitKey = new Terminal.Gui.Input.Key(Terminal.Gui.Drivers.KeyCode.CtrlMask | Terminal.Gui.Input.Key.Q.KeyCode);
 
             try
             {

@@ -64,12 +64,13 @@ public class ColumnSelectorDialog : Dialog
             AllowsMarking = false,
             AllowsMultipleSelection = false
         };
+        _columnsList.KeystrokeNavigator.Matcher = null!;
 
         RefreshColumnsList();
 
         _shortcutsLabel = new Label
         {
-            Text = "Space: Toggle | Ctrl+A: All | Ctrl+N: None | Enter: OK | Esc: Cancel",
+            Text = "space toggle | a all | n none | enter ok | esc cancel",
             X = 1,
             Y = Pos.Bottom(_columnsList),
             Width = Dim.Fill()! - 2,
@@ -107,12 +108,12 @@ public class ColumnSelectorDialog : Dialog
                 ToggleSelectedColumn();
                 key.Handled = true;
             }
-            else if (key.KeyCode == (Key.A.KeyCode | KeyCode.CtrlMask))
+            else if (key.KeyCode == Key.A.KeyCode)
             {
                 SelectAllColumns();
                 key.Handled = true;
             }
-            else if (key.KeyCode == (Key.N.KeyCode | KeyCode.CtrlMask))
+            else if (key.KeyCode == Key.N.KeyCode)
             {
                 SelectNoColumns();
                 key.Handled = true;

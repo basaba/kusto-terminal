@@ -51,6 +51,7 @@ public class ConnectionPane : View
                 Y = 0,
                 Width = Dim.Fill(),
                 Height = Dim.Fill(),
+                AllowLetterBasedNavigation = false,
                 Style = new TreeStyle()
                 {
                     ExpandableSymbol = Glyphs.RightArrow,
@@ -59,10 +60,10 @@ public class ConnectionPane : View
             };
             
             var labels = new List<Label>();
-            labels.AddRange(BuildShortcutLabel("Ctrl+N", "New", Pos.Bottom(_connectionsTree) - 4));
-            labels.AddRange(BuildShortcutLabel("Ctrl+E", "Edit", Pos.Bottom(_connectionsTree) - 3));
-            labels.AddRange(BuildShortcutLabel("Del", "Delete", Pos.Bottom(_connectionsTree) - 2));
-            labels.AddRange(BuildShortcutLabel("Space", "Refresh", Pos.Bottom(_connectionsTree) - 1));
+            labels.AddRange(BuildShortcutLabel("n", "new", Pos.Bottom(_connectionsTree) - 4));
+            labels.AddRange(BuildShortcutLabel("e", "edit", Pos.Bottom(_connectionsTree) - 3));
+            labels.AddRange(BuildShortcutLabel("del", "delete", Pos.Bottom(_connectionsTree) - 2));
+            labels.AddRange(BuildShortcutLabel("space", "refresh", Pos.Bottom(_connectionsTree) - 1));
             _shortcutsLabels = labels.ToArray();
 
             // Set up event handlers
@@ -74,7 +75,7 @@ public class ConnectionPane : View
         {
             var keyLabel = new Label()
             {
-                Text = $"{shortcutKey}:",
+                Text = $"{shortcutKey}",
                 X = 0,
                 Y = y,
                 Width = Dim.Auto(DimAutoStyle.Text),
@@ -90,12 +91,12 @@ public class ConnectionPane : View
         {
             _connectionsTree.KeyDown += (o, key) =>
             {
-                if (key.KeyCode == (Key.N.KeyCode | KeyCode.CtrlMask))
+                if (key.KeyCode == Key.N.KeyCode)
                 {
                     OnAddClicked();
                     key.Handled = true;
                 }
-                else if (key.KeyCode == (Key.E.KeyCode | KeyCode.CtrlMask))
+                else if (key.KeyCode == Key.E.KeyCode)
                 {
                     OnEditClicked();
                     key.Handled = true;

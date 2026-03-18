@@ -84,7 +84,8 @@ public class ResultsPane : BasePane
             Width = Dim.Fill(),
             Height = Dim.Fill()! - 1,
             FullRowSelect = false,
-            MultiSelect = false
+            MultiSelect = false,
+            CollectionNavigator = null!
         };
 
         _searchLabel = new Label
@@ -135,29 +136,29 @@ public class ResultsPane : BasePane
         var last = labelToAppendTo;
         var normalScheme = Constants.ShortcutDescriptionSchemeName;
         var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
-        last = last.AppendLabel("/: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("Filter ", normalScheme, labels);
+        last = last.AppendLabel("/", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" filter ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
-        last = last.AppendLabel("Ctrl+L: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("Select Columns ", normalScheme, labels);
+        last = last.AppendLabel("l", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" select columns ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
-        last = last.AppendLabel("Ctrl+S: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("Share ", normalScheme, labels);
+        last = last.AppendLabel("s", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" share ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
-        last = last.AppendLabel("Ctrl+R: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("Row Select ", normalScheme, labels);
+        last = last.AppendLabel("r", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" row select ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
-        last = last.AppendLabel("Ctrl+J: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("JSON Viewer ", normalScheme, labels);
+        last = last.AppendLabel("j", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" json viewer ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
-        last = last.AppendLabel("Ctrl+E: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("Export ", normalScheme, labels);
+        last = last.AppendLabel("e", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" export ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
-        last = last.AppendLabel("Ctrl+G: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("Chart ", normalScheme, labels);
+        last = last.AppendLabel("g", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" chart ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
-        last = last.AppendLabel("F12: ", shortcutKeyScheme, labels);
-        last = last.AppendLabel("Maximize/Restore ", normalScheme, labels);
+        last = last.AppendLabel("f12", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" maximize/restore ", normalScheme, labels);
         return labels;
     }
 
@@ -170,7 +171,7 @@ public class ResultsPane : BasePane
                 ToggleSearch();
                 key.Handled = true;
             }
-            else if (key.KeyCode == (KeyCode.CtrlMask | Key.E.KeyCode))
+            else if (key.KeyCode == Key.E.KeyCode)
             {
                 OnExportClicked();
                 key.Handled = true;
@@ -180,17 +181,17 @@ public class ResultsPane : BasePane
                 MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
                 key.Handled = true;
             }
-            else if (key.KeyCode == (KeyCode.CtrlMask | Key.L.KeyCode))
+            else if (key.KeyCode == Key.L.KeyCode)
             {
                 OnColumnSelectorClicked();
                 key.Handled = true;
             }
-            else if (key.KeyCode == (KeyCode.CtrlMask | Key.S.KeyCode))
+            else if (key.KeyCode == Key.S.KeyCode)
             {
                 OnShareClicked();
                 key.Handled = true;
             }
-            else if (key.KeyCode == (KeyCode.CtrlMask | Key.G.KeyCode))
+            else if (key.KeyCode == Key.G.KeyCode)
             {
                 ToggleChartView();
                 key.Handled = true;
@@ -212,12 +213,12 @@ public class ResultsPane : BasePane
 
         _tableView.KeyDown += (sender, key) =>
         {
-            if (key == (KeyCode.CtrlMask | Key.C.KeyCode))
+            if (key.KeyCode == Key.C.KeyCode)
             {
                 OnCopyCellClicked();
                 key.Handled = true;
             }
-            else if (key == (KeyCode.CtrlMask | Key.R.KeyCode))
+            else if (key.KeyCode == Key.R.KeyCode)
             {
                 SwitchToRowMode();
                 key.Handled = true;
@@ -237,12 +238,12 @@ public class ResultsPane : BasePane
                 OnViewCellClicked();
                 key.Handled = true;
             }
-            else if (key.KeyCode == (KeyCode.CtrlMask | Key.Enter.KeyCode))
+            else if (key.KeyCode == Key.J.KeyCode)
             {
                 OnViewJsonClicked();
                 key.Handled = true;
             }
-            else if (key.KeyCode == (KeyCode.CtrlMask | Key.L.KeyCode))
+            else if (key.KeyCode == Key.L.KeyCode)
             {
                 OnColumnSelectorClicked();
                 key.Handled = true;
@@ -702,6 +703,16 @@ public class ResultsPane : BasePane
         };
 
         dialog.Add(textView);
+
+        dialog.KeyDown += (_, key) =>
+        {
+            if (key == Key.Esc)
+            {
+                Application.RequestStop();
+                key.Handled = true;
+            }
+        };
+
         textView.SetFocus();
 
         Application.Run(dialog);

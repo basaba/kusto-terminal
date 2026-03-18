@@ -52,12 +52,13 @@ namespace KustoTerminal.UI.Dialogs
                 Y = 2,
                 Width = Dim.Fill()! - 2,
                 Height = Dim.Fill()! - 1,
-                CanFocus = true
+                CanFocus = true,
+                AllowLetterBasedNavigation = false
             };
 
             _shortcutsLabel = new Label()
             {
-                Text = "Ctrl+E: Expand All | Ctrl+R: Collapse All",
+                Text = "e expand all | r collapse all",
                 X = 1,
                 Y = Pos.Bottom(_treeView),
                 Width = Dim.Fill()! - 2,
@@ -79,17 +80,17 @@ namespace KustoTerminal.UI.Dialogs
 
             _treeView.KeyDown += (sender, key) =>
             {
-                if (key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
+                if (key.KeyCode == Key.C.KeyCode)
                 {
                     OnCopySelectedClicked();
                     key.Handled = true;
                 }
-                else if (key.KeyCode == (KeyCode.CtrlMask | Key.E.KeyCode))
+                else if (key.KeyCode == Key.E.KeyCode)
                 {
                     OnExpandAllClicked();
                     key.Handled = true;
                 }
-                else if (key.KeyCode == (KeyCode.CtrlMask | Key.R.KeyCode))
+                else if (key.KeyCode == Key.R.KeyCode)
                 {
                     OnCollapseAllClicked();
                     key.Handled = true;

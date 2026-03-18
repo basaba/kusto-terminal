@@ -111,7 +111,7 @@ namespace KustoTerminal.UI.Dialogs
             // Shortcuts label
             _shortcutsLabel = new Label()
             {
-                Text = "Enter: OK | Esc: Cancel",
+                Text = "enter ok | esc cancel",
                 X = 1,
                 Y = 12,
                 Width = Dim.Fill()! - 2,

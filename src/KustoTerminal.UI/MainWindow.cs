@@ -167,17 +167,17 @@ public class MainWindow : Window
             var normalScheme = Constants.ShortcutDescriptionSchemeName;
             var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
             last = last.AppendLabel(" | ", normalScheme, labels);
-            last = last.AppendLabel("Ctrl+Q: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Quit ", normalScheme, labels);
+            last = last.AppendLabel("ctrl+q", shortcutKeyScheme, labels);
+            last = last.AppendLabel(" quit ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("Alt+T/F7: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("New Tab ", normalScheme, labels);
+            last = last.AppendLabel("alt+t/f7", shortcutKeyScheme, labels);
+            last = last.AppendLabel(" new tab ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("Alt+W/Shift+F7: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Close Tab ", normalScheme, labels);
+            last = last.AppendLabel("alt+w/shift+f7", shortcutKeyScheme, labels);
+            last = last.AppendLabel(" close tab ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("F8/Shift+F8: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Switch Tabs ", normalScheme, labels);
+            last = last.AppendLabel("f8/shift+f8", shortcutKeyScheme, labels);
+            last = last.AppendLabel(" switch tabs ", normalScheme, labels);
             return labels;
         }
 

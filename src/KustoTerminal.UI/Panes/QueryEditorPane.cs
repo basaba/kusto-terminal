@@ -111,11 +111,11 @@ namespace KustoTerminal.UI.Panes
             var last = labelToAppendTo;
             var normalScheme = Constants.ShortcutDescriptionSchemeName;
             var shortcutKeyScheme = Constants.ShortcutKeySchemeName;
-            last = last.AppendLabel("F5: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Execute query ", normalScheme, labels);
+            last = last.AppendLabel("f5", shortcutKeyScheme, labels);
+            last = last.AppendLabel(" execute query ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel( "F12: ", shortcutKeyScheme, labels);
-            last = last.AppendLabel("Maximize/Restore ", normalScheme, labels);
+            last = last.AppendLabel( "f12", shortcutKeyScheme, labels);
+            last = last.AppendLabel(" maximize/restore ", normalScheme, labels);
             return labels;
         }
 

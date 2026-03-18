@@ -87,7 +87,7 @@ public class ShareDialog : Dialog
 
             _shortcutsLabel = new Label()
             {
-                Text = "Space: Toggle | Enter: OK | Esc: Cancel",
+                Text = "space toggle | enter ok | esc cancel",
                 X = 1,
                 Y = Pos.Bottom(_resultCheckBox) + 1,
                 Width = Dim.Fill()! - 2,
