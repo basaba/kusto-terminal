@@ -478,6 +478,15 @@ public class ResultsPane : BasePane
 
         dialog.Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "results.csv");
 
+        dialog.KeyDown += (_, key) =>
+        {
+            if (key == Key.Esc)
+            {
+                Application.RequestStop();
+                key.Handled = true;
+            }
+        };
+
         Application.Run(dialog);
 
         if (!dialog.Canceled && !string.IsNullOrEmpty(dialog.FileName))

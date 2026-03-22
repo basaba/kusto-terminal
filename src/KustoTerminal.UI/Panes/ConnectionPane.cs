@@ -62,7 +62,7 @@ public class ConnectionPane : View
             var labels = new List<Label>();
             labels.AddRange(BuildShortcutLabel("n", "new", Pos.Bottom(_connectionsTree) - 4));
             labels.AddRange(BuildShortcutLabel("e", "edit", Pos.Bottom(_connectionsTree) - 3));
-            labels.AddRange(BuildShortcutLabel("del", "delete", Pos.Bottom(_connectionsTree) - 2));
+            labels.AddRange(BuildShortcutLabel("d", "delete", Pos.Bottom(_connectionsTree) - 2));
             labels.AddRange(BuildShortcutLabel("space", "refresh", Pos.Bottom(_connectionsTree) - 1));
             _shortcutsLabels = labels.ToArray();
 
@@ -101,7 +101,7 @@ public class ConnectionPane : View
                     OnEditClicked();
                     key.Handled = true;
                 }
-                else if (key == Key.DeleteChar)
+                else if (key == Key.D.KeyCode)
                 {
                     OnDeleteClicked();
                     key.Handled = true;

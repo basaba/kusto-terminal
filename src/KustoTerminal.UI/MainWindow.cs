@@ -169,15 +169,7 @@ public class MainWindow : Window
             last = last.AppendLabel(" | ", normalScheme, labels);
             last = last.AppendLabel("ctrl+q", shortcutKeyScheme, labels);
             last = last.AppendLabel(" quit ", normalScheme, labels);
-            last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("alt+t/f7", shortcutKeyScheme, labels);
-            last = last.AppendLabel(" new tab ", normalScheme, labels);
-            last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("alt+w/shift+f7", shortcutKeyScheme, labels);
-            last = last.AppendLabel(" close tab ", normalScheme, labels);
-            last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("f8/shift+f8", shortcutKeyScheme, labels);
-            last = last.AppendLabel(" switch tabs ", normalScheme, labels);
+
             return labels;
         }
 

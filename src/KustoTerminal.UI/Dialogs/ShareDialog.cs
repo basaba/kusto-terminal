@@ -115,7 +115,7 @@ public class ShareDialog : Dialog
             KeyBindings.ReplaceCommands(Key.Enter, Command.Accept);
             AddCommand(Command.Accept, () => { OnOkClicked(); return true; });
             
-            KeyBindings.ReplaceCommands(Key.Esc, Command.Cancel);
+            KeyBindings.Add(Key.Esc, Command.Cancel);
             AddCommand(Command.Cancel, () => { OnCancelClicked(); return true; });
         }
 

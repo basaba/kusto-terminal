@@ -94,7 +94,7 @@ public class ColumnSelectorDialog : Dialog
             return true;
         });
 
-        KeyBindings.ReplaceCommands(Key.Esc, Command.Cancel);
+        KeyBindings.Add(Key.Esc, Command.Cancel);
         AddCommand(Command.Cancel, () =>
         {
             OnCancelClicked();
@@ -103,7 +103,12 @@ public class ColumnSelectorDialog : Dialog
 
         _columnsList.KeyDown += (sender, key) =>
         {
-            if (key == Key.Space)
+            if (key == Key.Esc)
+            {
+                OnCancelClicked();
+                key.Handled = true;
+            }
+            else if (key == Key.Space)
             {
                 ToggleSelectedColumn();
                 key.Handled = true;

@@ -75,7 +75,7 @@ namespace KustoTerminal.UI.Dialogs
 
         private void SetKeyboard()
         {
-            KeyBindings.ReplaceCommands(Key.Esc, Command.Cancel);
+            KeyBindings.Add(Key.Esc, Command.Cancel);
             AddCommand(Command.Cancel, () => { OnCloseClicked(); return true; });
 
             _treeView.KeyDown += (sender, key) =>
