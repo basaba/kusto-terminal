@@ -213,7 +213,8 @@ public class ResultsPane : BasePane
 
         _tableView.KeyDown += (sender, key) =>
         {
-            if (key.KeyCode == Key.C.KeyCode)
+            if (key.KeyCode == Key.C.KeyCode
+            || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
             {
                 OnCopyCellClicked();
                 key.Handled = true;

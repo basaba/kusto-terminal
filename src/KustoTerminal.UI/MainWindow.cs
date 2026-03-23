@@ -320,8 +320,7 @@ public class MainWindow : Window
 
             KeyDown += (o, key) =>
             {
-                if (key.KeyCode == (KeyCode.CtrlMask | Key.Q.KeyCode)
-                || key.KeyCode == (KeyCode.CtrlMask | Key.C.KeyCode))
+                if (key.KeyCode == (KeyCode.CtrlMask | Key.Q.KeyCode))
                 {
                     Application.Shutdown();
                     key.Handled = true;
