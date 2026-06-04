@@ -135,6 +135,10 @@ namespace KustoTerminal.UI.Panes
             _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CtrlMask | Key.V.KeyCode, Command.Paste);
             _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CtrlMask | Key.C.KeyCode, Command.Copy);
 
+            // Ctrl+Shift+Arrow for word selection
+            _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CursorLeft | KeyCode.CtrlMask | KeyCode.ShiftMask, Command.WordLeftExtend);
+            _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CursorRight | KeyCode.CtrlMask | KeyCode.ShiftMask, Command.WordRightExtend);
+
             _queryTextView.KeyDown += (sender, key) =>
             {
                 // Shift+Enter executes query (like Azure Data Explorer).
