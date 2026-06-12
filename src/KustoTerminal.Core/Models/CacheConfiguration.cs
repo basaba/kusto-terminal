@@ -22,7 +22,7 @@ public class CacheConfiguration
     /// <summary>
     /// Cache expiration time in hours. Set to 0 for no expiration
     /// </summary>
-    public int CacheExpirationHours { get; set; } = 24;
+    public int CacheExpirationHours { get; set; } = 24 * 30;
 
     /// <summary>
     /// Gets the default cache directory based on the user's home directory
