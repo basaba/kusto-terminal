@@ -24,11 +24,13 @@ public class ConnectionPane : View
     {
         private readonly IConnectionManager _connectionManager;
         private TreeView _connectionsTree = null!;
+        private TextField _searchField = null!;
         private Label[] _shortcutsLabels = null!;
         
         private KustoConnection[] _connections = Array.Empty<KustoConnection>();
         private KustoConnection? _selectedConnection;
         private readonly Dictionary<string, IKustoClient> _kustoClients = new();
+        private string _searchQuery = string.Empty;
 
         public event EventHandler<KustoConnection>? ConnectionSelected;
 
@@ -45,6 +47,15 @@ public class ConnectionPane : View
 
         private void InitializeComponents()
         {
+            _searchField = new TextField()
+            {
+                X = 0,
+                Y = 0,
+                Width = Dim.Fill(),
+                Height = 1,
+                Visible = false,
+            };
+
             _connectionsTree = new TreeView()
             {
                 X = 0,
@@ -60,15 +71,17 @@ public class ConnectionPane : View
             };
             
             var labels = new List<Label>();
-            labels.AddRange(BuildShortcutLabel("n", "new", Pos.Bottom(_connectionsTree) - 4));
-            labels.AddRange(BuildShortcutLabel("e", "edit", Pos.Bottom(_connectionsTree) - 3));
-            labels.AddRange(BuildShortcutLabel("d", "delete", Pos.Bottom(_connectionsTree) - 2));
-            labels.AddRange(BuildShortcutLabel("space", "refresh", Pos.Bottom(_connectionsTree) - 1));
+            labels.AddRange(BuildShortcutLabel("n", "new", Pos.Bottom(_connectionsTree) - 5));
+            labels.AddRange(BuildShortcutLabel("e", "edit", Pos.Bottom(_connectionsTree) - 4));
+            labels.AddRange(BuildShortcutLabel("d", "delete", Pos.Bottom(_connectionsTree) - 3));
+            labels.AddRange(BuildShortcutLabel("space", "refresh", Pos.Bottom(_connectionsTree) - 2));
+            labels.AddRange(BuildShortcutLabel("/", "search", Pos.Bottom(_connectionsTree) - 1));
             _shortcutsLabels = labels.ToArray();
 
             // Set up event handlers
             _connectionsTree.SelectionChanged += OnTreeSelectionChanged;
             _connectionsTree.ObjectActivated += OnTreeObjectActivated;
+            _searchField.TextChanged += OnSearchTextChanged;
         }
 
         private static List<Label> BuildShortcutLabel(string shortcutKey, string description, Pos y)
@@ -111,11 +124,67 @@ public class ConnectionPane : View
                     OnExpandDatabases();
                     key.Handled = true;
                 }
+                else if ((char)key == '/')
+                {
+                    ActivateSearch();
+                    key.Handled = true;
+                }
             };
+
+            _searchField.KeyDown += (o, key) =>
+            {
+                if (key.KeyCode == Key.Esc.KeyCode)
+                {
+                    CancelSearch();
+                    key.Handled = true;
+                }
+                else if (key.KeyCode == Key.Enter.KeyCode)
+                {
+                    CommitSearch();
+                    key.Handled = true;
+                }
+            };
+        }
+
+        private void ActivateSearch()
+        {
+            _searchField.Visible = true;
+            _connectionsTree.Y = 1;
+            _searchField.Text = string.Empty;
+            _searchField.SetFocus();
+            SetNeedsLayout();
+        }
+
+        private void CancelSearch()
+        {
+            _searchQuery = string.Empty;
+            _searchField.Text = string.Empty;
+            HideSearch();
+            RebuildTree();
+        }
+
+        private void CommitSearch()
+        {
+            HideSearch();
+            _connectionsTree.SetFocus();
+        }
+
+        private void HideSearch()
+        {
+            _searchField.Visible = false;
+            _connectionsTree.Y = 0;
+            SetNeedsLayout();
+        }
+
+        private void OnSearchTextChanged(object? sender, EventArgs e)
+        {
+            _searchQuery = _searchField.Text?.ToString() ?? string.Empty;
+            RebuildTree();
         }
 
         private void SetupLayout()
         {
+            Add(_searchField);
             Add(_connectionsTree);
             _shortcutsLabels.ToList().ForEach(label => Add(label));
         }
@@ -126,16 +195,8 @@ public class ConnectionPane : View
             {
                 var connections = await _connectionManager.GetConnectionsAsync();
                 _connections = connections.ToArray();
-                
-                // Clear existing tree
-                _connectionsTree.ClearObjects();
-                
-                // Add cluster nodes to tree
-                foreach (var connection in _connections)
-                {
-                    var clusterNode = new ClusterTreeNode(connection, GetKustoClient(connection), _connectionManager);
-                    _connectionsTree.AddObject(clusterNode);
-                }
+
+                RebuildTree();
 
                 if (_connections.Length > 0)
                 {
@@ -146,6 +207,42 @@ public class ConnectionPane : View
             {
                 MessageBox.ErrorQuery("Error", $"Failed to load connections: {ex.Message}", "OK");
             }
+        }
+
+        private void RebuildTree()
+        {
+            _connectionsTree.ClearObjects();
+
+            foreach (var connection in _connections)
+            {
+                if (!MatchesSearch(connection))
+                    continue;
+
+                var clusterNode = new ClusterTreeNode(connection, GetKustoClient(connection), _connectionManager);
+                _connectionsTree.AddObject(clusterNode);
+            }
+        }
+
+        private bool MatchesSearch(KustoConnection connection)
+        {
+            if (string.IsNullOrEmpty(_searchQuery))
+                return true;
+
+            var q = _searchQuery;
+            var cmp = StringComparison.OrdinalIgnoreCase;
+
+            if (!string.IsNullOrEmpty(connection.Name) && connection.Name.Contains(q, cmp))
+                return true;
+            if (!string.IsNullOrEmpty(connection.ClusterUri) && connection.ClusterUri.Contains(q, cmp))
+                return true;
+            if (connection.GetClusterNameFromUrl().Contains(q, cmp))
+                return true;
+            if (!string.IsNullOrEmpty(connection.Database) && connection.Database.Contains(q, cmp))
+                return true;
+            if (connection.Databases != null && connection.Databases.Any(db => db.Contains(q, cmp)))
+                return true;
+
+            return false;
         }
 
         public void RefreshConnections()
