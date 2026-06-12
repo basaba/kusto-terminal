@@ -310,6 +310,19 @@ public class ConnectionPane : View
             TrySelectNode(clusterUri, databaseName);
         }
 
+        /// <summary>
+        /// Highlights the tree node matching the given connection (cluster + optional database).
+        /// Does not create a new connection if no match exists; in that case the current
+        /// selection is left unchanged.
+        /// </summary>
+        public void HighlightConnection(KustoConnection? connection)
+        {
+            if (connection == null || string.IsNullOrWhiteSpace(connection.ClusterUri))
+                return;
+
+            TrySelectNode(connection.ClusterUri, connection.Database);
+        }
+
         private bool TrySelectNode(string clusterUri, string? databaseName)
         {
             foreach (var obj in _connectionsTree.Objects)

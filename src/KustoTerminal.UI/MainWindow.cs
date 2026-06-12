@@ -486,6 +486,9 @@ public class MainWindow : Window
             // Update frame title to show active tab
             UpdateEditorFrameTitle();
 
+            // Highlight the tab's connection in the connection pane
+            _connectionPane.HighlightConnection(newTab.Connection);
+
             // Focus the editor
             newTab.EditorPane.FocusEditor();
 
