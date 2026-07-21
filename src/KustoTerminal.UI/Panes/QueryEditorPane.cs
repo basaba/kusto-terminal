@@ -411,6 +411,43 @@ namespace KustoTerminal.UI.Panes
             _queryTextView.Text = text ?? string.Empty;
         }
 
+        /// <summary>
+        /// Appends a new pipe step ("| {clause}") to the query block that currently contains
+        /// the editor cursor. Query blocks are separated by blank lines (same convention as
+        /// <see cref="GetCurrentQuery"/>). If the editor is empty, the clause becomes the
+        /// entire content.
+        /// </summary>
+        public void AppendPipeStepToCurrentQuery(string clause)
+        {
+            if (string.IsNullOrWhiteSpace(clause))
+                return;
+
+            var fullText = _queryTextView.Text?.ToString() ?? string.Empty;
+            var pipeLine = "| " + clause.TrimStart();
+
+            if (string.IsNullOrEmpty(fullText))
+            {
+                _queryTextView.Text = pipeLine;
+                _queryTextView.CursorPosition = new System.Drawing.Point(pipeLine.Length, 0);
+                _queryTextView.SetNeedsDraw();
+                return;
+            }
+
+            var lines = fullText.Split('\n').ToList();
+            var cursorPos = _queryTextView.CursorPosition;
+            int currentLine = Math.Min(Math.Max(cursorPos.Y, 0), lines.Count - 1);
+
+            // Find end of current query block (forward to blank line or EOF).
+            int queryEnd = currentLine;
+            while (queryEnd < lines.Count - 1 && !string.IsNullOrWhiteSpace(lines[queryEnd + 1]))
+                queryEnd++;
+
+            lines.Insert(queryEnd + 1, pipeLine);
+            _queryTextView.Text = string.Join("\n", lines);
+            _queryTextView.CursorPosition = new System.Drawing.Point(pipeLine.Length, queryEnd + 1);
+            _queryTextView.SetNeedsDraw();
+        }
+
         public async void SaveCurrentQueryAsync()
         {
             if (_userSettingsManager != null)

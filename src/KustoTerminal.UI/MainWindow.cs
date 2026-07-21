@@ -463,6 +463,7 @@ public class MainWindow : Window
             tab.EditorPane.QueryCancelRequested += OnQueryCancelRequested;
             tab.EditorPane.MaximizeToggleRequested += OnQueryEditorMaximizeToggleRequested;
             tab.ResultsPane.MaximizeToggleRequested += OnResultsPaneMaximizeToggleRequested;
+            tab.ResultsPane.FilterFromSelectionRequested += OnFilterFromSelectionRequested;
         }
 
         private void UnwireTabEvents(QueryTab tab)
@@ -471,6 +472,17 @@ public class MainWindow : Window
             tab.EditorPane.QueryCancelRequested -= OnQueryCancelRequested;
             tab.EditorPane.MaximizeToggleRequested -= OnQueryEditorMaximizeToggleRequested;
             tab.ResultsPane.MaximizeToggleRequested -= OnResultsPaneMaximizeToggleRequested;
+            tab.ResultsPane.FilterFromSelectionRequested -= OnFilterFromSelectionRequested;
+        }
+
+        private void OnFilterFromSelectionRequested(object? sender, string clause)
+        {
+            var activeTab = _tabManager.ActiveTab;
+            if (activeTab == null || string.IsNullOrWhiteSpace(clause))
+                return;
+
+            activeTab.EditorPane.AppendPipeStepToCurrentQuery(clause);
+            activeTab.EditorPane.FocusEditor();
         }
 
         private void OnActiveTabChanged(object? sender, QueryTab newTab)

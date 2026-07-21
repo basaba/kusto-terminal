@@ -41,6 +41,13 @@ public class ResultsPane : BasePane
 
     public event EventHandler? MaximizeToggleRequested;
 
+    /// <summary>
+    /// Raised when the user requests a <c>where</c> filter derived from the currently
+    /// selected cell(s). Payload is the clause body without the leading pipe
+    /// (e.g. <c>"where Col == 5"</c>).
+    /// </summary>
+    public event EventHandler<string>? FilterFromSelectionRequested;
+
     public ResultsPane(HtmlSyntaxHighlighter htmlSyntaxHtmlSyntaxHighlighter)
     {
         _htmlSyntaxHighlighter = htmlSyntaxHtmlSyntaxHighlighter;
@@ -84,7 +91,7 @@ public class ResultsPane : BasePane
             Width = Dim.Fill(),
             Height = Dim.Fill()! - 1,
             FullRowSelect = false,
-            MultiSelect = false,
+            MultiSelect = true,
             CollectionNavigator = null!
         };
 
@@ -156,6 +163,9 @@ public class ResultsPane : BasePane
         last = last.AppendLabel("| ", normalScheme, labels);
         last = last.AppendLabel("g", shortcutKeyScheme, labels);
         last = last.AppendLabel(" chart ", normalScheme, labels);
+        last = last.AppendLabel("| ", normalScheme, labels);
+        last = last.AppendLabel("f", shortcutKeyScheme, labels);
+        last = last.AppendLabel(" filter by cells ", normalScheme, labels);
         last = last.AppendLabel("| ", normalScheme, labels);
         last = last.AppendLabel("f12", shortcutKeyScheme, labels);
         last = last.AppendLabel(" maximize/restore ", normalScheme, labels);
@@ -248,6 +258,45 @@ public class ResultsPane : BasePane
             {
                 OnColumnSelectorClicked();
                 key.Handled = true;
+            }
+            else if (key.KeyCode == Key.F.KeyCode)
+            {
+                OnFilterFromSelectionRequested();
+                key.Handled = true;
+            }
+        };
+
+        // TableView keeps "toggled" cells in MultiSelectedRegions across plain clicks.
+        // In practice that leaves stale highlights after a mouse click, so we
+        // proactively collapse the region on any non-Shift Button1 click before
+        // TableView applies its own selection change.
+        _tableView.MouseEvent += (sender, args) =>
+        {
+            if (args.Flags.HasFlag(MouseFlags.Button1Clicked)
+                && !args.Flags.HasFlag(MouseFlags.ButtonShift))
+            {
+                _tableView.MultiSelectedRegions.Clear();
+                _tableView.SetNeedsDraw();
+            }
+        };
+
+        // Drop any multi-cell region that doesn't contain the newly selected cell.
+        // Shift+arrow extension always produces a region that includes the moving
+        // cursor, so it's preserved. A stray toggled region left by a mouse click
+        // no longer contains the cursor once the user arrow-navigates away, and
+        // therefore gets cleared here instead of persisting until Esc.
+        _tableView.SelectedCellChanged += (sender, args) =>
+        {
+            if (_tableView.MultiSelectedRegions.Count == 0)
+                return;
+
+            var stillRelevant = _tableView.MultiSelectedRegions
+                .Any(r => r.Rectangle.Contains(args.NewCol, args.NewRow));
+
+            if (!stillRelevant)
+            {
+                _tableView.MultiSelectedRegions.Clear();
+                _tableView.SetNeedsDraw();
             }
         };
     }
@@ -572,6 +621,65 @@ public class ResultsPane : BasePane
         File.WriteAllText(fileName, json);
     }
 
+    private void OnFilterFromSelectionRequested()
+    {
+        if (_currentResult?.Data == null || _tableView.Table == null)
+        {
+            return;
+        }
+
+        // Source the values from the underlying result DataTable (with full type fidelity)
+        // rather than from the table view's already-formatted strings.
+        // Column indices in the view align with columns in the (possibly column-filtered)
+        // DataTable surfaced through ApplyColumnFilter, so we resolve by column name.
+        var viewTable = _tableView.Table;
+        var sourceTable = _currentResult.Data;
+
+        var cells = _tableView.GetAllSelectedCells()?.ToList();
+        if (cells == null || cells.Count == 0)
+        {
+            return;
+        }
+
+        // Translate view cells (col, row) into matching cells in the source DataTable,
+        // using column names to bridge across any column filtering.
+        var translated = new List<System.Drawing.Point>(cells.Count);
+        foreach (var cell in cells)
+        {
+            if (cell.X < 0 || cell.X >= viewTable.Columns)
+                continue;
+            if (cell.Y < 0 || cell.Y >= viewTable.Rows)
+                continue;
+
+            var colName = viewTable.ColumnNames.ElementAtOrDefault(cell.X);
+            if (string.IsNullOrEmpty(colName))
+                continue;
+
+            var sourceColIndex = sourceTable.Columns.IndexOf(colName);
+            if (sourceColIndex < 0)
+                continue;
+
+            translated.Add(new System.Drawing.Point(sourceColIndex, cell.Y));
+        }
+
+        var clause = KustoFilterBuilder.BuildWhereClause(sourceTable, translated);
+        if (string.IsNullOrEmpty(clause))
+        {
+            return;
+        }
+
+        // Collapse any multi-cell selection back to a single active cell BEFORE
+        // raising the event — the event handler shifts focus to the editor,
+        // and if we clear after that the table view may not repaint until Esc.
+        var anchorCol = _tableView.SelectedColumn;
+        var anchorRow = _tableView.SelectedRow;
+        _tableView.MultiSelectedRegions.Clear();
+        _tableView.SetSelection(anchorCol, anchorRow, extendExistingSelection: false);
+        _tableView.SetNeedsDraw();
+
+        FilterFromSelectionRequested?.Invoke(this, clause!);
+    }
+
     private void OnCopyCellClicked()
     {
         if (_currentResult?.Data == null || _tableView.Table == null)
@@ -648,7 +756,11 @@ public class ResultsPane : BasePane
     private void SwitchToCellMode()
     {
         _tableView.FullRowSelect = false;
+        // Clear any lingering multi-cell selection region so arrow navigation
+        // is back to single-cell movement.
+        _tableView.MultiSelectedRegions.Clear();
         _tableView.SetNeedsLayout();
+        _tableView.SetNeedsDraw();
     }
 
     private void OnViewCellClicked()
