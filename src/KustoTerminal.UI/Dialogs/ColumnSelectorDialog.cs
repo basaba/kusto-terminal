@@ -64,7 +64,11 @@ public class ColumnSelectorDialog : Dialog
             AllowsMarking = false,
             AllowsMultipleSelection = false
         };
-        _columnsList.KeystrokeNavigator.Matcher = null!;
+        // Disable letter-based navigation so shortcut keys ('a', 'n') aren't swallowed
+        // by the ListView's collection navigator. Assigning null here throws
+        // NullReferenceException in OnKeyDown and prevented Enter/Esc from closing
+        // the dialog.
+        _columnsList.KeystrokeNavigator.Matcher = new NoOpMatcher();
 
         RefreshColumnsList();
 
@@ -194,5 +198,11 @@ public class ColumnSelectorDialog : Dialog
     private void OnCancelClicked()
     {
         Application.RequestStop();
+    }
+
+    private sealed class NoOpMatcher : ICollectionNavigatorMatcher
+    {
+        public bool IsCompatibleKey(Key key) => false;
+        public bool IsMatch(string search, object value) => false;
     }
 }
