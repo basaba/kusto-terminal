@@ -81,8 +81,11 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"Fatal error: {ex.ToString()}");
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
+            if (!Console.IsInputRedirected)
+            {
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+            }
         }
     }
 
@@ -103,6 +106,12 @@ class Program
         if (driverName == "net")
         {
             Application.Init(driverName: "NetDriver");
+            return;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            Application.Init(driverName: "WindowsDriver");
             return;
         }
 
