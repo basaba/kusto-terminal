@@ -10,8 +10,17 @@ namespace KustoTerminal.UI.Controls;
 /// </summary>
 public class SafeTextView : TextView
 {
+    /// <summary>Raised before TextView processes key input such as autocomplete.</summary>
+    public event EventHandler<Key>? PreviewKeyDown;
+
     /// <summary>Raised after a mouse event has been processed (cursor may have moved).</summary>
     public event EventHandler? MouseProcessed;
+
+    protected override bool OnKeyDown(Key key)
+    {
+        PreviewKeyDown?.Invoke(this, key);
+        return key.Handled || base.OnKeyDown(key);
+    }
 
     protected override bool OnMouseEvent(MouseEventArgs mouseEvent)
     {

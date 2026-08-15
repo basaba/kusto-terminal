@@ -28,6 +28,8 @@ namespace KustoTerminal.UI.Panes
         
         private bool _isExecuting = false;
         private System.Threading.Timer? _temporaryMessageTimer;
+        private System.Threading.Timer? _windowsShiftEnterTimer;
+        private System.Threading.Timer? _windowsCtrlBackspaceTimer;
         private readonly IUserSettingsManager? _userSettingsManager;
         private readonly SyntaxHighlighter _syntaxHighlighter = null!;
         private readonly AutocompleteSuggestionGenerator _autocompleteSuggestionGenerator = null!;
@@ -139,14 +141,32 @@ namespace KustoTerminal.UI.Panes
             _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CursorLeft | KeyCode.CtrlMask | KeyCode.ShiftMask, Command.WordLeftExtend);
             _queryTextView.KeyBindings.ReplaceCommands(KeyCode.CursorRight | KeyCode.CtrlMask | KeyCode.ShiftMask, Command.WordRightExtend);
 
-            _queryTextView.KeyDown += (sender, key) =>
+            ((Controls.SafeTextView)_queryTextView).PreviewKeyDown += (sender, key) =>
             {
+                if (Common.PlatformModifiers.IsWindows && key.KeyCode == KeyCode.ShiftMask)
+                {
+                    StartWindowsShiftEnterMonitor();
+                }
+
+                if (Common.PlatformModifiers.IsWindows && key.KeyCode == KeyCode.CtrlMask)
+                {
+                    StartWindowsCtrlBackspaceMonitor();
+                }
+
+                if (key == Key.Backspace.WithCtrl)
+                {
+                    StopWindowsCtrlBackspaceMonitor();
+                    key.Handled = _queryTextView.InvokeCommand(Command.KillWordBackwards) ?? false;
+                    return;
+                }
+
                 // Shift+Enter executes query (like Azure Data Explorer).
-                // Check both: driver-reported modifier AND macOS CGEventSourceFlagsState
-                // (fallback for terminals/drivers that don't distinguish Shift+Enter).
+                // Check both the driver-reported modifier and the platform key state
+                // for drivers that report Shift+Enter as plain Enter.
                 if (key == Key.F5 || key == Key.Enter.WithShift
                     || (key == Key.Enter && Common.PlatformModifiers.IsShiftHeld))
                 {
+                    StopWindowsShiftEnterMonitor();
                     OnExecuteClicked();
                     key.Handled = true;
                 }
@@ -155,16 +175,77 @@ namespace KustoTerminal.UI.Panes
                     MaximizeToggleRequested?.Invoke(this, EventArgs.Empty);
                     key.Handled = true;
                 }
-                else if (key == Key.Esc)
+                else if (key == Key.Esc && _isExecuting)
                 {
-                    if (_isExecuting)
-                    {
-                        QueryCancelRequested?.Invoke(this, EventArgs.Empty);
-                    }
-                        
+                    QueryCancelRequested?.Invoke(this, EventArgs.Empty);
                     key.Handled = true;
                 }
             };
+        }
+
+        private void StartWindowsShiftEnterMonitor()
+        {
+            StopWindowsShiftEnterMonitor();
+            _windowsShiftEnterTimer = new System.Threading.Timer(
+                _ =>
+                {
+                    if (!Common.PlatformModifiers.IsShiftHeld)
+                    {
+                        StopWindowsShiftEnterMonitor();
+                        return;
+                    }
+
+                    if (!Common.PlatformModifiers.IsEnterHeld)
+                        return;
+
+                    StopWindowsShiftEnterMonitor();
+                    Application.Invoke(OnExecuteClicked);
+                },
+                null,
+                0,
+                10);
+        }
+
+        private void StopWindowsShiftEnterMonitor()
+        {
+            Interlocked.Exchange(ref _windowsShiftEnterTimer, null)?.Dispose();
+        }
+
+        private void StartWindowsCtrlBackspaceMonitor()
+        {
+            StopWindowsCtrlBackspaceMonitor();
+            var backspaceWasHeld = false;
+            _windowsCtrlBackspaceTimer = new System.Threading.Timer(
+                _ =>
+                {
+                    if (!Common.PlatformModifiers.IsControlHeld)
+                    {
+                        StopWindowsCtrlBackspaceMonitor();
+                        return;
+                    }
+
+                    var backspaceIsHeld = Common.PlatformModifiers.IsBackspaceHeld;
+                    if (!backspaceIsHeld)
+                    {
+                        backspaceWasHeld = false;
+                        return;
+                    }
+
+                    if (backspaceWasHeld)
+                        return;
+
+                    backspaceWasHeld = true;
+                    Application.Invoke(() =>
+                        _queryTextView.InvokeCommand(Command.KillWordBackwards));
+                },
+                null,
+                0,
+                10);
+        }
+
+        private void StopWindowsCtrlBackspaceMonitor()
+        {
+            Interlocked.Exchange(ref _windowsCtrlBackspaceTimer, null)?.Dispose();
         }
 
         private void SetupLayout()
@@ -236,6 +317,9 @@ namespace KustoTerminal.UI.Panes
 
         private void OnExecuteClicked()
         {
+            if (_isExecuting)
+                return;
+
             var query = GetCurrentQuery();
             if (!string.IsNullOrWhiteSpace(query))
             {
