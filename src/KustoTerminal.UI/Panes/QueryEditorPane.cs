@@ -125,9 +125,9 @@ namespace KustoTerminal.UI.Panes
             last = last.AppendLabel("alt+w", shortcutKeyScheme, labels);
             last = last.AppendLabel(" close tab ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("alt+tab", shortcutKeyScheme, labels);
+            last = last.AppendLabel("ctrl+pgdn", shortcutKeyScheme, labels);
             last = last.AppendLabel(" next tab ", normalScheme, labels);
-            last = last.AppendLabel("alt+shift+tab", shortcutKeyScheme, labels);
+            last = last.AppendLabel("ctrl+pgup", shortcutKeyScheme, labels);
             last = last.AppendLabel(" previous tab ", normalScheme, labels);
             return labels;
         }

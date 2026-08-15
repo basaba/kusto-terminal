@@ -288,8 +288,8 @@ public class MainWindow : Window
 
         private void SetKeyboard()
         {
-            // Application-level handler intercepts Alt+key BEFORE any view processes them.
-            // This is necessary because TextView consumes Alt+letter as special chars.
+            // Application-level handler intercepts tab shortcuts before focused views.
+            // This is necessary because TextView consumes modified keys.
             Application.KeyDown += (o, key) =>
             {
                 if (IsAltKey(key, 't'))
@@ -302,15 +302,13 @@ public class MainWindow : Window
                     CloseActiveTab();
                     key.Handled = true;
                 }
-                else if (key.KeyCode == (KeyCode.AltMask | KeyCode.Tab)
-                      || key.KeyCode == (KeyCode.Tab | KeyCode.AltMask))
+                else if (key == Key.PageDown.WithCtrl)
                 {
                     _tabManager.ActivateNextTab();
                     UpdateEditorFrameTitle();
                     key.Handled = true;
                 }
-                else if (key.KeyCode == (KeyCode.AltMask | KeyCode.ShiftMask | KeyCode.Tab)
-                      || key.KeyCode == (KeyCode.ShiftMask | KeyCode.AltMask | KeyCode.Tab))
+                else if (key == Key.PageUp.WithCtrl)
                 {
                     _tabManager.ActivatePreviousTab();
                     UpdateEditorFrameTitle();
