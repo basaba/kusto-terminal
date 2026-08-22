@@ -13,6 +13,8 @@ namespace KustoTerminal.Core.Models
         public string? ErrorMessage { get; set; }
         public DataTable? Data { get; set; }
         public string? ClientRequestId { get; set; }
+        public bool IsCached { get; set; }
+        public DateTime? CachedAt { get; set; }
         public int RowCount => Data?.Rows.Count ?? 0;
         public int ColumnCount => Data?.Columns.Count ?? 0;
         
@@ -45,10 +47,12 @@ namespace KustoTerminal.Core.Models
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Query { get; set; } = string.Empty;
-        public string ConnectionId { get; set; } = string.Empty;
+        public string ClusterUri { get; set; } = string.Empty;
+        public string Database { get; set; } = string.Empty;
         public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
-        public bool IsSuccessful { get; set; }
-        public TimeSpan Duration { get; set; }
-        public string? ErrorMessage { get; set; }
+        public bool IsCommand { get; set; }
+        public long DurationTicks { get; set; }
+        public string? ClientRequestId { get; set; }
+        public string ResultFileName { get; set; } = string.Empty;
     }
 }

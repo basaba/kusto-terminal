@@ -116,6 +116,9 @@ namespace KustoTerminal.UI.Panes
             last = last.AppendLabel("f5/shift+enter", shortcutKeyScheme, labels);
             last = last.AppendLabel(" execute query ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
+            last = last.AppendLabel("f8", shortcutKeyScheme, labels);
+            last = last.AppendLabel(" recall result ", normalScheme, labels);
+            last = last.AppendLabel("| ", normalScheme, labels);
             last = last.AppendLabel( "f12", shortcutKeyScheme, labels);
             last = last.AppendLabel(" maximize/restore ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
@@ -125,10 +128,20 @@ namespace KustoTerminal.UI.Panes
             last = last.AppendLabel("alt+w", shortcutKeyScheme, labels);
             last = last.AppendLabel(" close tab ", normalScheme, labels);
             last = last.AppendLabel("| ", normalScheme, labels);
-            last = last.AppendLabel("ctrl+pgdn", shortcutKeyScheme, labels);
-            last = last.AppendLabel(" next tab ", normalScheme, labels);
-            last = last.AppendLabel("ctrl+pgup", shortcutKeyScheme, labels);
-            last = last.AppendLabel(" previous tab ", normalScheme, labels);
+            if (OperatingSystem.IsMacOS())
+            {
+                last = last.AppendLabel("alt+tab", shortcutKeyScheme, labels);
+                last = last.AppendLabel(" next tab ", normalScheme, labels);
+                last = last.AppendLabel("alt+shift+tab", shortcutKeyScheme, labels);
+                last = last.AppendLabel(" previous tab ", normalScheme, labels);
+            }
+            else
+            {
+                last = last.AppendLabel("ctrl+pgdn", shortcutKeyScheme, labels);
+                last = last.AppendLabel(" next tab ", normalScheme, labels);
+                last = last.AppendLabel("ctrl+pgup", shortcutKeyScheme, labels);
+                last = last.AppendLabel(" previous tab ", normalScheme, labels);
+            }
             return labels;
         }
 

@@ -30,6 +30,8 @@ public class MainWindow : Window
 {
     private readonly IConnectionManager _connectionManager;
         private readonly IUserSettingsManager _userSettingsManager;
+        private readonly IExecutionHistoryManager _executionHistoryManager;
+        private readonly IDisposable? _executionHistoryDisposable;
         private readonly ClusterSchemaService _clusterSchemaService;
         private readonly SyntaxHighlighter _syntaxHighlighter;
         private readonly HtmlSyntaxHighlighter _htmlSyntaxHighlighter;
@@ -51,10 +53,17 @@ public class MainWindow : Window
         private Dim _originalBottomFrameHeight = null!;
         private Pos _originalRightTopFrameY = null!;
 
-        public MainWindow(IConnectionManager connectionManager, IUserSettingsManager userSettingsManager)
+        public MainWindow(
+            IConnectionManager connectionManager,
+            IUserSettingsManager userSettingsManager,
+            IExecutionHistoryManager? executionHistoryManager = null)
         {
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
             _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
+            _executionHistoryManager = executionHistoryManager ?? new ExecutionHistoryManager();
+            _executionHistoryDisposable = executionHistoryManager == null
+                ? _executionHistoryManager as IDisposable
+                : null;
 
             // Initialize language service and cluster schema service
             var languageService = new LanguageService();
@@ -292,7 +301,24 @@ public class MainWindow : Window
             // This is necessary because TextView consumes modified keys.
             Application.KeyDown += (o, key) =>
             {
-                if (IsAltKey(key, 't'))
+                if (key == Key.F8)
+                {
+                    _ = RecallLastExecutionAsync();
+                    key.Handled = true;
+                }
+                else if (OperatingSystem.IsMacOS() && key == Key.Tab.WithAlt.WithShift)
+                {
+                    _tabManager.ActivatePreviousTab();
+                    UpdateEditorFrameTitle();
+                    key.Handled = true;
+                }
+                else if (OperatingSystem.IsMacOS() && key == Key.Tab.WithAlt)
+                {
+                    _tabManager.ActivateNextTab();
+                    UpdateEditorFrameTitle();
+                    key.Handled = true;
+                }
+                else if (IsAltKey(key, 't'))
                 {
                     CreateNewTab();
                     key.Handled = true;
@@ -341,11 +367,6 @@ public class MainWindow : Window
                 else if (key == (KeyCode.ShiftMask | Key.F7.KeyCode))
                 {
                     CloseActiveTab();
-                    key.Handled = true;
-                }
-                else if (key == Key.F8)
-                {
-                    _tabManager.ActivateNextTab();
                     key.Handled = true;
                 }
                 else if (key == (KeyCode.ShiftMask | Key.F8.KeyCode))
@@ -565,6 +586,62 @@ public class MainWindow : Window
             await ExecuteQueryAsync(query);
         }
 
+        private async Task RecallLastExecutionAsync()
+        {
+            var tab = _tabManager.ActiveTab;
+            if (tab == null)
+                return;
+
+            var connection = tab.Connection ?? _connectionPane.GetSelectedConnection();
+            if (connection == null)
+            {
+                tab.EditorPane.ShowTemporaryMessage("Select a connection before recalling history.");
+                return;
+            }
+
+            var query = tab.EditorPane.GetCurrentQuery();
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                tab.EditorPane.ShowTemporaryMessage("Place the cursor in a query before recalling its result.");
+                return;
+            }
+
+            try
+            {
+                var result = await Task.Run(() =>
+                    _executionHistoryManager.GetLatestAsync(connection, query));
+                if (result == null)
+                {
+                    Application.Invoke(() =>
+                    {
+                        if (_tabManager.Tabs.Contains(tab))
+                            tab.EditorPane.ShowTemporaryMessage("No cached result found for the query under the cursor.");
+                    });
+                    return;
+                }
+
+                Application.Invoke(() =>
+                {
+                    if (!_tabManager.Tabs.Contains(tab))
+                        return;
+
+                    tab.ResultsPane.SetQueryText(result.Query);
+                    tab.ResultsPane.SetConnection(connection);
+                    tab.ResultsPane.DisplayResult(result);
+                    tab.EditorPane.FocusEditor();
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Failed to recall execution history: {ex.Message}");
+                Application.Invoke(() =>
+                {
+                    if (_tabManager.Tabs.Contains(tab))
+                        tab.EditorPane.ShowTemporaryMessage("Failed to read the local execution cache.");
+                });
+            }
+        }
+
         private void OnQueryCancelRequested(object? sender, EventArgs e)
         {
             var activeTab = _tabManager.ActiveTab;
@@ -598,6 +675,7 @@ public class MainWindow : Window
         {
             var tab = _tabManager.ActiveTab;
             if (tab == null) return;
+            var submittedQuery = query;
 
             // If there's an existing query on this tab, cancel it
             if (tab.CancellationTokenSource != null && !tab.CancellationTokenSource.Token.IsCancellationRequested)
@@ -712,6 +790,27 @@ public class MainWindow : Window
                     tab.ResultsPane.SetConnection(connection);
                     tab.ResultsPane.DisplayResult(result);
                 });
+
+                if (result.IsSuccess)
+                {
+                    try
+                    {
+                        await Task.Run(() =>
+                            _executionHistoryManager.AppendAsync(
+                                connection,
+                                submittedQuery,
+                                result,
+                                cancellationToken));
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Cancellation after displaying a result should not surface as a cache error.
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Warning: Failed to cache execution result: {ex.Message}");
+                    }
+                }
             }
             catch (OperationCanceledException)
             {
@@ -937,6 +1036,7 @@ public class MainWindow : Window
                 }
                 
                 _tabManager.Dispose();
+                _executionHistoryDisposable?.Dispose();
             }
             base.Dispose(disposing);
         }

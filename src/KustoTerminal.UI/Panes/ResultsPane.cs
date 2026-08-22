@@ -371,13 +371,9 @@ public class ResultsPane : BasePane
             var filteredTable = ApplyColumnFilter(dataTable);
             _tableView.Table = new DataTableSource(filteredTable);
 
-            var statusText = $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms";
-            if (!string.IsNullOrEmpty(result.ClientRequestId))
-            {
-                statusText += $" | ClientRequestId: {result.ClientRequestId}";
-            }
-
-            _statusLabel.Text = statusText;
+            _statusLabel.Text = AppendResultMetadata(
+                $"Rows: {result.RowCount:N0} | Columns: {result.ColumnCount} | Duration: {result.Duration.TotalMilliseconds:F0}ms",
+                result);
         }
         catch (Exception ex)
         {
@@ -409,13 +405,9 @@ public class ResultsPane : BasePane
         _tableView.Visible = true;
         _statusLabel.Visible = true;
 
-        var statusText = $"No results returned | Duration: {result.Duration.TotalMilliseconds:F0}ms";
-        if (!string.IsNullOrEmpty(result.ClientRequestId))
-        {
-            statusText += $" | ClientRequestId: {result.ClientRequestId}";
-        }
-
-        _statusLabel.Text = statusText;
+        _statusLabel.Text = AppendResultMetadata(
+            $"No results returned | Duration: {result.Duration.TotalMilliseconds:F0}ms",
+            result);
 
         if (result.Data != null && result.Data.Columns.Count > 0)
         {
@@ -487,12 +479,9 @@ public class ResultsPane : BasePane
         {
             var seriesCount = _currentChartData?.Series.Count ?? 0;
             var pointCount = _currentChartData?.TimePoints.Count ?? 0;
-            var statusText = $"📊 Chart View | Series: {seriesCount} | Points: {pointCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms | Ctrl+G: Switch to Table";
-            if (!string.IsNullOrEmpty(_currentResult.ClientRequestId))
-            {
-                statusText += $" | ClientRequestId: {_currentResult.ClientRequestId}";
-            }
-            _statusLabel.Text = statusText;
+            _statusLabel.Text = AppendResultMetadata(
+                $"📊 Chart View | Series: {seriesCount} | Points: {pointCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms | Ctrl+G: Switch to Table",
+                _currentResult);
         }
 
         _chartView.SetFocus();
@@ -988,13 +977,9 @@ public class ResultsPane : BasePane
             return;
         }
 
-        var statusText = $"Rows: {_currentResult.RowCount:N0} | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
-        if (!string.IsNullOrEmpty(_currentResult.ClientRequestId))
-        {
-            statusText += $" | ClientRequestId: {_currentResult.ClientRequestId}";
-        }
-
-        _statusLabel.Text = statusText;
+        _statusLabel.Text = AppendResultMetadata(
+            $"Rows: {_currentResult.RowCount:N0} | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms",
+            _currentResult);
     }
 
     private void UpdateStatusForFilteredData(int filteredRowCount, string searchText)
@@ -1004,13 +989,24 @@ public class ResultsPane : BasePane
             return;
         }
 
-        var statusText = $"Filtered: {filteredRowCount:N0} of {_currentResult.RowCount:N0} rows | Search: \"{searchText}\" | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms";
-        if (!string.IsNullOrEmpty(_currentResult.ClientRequestId))
+        _statusLabel.Text = AppendResultMetadata(
+            $"Filtered: {filteredRowCount:N0} of {_currentResult.RowCount:N0} rows | Search: \"{searchText}\" | Columns: {_currentResult.ColumnCount} | Duration: {_currentResult.Duration.TotalMilliseconds:F0}ms",
+            _currentResult);
+    }
+
+    private static string AppendResultMetadata(string statusText, QueryResult result)
+    {
+        if (result.IsCached && result.CachedAt.HasValue)
         {
-            statusText += $" | ClientRequestId: {_currentResult.ClientRequestId}";
+            statusText += $" | Cached: {result.CachedAt.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}";
         }
 
-        _statusLabel.Text = statusText;
+        if (!string.IsNullOrEmpty(result.ClientRequestId))
+        {
+            statusText += $" | ClientRequestId: {result.ClientRequestId}";
+        }
+
+        return statusText;
     }
 
     private void OnColumnSelectorClicked()
