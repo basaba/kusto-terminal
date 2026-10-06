@@ -18,6 +18,7 @@ namespace KustoTerminal.Core.Services
     {
         private readonly KustoConnection _connection;
         private readonly IAuthenticationProvider _authProvider;
+        private readonly ManagedSession? _managedSession;
         private ICslQueryProvider? _queryProvider;
         private ICslAdminProvider? _adminProvider;
         private string? _currentRequestId;
@@ -27,6 +28,14 @@ namespace KustoTerminal.Core.Services
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _authProvider = authProvider ?? throw new ArgumentNullException(nameof(authProvider));
+            _managedSession = authProvider as ManagedSession;
+            if (_managedSession != null)
+            {
+                _managedSession.ValidateTarget(connection);
+                _connection = _managedSession.CreateConnection();
+            }
+            else if (connection.AuthType == AuthenticationType.ManagedShell)
+                throw new InvalidOperationException("Managed shell authentication requires its parent session.");
         }
 
         public async Task<QueryResult> ExecuteQueryAsync(string query, CancellationToken cancellationToken = default, IProgress<string>? progress = null)
@@ -45,7 +54,7 @@ namespace KustoTerminal.Core.Services
             try
             {
                 progress?.Report("Initializing connection...");
-                await EnsureConnectionAsync();
+                await EnsureConnectionAsync(combinedToken);
                 
                 // Check for cancellation after connection setup
                 combinedToken.ThrowIfCancellationRequested();
@@ -114,8 +123,9 @@ namespace KustoTerminal.Core.Services
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                progress?.Report($"Query failed: {ex.Message}");
-                return QueryResult.Error(query, ex.Message, stopwatch.Elapsed, _currentRequestId);
+                var message = _managedSession == null ? ex.Message : "Managed query failed; check the parent shell session and target.";
+                progress?.Report($"Query failed: {message}");
+                return QueryResult.Error(query, message, stopwatch.Elapsed, _currentRequestId);
             }
             finally
             {
@@ -149,7 +159,14 @@ namespace KustoTerminal.Core.Services
                 var cancelProperties = new ClientRequestProperties();
                 
                 // Execute the cancel command with a short timeout
-                await _adminProvider.ExecuteControlCommandAsync(_connection.Database, cancelCommand, cancelProperties);
+                if (_managedSession != null)
+                {
+                    var builder = await _managedSession.CreateConnectionStringBuilderAsync(_connection);
+                    using var cancelProvider = KustoClientFactory.CreateCslAdminProvider(builder);
+                    await cancelProvider.ExecuteControlCommandAsync(_connection.Database, cancelCommand, cancelProperties);
+                }
+                else
+                    await _adminProvider.ExecuteControlCommandAsync(_connection.Database, cancelCommand, cancelProperties);
             }
             catch
             {
@@ -206,6 +223,7 @@ namespace KustoTerminal.Core.Services
 
         public async Task<string[]> GetDatabasesAsync()
         {
+            if (_managedSession != null) return [_connection.Database];
             try
             {
                 await EnsureConnectionAsync();
@@ -238,6 +256,7 @@ namespace KustoTerminal.Core.Services
         {
             try
             {
+                _managedSession?.ValidateTarget(_connection, database);
                 await EnsureConnectionAsync();
                 
                 if (_queryProvider == null)
@@ -266,6 +285,14 @@ namespace KustoTerminal.Core.Services
 
         public async Task<ClusterSchema?> GetClusterSchemaAsync()
         {
+            if (_managedSession != null)
+            {
+                var database = await GetDatabaseSchemaAsync(_connection.Database);
+                return database == null ? null : new ClusterSchema
+                {
+                    Databases = { [_connection.Database] = database }
+                };
+            }
             try
             {
                 await EnsureConnectionAsync();
@@ -304,6 +331,7 @@ namespace KustoTerminal.Core.Services
         {
             try
             {
+                _managedSession?.ValidateTarget(_connection, databaseName);
                 await EnsureConnectionAsync();
                 
                 if (_adminProvider == null)
@@ -347,6 +375,7 @@ namespace KustoTerminal.Core.Services
 
             try
             {
+                _managedSession?.ValidateTarget(_connection, databaseName);
                 await EnsureConnectionAsync();
                 if (_queryProvider == null)
                     throw new InvalidOperationException("Query provider is not initialized");
@@ -355,6 +384,7 @@ namespace KustoTerminal.Core.Services
                 {
                     try
                     {
+                        if (_managedSession != null) await EnsureConnectionAsync();
                         var query = $"{tableName} | getschema";
                         var clientRequestProperties = new ClientRequestProperties();
                         using var reader = await _queryProvider.ExecuteQueryAsync(
@@ -403,6 +433,7 @@ namespace KustoTerminal.Core.Services
 
             try
             {
+                _managedSession?.ValidateTarget(_connection, databaseName);
                 await EnsureConnectionAsync();
                 if (_queryProvider == null)
                     throw new InvalidOperationException("Query provider is not initialized");
@@ -411,6 +442,7 @@ namespace KustoTerminal.Core.Services
                 {
                     try
                     {
+                        if (_managedSession != null) await EnsureConnectionAsync();
                         var callArgs = BuildDefaultArgs(func.Parameters);
                         var query = $"{func.Name}({callArgs}) | getschema";
                         var clientRequestProperties = new ClientRequestProperties();
@@ -485,8 +517,17 @@ namespace KustoTerminal.Core.Services
             };
         }
 
-        private async Task EnsureConnectionAsync()
+        private async Task EnsureConnectionAsync(CancellationToken cancellationToken = default)
         {
+            if (_managedSession != null)
+            {
+                var managedBuilder = await _managedSession.CreateConnectionStringBuilderAsync(_connection, cancellationToken);
+                _queryProvider?.Dispose();
+                _adminProvider?.Dispose();
+                _queryProvider = KustoClientFactory.CreateCslQueryProvider(managedBuilder);
+                _adminProvider = KustoClientFactory.CreateCslAdminProvider(managedBuilder);
+                return;
+            }
             if (_queryProvider != null && _adminProvider != null)
                 return;
 

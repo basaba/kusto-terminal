@@ -8,8 +8,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework Condition="'$(OS)' != 'Windows_NT'">net8.0</TargetFramework>
-    <TargetFramework Condition="'$(OS)' == 'Windows_NT'">net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework Condition="$(RuntimeIdentifier.StartsWith('win-')) Or ('$(RuntimeIdentifier)' == '' And '$(OS)' == 'Windows_NT')">net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>KustoTerminal</AssemblyName>

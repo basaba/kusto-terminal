@@ -24,14 +24,25 @@ class Program
 
     static async Task Main(string[] args)
     {
+        ManagedSession? managedSession = null;
+        var managedRequested = args.Any(a => a.StartsWith("--shell-", StringComparison.Ordinal) ||
+            a is "--cluster" or "--database" or "--tenant");
         try
         {
+            var managedOptions = ManagedShellOptions.Parse(args);
+            if (managedOptions != null)
+            {
+                var channel = await ManagedTokenChannel.ConnectAsync(managedOptions);
+                managedSession = new ManagedSession(channel);
+                // Authenticate before opening the UI. No fallback to standalone login.
+                await managedSession.CreateConnectionStringBuilderAsync(managedSession.CreateConnection());
+            }
             Console.WriteLine("Kusto Terminal - Azure Data Explorer Client");
             Console.WriteLine("Initializing...");
 
             // Initialize services
-            var connectionManager = new ConnectionManager();
-            var userSettingsManager = new UserSettingsManager();
+            IConnectionManager connectionManager = (IConnectionManager?)managedSession ?? new ConnectionManager();
+            IUserSettingsManager userSettingsManager = (IUserSettingsManager?)managedSession ?? new UserSettingsManager();
 
             // Load existing connections
             await connectionManager.LoadConnectionsAsync();
@@ -42,13 +53,14 @@ class Program
             Console.WriteLine("Starting Terminal UI...");
 
             // Enable ConfigurationManager to load color schemes and themes
-            ConfigurationManager.Enable(ConfigLocations.All);
+            ConfigurationManager.Enable(managedSession == null ? ConfigLocations.All :
+                ConfigLocations.HardCoded | ConfigLocations.LibraryResources | ConfigLocations.AppResources);
             ConfigurationManager.Apply();
 
             // Parse --driver flag: kusto (default), net (fallback)
             var driverArg = args.FirstOrDefault(a => a.StartsWith("--driver="));
             var driverName = driverArg?.Split('=', 2).ElementAtOrDefault(1) ?? "kusto";
-            bool showFps = args.Contains("--fps");
+            bool showFps = managedSession == null && args.Contains("--fps");
 
             if (showFps)
             {
@@ -80,13 +92,17 @@ class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Fatal error: {ex.ToString()}");
-            if (!Console.IsInputRedirected)
+            Console.WriteLine(managedRequested
+                ? "Managed shell startup failed. A supported platform and valid parent shell session are required."
+                : $"Fatal error: {ex.ToString()}");
+            if (managedRequested) Environment.ExitCode = 1;
+            if (!managedRequested && !Console.IsInputRedirected)
             {
                 Console.WriteLine("Press any key to exit...");
                 Console.ReadKey();
             }
         }
+        finally { managedSession?.Dispose(); }
     }
 
     static void WriteFpsLog()

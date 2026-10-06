@@ -1,0 +1,31 @@
+{
+  "Request": {
+    "Version": 1,
+    "RequestId": "fixture-1",
+    "ClusterUri": "https://example.kusto.windows.net"
+  },
+  "MsalResponse": {
+    "Version": 1,
+    "RequestId": "fixture-1",
+    "Scheme": 0,
+    "AccessToken": "synthetic-msal-token",
+    "ExpiresOn": "2099-01-01T00:00:00+00:00",
+    "ErrorCode": ""
+  },
+  "DstsResponse": {
+    "Version": 1,
+    "RequestId": "fixture-1",
+    "Scheme": 1,
+    "AccessToken": "synthetic-dsts-token",
+    "ExpiresOn": "2099-01-01T00:00:00Z",
+    "ErrorCode": ""
+  },
+  "ErrorResponse": {
+    "Version": 1,
+    "RequestId": "fixture-1",
+    "Scheme": 0,
+    "AccessToken": "",
+    "ExpiresOn": "0001-01-01T00:00:00+00:00",
+    "ErrorCode": "authentication-failed"
+  }
+}

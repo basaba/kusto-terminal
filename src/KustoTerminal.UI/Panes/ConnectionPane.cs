@@ -23,6 +23,7 @@ namespace KustoTerminal.UI.Panes;
 public class ConnectionPane : View
     {
         private readonly IConnectionManager _connectionManager;
+        private readonly ManagedSession? _managedSession;
         private TreeView _connectionsTree = null!;
         private TextField _searchField = null!;
         private Label[] _shortcutsLabels = null!;
@@ -37,6 +38,7 @@ public class ConnectionPane : View
         public ConnectionPane(IConnectionManager connectionManager)
         {
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+            _managedSession = connectionManager as ManagedSession;
 
             InitializeComponents();
             SetupLayout();
@@ -71,9 +73,12 @@ public class ConnectionPane : View
             };
             
             var labels = new List<Label>();
-            labels.AddRange(BuildShortcutLabel("n", "new", Pos.Bottom(_connectionsTree) - 5));
-            labels.AddRange(BuildShortcutLabel("e", "edit", Pos.Bottom(_connectionsTree) - 4));
-            labels.AddRange(BuildShortcutLabel("d", "delete", Pos.Bottom(_connectionsTree) - 3));
+            if (_managedSession == null)
+            {
+                labels.AddRange(BuildShortcutLabel("n", "new", Pos.Bottom(_connectionsTree) - 5));
+                labels.AddRange(BuildShortcutLabel("e", "edit", Pos.Bottom(_connectionsTree) - 4));
+                labels.AddRange(BuildShortcutLabel("d", "delete", Pos.Bottom(_connectionsTree) - 3));
+            }
             labels.AddRange(BuildShortcutLabel("space", "refresh", Pos.Bottom(_connectionsTree) - 2));
             labels.AddRange(BuildShortcutLabel("/", "search", Pos.Bottom(_connectionsTree) - 1));
             _shortcutsLabels = labels.ToArray();
@@ -315,6 +320,7 @@ public class ConnectionPane : View
 
         private void OnAddClicked()
         {
+            if (_managedSession != null) return;
             var dialog = new ConnectionDialog();
             Application.Run(dialog);
 
@@ -330,6 +336,7 @@ public class ConnectionPane : View
 
         private void OnEditClicked()
         {
+            if (_managedSession != null) return;
             if (_selectedConnection == null) return;
 
             var dialog = new ConnectionDialog(_selectedConnection);
@@ -347,6 +354,7 @@ public class ConnectionPane : View
 
         private void OnDeleteClicked()
         {
+            if (_managedSession != null) return;
             if (_selectedConnection == null) return;
 
             var result = MessageBox.Query("Confirm Delete",
@@ -373,7 +381,7 @@ public class ConnectionPane : View
 
         public KustoConnection? GetSelectedConnection()
         {
-            return _selectedConnection;
+            return _managedSession?.CreateConnection() ?? _selectedConnection;
         }
 
         /// <summary>
@@ -383,6 +391,14 @@ public class ConnectionPane : View
         /// </summary>
         public async Task SelectByClusterUriAsync(string clusterUri, string? databaseName = null, string? displayName = null)
         {
+            if (_managedSession != null)
+            {
+                var target = _managedSession.CreateConnection();
+                if (clusterUri != target.ClusterUri || (databaseName != null && databaseName != target.Database))
+                    throw new InvalidOperationException("The managed shell target cannot be changed.");
+                TrySelectNode(target.ClusterUri, target.Database);
+                return;
+            }
             if (string.IsNullOrWhiteSpace(clusterUri))
                 return;
 
@@ -457,7 +473,8 @@ public class ConnectionPane : View
         {
             if (!_kustoClients.TryGetValue(connection.Id, out var client))
             {
-                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType);
+                var authProvider = (IAuthenticationProvider?)_managedSession ??
+                    AuthenticationProviderFactory.CreateProvider(connection.AuthType);
                 client = new KustoClient(connection, authProvider!);
                 _kustoClients[connection.Id] = client;
             }

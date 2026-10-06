@@ -52,6 +52,7 @@ public class MainWindow : Window
         private Pos _originalBottomFrameY = null!;
         private Dim _originalBottomFrameHeight = null!;
         private Pos _originalRightTopFrameY = null!;
+        private readonly ManagedSession? _managedSession;
 
         public MainWindow(
             IConnectionManager connectionManager,
@@ -59,9 +60,10 @@ public class MainWindow : Window
             IExecutionHistoryManager? executionHistoryManager = null)
         {
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
-            _userSettingsManager = userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
-            _executionHistoryManager = executionHistoryManager ?? new ExecutionHistoryManager();
-            _executionHistoryDisposable = executionHistoryManager == null
+            _managedSession = connectionManager as ManagedSession;
+            _userSettingsManager = _managedSession ?? userSettingsManager ?? throw new ArgumentNullException(nameof(userSettingsManager));
+            _executionHistoryManager = (IExecutionHistoryManager?)_managedSession ?? executionHistoryManager ?? new ExecutionHistoryManager();
+            _executionHistoryDisposable = _managedSession == null && executionHistoryManager == null
                 ? _executionHistoryManager as IDisposable
                 : null;
 
@@ -73,10 +75,10 @@ public class MainWindow : Window
             // Initialize cache configuration with default settings
             var cacheConfig = new CacheConfiguration
             {
-                EnableDiskCache = true,
+                EnableDiskCache = _managedSession == null,
                 CacheExpirationHours = 24
             };
-            _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig);
+            _clusterSchemaService = new ClusterSchemaService(languageService, cacheConfig, _managedSession);
 
             // Initialize tab manager — passes languageService so each tab creates its own autocomplete generator
             _tabManager = new TabManagerService(
@@ -459,6 +461,11 @@ public class MainWindow : Window
 
         private void OnTabCreated(object? sender, QueryTab tab)
         {
+            if (_managedSession != null)
+            {
+                tab.Connection = _managedSession.CreateConnection();
+                tab.EditorPane.SetConnection(tab.Connection);
+            }
             WireTabEvents(tab);
         }
 
@@ -559,6 +566,7 @@ public class MainWindow : Window
 
         private void OnConnectionSelected(object? sender, KustoConnection connection)
         {
+            _managedSession?.ValidateTarget(connection);
             var activeTab = _tabManager.ActiveTab;
             if (activeTab != null)
             {
@@ -729,6 +737,15 @@ public class MainWindow : Window
                 // Handle #connect directive — switch connection context before executing
                 if (ConnectDirectiveParser.TryParse(query, out var connectClusterUri, out var connectDisplayName, out var connectDatabase, out var connectRemainingQuery))
                 {
+                    if (_managedSession != null)
+                    {
+                        Application.Invoke(() =>
+                        {
+                            tab.EditorPane.SetExecuting(false);
+                            tab.EditorPane.ShowTemporaryMessage("#connect is disabled in managed shell mode.");
+                        });
+                        return;
+                    }
                     var newConnection = new KustoConnection
                     {
                         Id = Guid.NewGuid().ToString(),
@@ -777,7 +794,8 @@ public class MainWindow : Window
                         tab.EditorPane.UpdateProgressMessage(message);
                     });
                 });
-                var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
+                var authProvider = (IAuthenticationProvider?)_managedSession ??
+                    AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
                 tab.CurrentKustoClient = new Core.Services.KustoClient(connection, authProvider);
                 var result = await tab.CurrentKustoClient.ExecuteQueryAsync(query, cancellationToken, progress);
                 tab.CurrentKustoClient.Dispose();

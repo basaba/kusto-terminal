@@ -5,9 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseAppHost>false</UseAppHost>
+    <!-- Keep the publishing RID across project references: clipboard support depends on its OS. -->
+    <IsRidAgnostic>false</IsRidAgnostic>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+  <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('win-')) Or ('$(RuntimeIdentifier)' == '' And '$(OS)' == 'Windows_NT')">
     <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 
@@ -15,7 +17,7 @@
     <PackageReference Include="Terminal.Gui" Version="2.0.0-alpha.3721" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win-')) Or ('$(RuntimeIdentifier)' == '' And '$(OS)' == 'Windows_NT')">
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
 

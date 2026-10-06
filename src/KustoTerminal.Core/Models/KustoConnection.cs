@@ -39,6 +39,7 @@ namespace KustoTerminal.Core.Models
     public enum AuthenticationType
     {
         None,
-        AzureCli
+        AzureCli,
+        ManagedShell
     }
 }

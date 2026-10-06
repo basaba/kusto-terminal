@@ -14,13 +14,16 @@ namespace KustoTerminal.Core.Services
     {
         private LanguageService _languageService;
         private SchemaCacheManager? _cacheManager;
+        private readonly ManagedSession? _managedSession;
 
-        public ClusterSchemaService(LanguageService languageService, CacheConfiguration? cacheConfiguration = null)
+        public ClusterSchemaService(LanguageService languageService, CacheConfiguration? cacheConfiguration = null,
+            ManagedSession? managedSession = null)
         {
             _languageService = languageService;
+            _managedSession = managedSession;
             
             // Initialize cache manager if configuration is provided
-            if (cacheConfiguration != null && cacheConfiguration.EnableDiskCache)
+            if (managedSession == null && cacheConfiguration != null && cacheConfiguration.EnableDiskCache)
             {
                 try
                 {
@@ -92,7 +95,8 @@ namespace KustoTerminal.Core.Services
             }
 
             // Fetch from server if no cache or force refresh
-            var authProvider = AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
+            var authProvider = (IAuthenticationProvider?)_managedSession ??
+                AuthenticationProviderFactory.CreateProvider(connection.AuthType)!;
             var kustoClient = new KustoClient(connection, authProvider);
 
             try
